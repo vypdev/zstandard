@@ -71,13 +71,18 @@ class ZstandardMacOS extends ZstandardPlatform {
 
   @override
   Future<Uint8List?> decompress(Uint8List data) async {
+    const int contentSizeUnknown = -1;
+    const int contentSizeError = -2;
+
     final int compressedSize = data.lengthInBytes;
     final Pointer<Uint8> src = malloc.allocate<Uint8>(compressedSize);
     src.asTypedList(compressedSize).setAll(0, data);
 
     final int decompressedSizeExpected =
-        _bindings.ZSTD_getDecompressedSize(src.cast(), compressedSize);
-    final int dstCapacity = decompressedSizeExpected > 0
+        _bindings.ZSTD_getFrameContentSize(src.cast(), compressedSize);
+    final int dstCapacity = (decompressedSizeExpected != contentSizeUnknown &&
+        decompressedSizeExpected != contentSizeError &&
+        decompressedSizeExpected > 0)
         ? decompressedSizeExpected
         : compressedSize * 20;
     final Pointer<Uint8> dst = malloc.allocate<Uint8>(dstCapacity);
