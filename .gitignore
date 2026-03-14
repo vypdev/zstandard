@@ -5,3 +5,4 @@ zstandard_cli/zstd/
 */coverage/
 
 */*.lock
+.env
