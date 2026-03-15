@@ -18,7 +18,8 @@ A new Flutter FFI plugin project.
   # scripts/sync_zstd_ios_macos.sh. Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
   s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h', 'Classes/*.swift'
-  s.public_header_files = 'Classes/zstd/zstd.h'
+  # zstd.h includes zstd_errors.h; both must be public so the module build finds them.
+  s.public_header_files = 'Classes/zstd/zstd.h', 'Classes/zstd/zstd_errors.h'
 
   # Run at pod install so Classes/zstd exists when CocoaPods globs source_files (path pods only).
   s.prepare_command = <<~CMD
