@@ -76,14 +76,14 @@ Referencias:
 
 ## Automatización: script_phases en el podspec (before_compile / after_compile)
 
-CocoaPods resuelve `source_files` en **pod install** (con un glob). Si en ese momento `Classes/zstd` no existe, la lista de archivos del target queda vacía. Por eso el sync debe ejecutarse **antes** de que CocoaPods haga el glob; en la práctica eso se hace en un **script_phase** con `execution_position => :before_compile`, que corre en cada compilación del target del pod (y así `Classes/zstd` existe cuando se compila).
+CocoaPods resuelve `source_files` en **pod install** (con un glob). Si en ese momento `Classes/zstd` no existe, la lista de archivos del target queda vacía. Un **script_phase** con `before_compile` corre en cada **build**, no en pod install; cuando se compila, el sync ya creó `Classes/zstd`, pero el glob de `source_files` se hizo antes (en pod install), así que si entonces no existía la carpeta, esos archivos no se añaden al target. Además, cuando el pod se usa con `:path`, CocoaPods **no ejecuta** `prepare_command` del podspec, por lo que el sync del podspec no se dispara en el primer install. Por tanto, el sync debe ejecutarse **antes de pod install** (p. ej. con `pre_install` en el Podfile o manualmente).
 
 Cada plataforma solo sincroniza y borra su propia copia:
 
 - **iOS**: el podspec de `zstandard_ios` tiene una fase "Sync zstd" que ejecuta `scripts/sync_zstd_ios_macos.sh ios` (solo copia a `zstandard_ios/ios/Classes/zstd/`) y otra "Remove synced zstd" que borra esa carpeta tras compilar.
 - **macOS**: el podspec de `zstandard_macos` hace lo mismo con `sync_zstd_ios_macos.sh macos` (solo copia a `zstandard_macos/macos/Classes/zstd/`) y borra su copia en after_compile.
 
-El script acepta `ios`, `macos` o sin argumentos (sincroniza ambas plataformas, útil al ejecutarlo manualmente desde la raíz). No hace falta **pre_install** en el Podfile: el plugin se encarga del sync en sus script_phases.
+El script acepta `ios`, `macos` o sin argumentos (sincroniza ambas plataformas, útil al ejecutarlo manualmente desde la raíz). **Sí** hace falta que el sync se ejecute antes del primer pod install (pre_install en el Podfile o ejecutar `./scripts/sync_zstd_ios_macos.sh macos` desde la raíz); las script_phases solo corren en el build, no en install.
 
 ## Recomendación práctica
 

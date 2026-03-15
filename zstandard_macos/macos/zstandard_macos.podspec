@@ -3,6 +3,7 @@
 # Run `pod lib lint zstandard_macos.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
+  s.cocoapods_version = '>= 1.11.0'  # for script_phase :before_headers
   s.name             = 'zstandard_macos'
   s.version          = '0.0.1'
   s.summary          = 'A new Flutter FFI plugin project.'
@@ -41,17 +42,34 @@ A new Flutter FFI plugin project.
     'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY',
   }
 
-  # before_compile: sync again so build sees latest zstd; after_compile: remove copy from disk.
+  # script_phases run at BUILD time; source_files glob runs at POD INSTALL time. So if Classes/zstd
+  # doesn't exist at pod install (e.g. path pod, prepare_command not run), the target gets no zstd
+  # files. before_compile sync ensures latest zstd at build; after_compile removes the copy.
+  # Sync must run BEFORE Headers (Copy Headers reads Classes/zstd). CocoaPods runs Headers before
+  # Compile, so we use :before_headers so the sync runs first. Find repo root by walking up from
+  # the resolved pod path; use SRCROOT when PODS_TARGET_SRCROOT is relative (e.g. Flutter .symlinks).
   s.script_phases = [
     {
       :name => 'Sync zstd',
       :script => <<~SCRIPT,
-        SCRIPT="${PODS_TARGET_SRCROOT}/../../scripts/sync_zstd_ios_macos.sh"
-        if [ -x "$SCRIPT" ]; then
-          "$SCRIPT" macos
+        POD_ROOT="$(cd "${PODS_TARGET_SRCROOT}" 2>/dev/null && pwd -P)"
+        [ -z "$POD_ROOT" ] && POD_ROOT="$(cd "${SRCROOT}/${PODS_TARGET_SRCROOT}" 2>/dev/null && pwd -P)"
+        ROOT="${POD_ROOT:-$PODS_TARGET_SRCROOT}"
+        while [ -n "$ROOT" ] && [ ! -f "$ROOT/scripts/sync_zstd_ios_macos.sh" ]; do ROOT="${ROOT%/*}"; done
+        if [ -n "$ROOT" ] && [ -f "$ROOT/scripts/sync_zstd_ios_macos.sh" ]; then
+          bash "$ROOT/scripts/sync_zstd_ios_macos.sh" macos
+          CANONICAL="$ROOT/zstandard_macos/macos/Classes/zstd"
+          DEST="${PODS_TARGET_SRCROOT}/Classes/zstd"
+          if [ -d "$CANONICAL" ]; then
+            REAL_DEST="$(cd "${PODS_TARGET_SRCROOT}" 2>/dev/null && pwd -P)/Classes/zstd" || REAL_DEST="$DEST"
+            if [ "$(cd "$CANONICAL" 2>/dev/null && pwd -P)" != "$(cd "$REAL_DEST" 2>/dev/null && pwd -P)" ]; then
+              mkdir -p "$REAL_DEST"
+              rsync -a "$CANONICAL/" "$REAL_DEST/"
+            fi
+          fi
         fi
       SCRIPT
-      :execution_position => :before_compile
+      :execution_position => :before_headers
     },
     { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
   ]
