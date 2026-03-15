@@ -25,6 +25,8 @@ A new Flutter FFI plugin project.
   s.platform = :ios, '13.0'
 
   # Flutter.framework does not contain a i386 slice.
+  # Run ./scripts/sync_zstd_ios_macos.sh after updating zstd; it removes module.modulemap on iOS
+  # so legacy/*.c use their local ZSTD_parameters (with .windowLog), not the one from zstd.h.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',

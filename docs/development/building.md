@@ -42,7 +42,11 @@ If you are developing or modifying a platform package’s native code:
 
 ### iOS / macOS
 
-- The zstd source is typically under `ios/Classes/zstd/` (iOS) or `src/` (macOS).
+- The zstd source is typically under `ios/Classes/zstd/` (iOS) or `macos/Classes/zstd/` (macOS). The canonical source is `zstandard_macos/src/`.
+- To update the zstd code in **both** iOS and macOS from that canonical source, run from the repo root:
+  ```bash
+  ./scripts/sync_zstd_ios_macos.sh
+  ```
 - Build the example app for iOS or macOS; Xcode/CocoaPods will build the native target.
 - For macOS, the product may be a framework or dylib that the Dart code loads by name.
 
@@ -91,14 +95,37 @@ dart compile exe bin/compress.dart   # if the package exposes such a script
 
 The compiled executable will still need the native library (e.g. .dylib, .dll, .so) to be available at runtime as the package expects.
 
-## FFI Bindings Regeneration
+## Workflow: updating zstd and running the app (do not edit native zstd)
 
-If you change the zstd C API surface or headers used by the plugin:
+**Do not modify the native zstd C library by hand.** The flow is:
+
+1. **Update the canonical zstd source**  
+   The source of truth for iOS and macOS is `zstandard_macos/src/`. Update it only by replacing it with an upstream release (e.g. from [facebook/zstd](https://github.com/facebook/zstd)) or by running a script that fetches it; do not edit the C files manually.  
+   If `zstandard_macos/src/` or the iOS/macOS `Classes/zstd/` trees are missing (e.g. after a clean clone), copy the contents of the upstream `lib/` directory into `zstandard_macos/src/` (e.g. `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && cp -R /tmp/zstd/lib/* zstandard_macos/src/`).
+
+2. **Sync zstd to iOS and macOS** (from repo root):
+   ```bash
+   ./scripts/sync_zstd_ios_macos.sh
+   ```
+   This copies `zstandard_macos/src/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`, and removes `module.modulemap` on both so the pods build correctly (legacy and module conflicts).
+
+3. **Regenerate FFI bindings** (from repo root):
+   ```bash
+   ./scripts/regenerate_bindings.sh
+   ```
+   This runs `dart run ffigen` in each platform package (android, ios, macos, linux, windows, cli). Commit any changed `*_bindings_generated.dart` files.
+
+4. **Run the app** (e.g. `flutter run` from `zstandard/example` for the desired platform).
+
+Android, Linux, and Windows each have their own `src/` tree; they are not synced from the iOS/macOS script. If you update zstd for those platforms, update their `src/` accordingly (again, without editing the C code by hand), then run the bindings script.
+
+## FFI Bindings Regeneration (manual)
+
+If you only need to regenerate bindings for one package:
 
 1. Install **ffigen** (and LLVM if required): see the Dart FFI documentation.
-2. Each platform package that uses FFI typically has an `ffigen` config (e.g. `ffigen.yaml` or in `pubspec.yaml`).
-3. Run ffigen for that package (e.g. `dart run ffigen` from the package directory) to regenerate the `*_bindings_generated.dart` file.
-4. Commit the updated bindings so that others and CI use the same bindings.
+2. From the package directory (e.g. `zstandard_ios`), run: `dart run ffigen --config ffigen.yaml`.
+3. Commit the updated `*_bindings_generated.dart` file.
 
 ## Troubleshooting
 

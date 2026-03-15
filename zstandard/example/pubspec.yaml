@@ -17,6 +17,8 @@ dependency_overrides:
   # Use local plugins from repo when developing (e.g. macOS zstd symbol fix).
   zstandard_macos:
     path: ../../zstandard_macos
+  zstandard_ios:
+    path: ../../zstandard_ios
 
 dependencies:
   flutter:
