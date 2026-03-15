@@ -69,7 +69,8 @@ A new Flutter FFI plugin project.
           fi
         fi
       SCRIPT
-      :execution_position => :before_headers
+      :execution_position => :before_headers,
+      :output_files => ['$(PODS_TARGET_SRCROOT)/Classes/zstd/zstd.h']
     },
     { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
   ]
