@@ -105,6 +105,15 @@ flutter test --coverage
 
 View the generated `coverage/lcov.info` with a tool like `lcov` or your IDE. Aim for high coverage on the main plugin and platform interface; platform-specific code may have lower coverage when run on a single host.
 
+## Mutation testing
+
+Mutation testing measures test quality by mutating source code and checking whether tests detect the changes. A mutation score of 90% or above is required.
+
+- **Config**: `mutation_test_config.xml` at repo root (Flutter packages) or `zstandard_cli/mutation_test_config.xml` (CLI).
+- **Run for one package** (from repo root): `cd <package> && dart run mutation_test ../mutation_test_config.xml` (use `mutation_test_config.xml` for zstandard_cli).
+- **Run for all packages**: `./scripts/run_mutation_test.sh all` (takes a long time).
+- **Threshold**: Failure if mutation score &lt; 90%.
+
 ## CI
 
 The project’s CI (e.g. GitHub Actions) should run `flutter test` (or `dart test`) for the relevant packages. Ensure your changes do not break these jobs. Add new tests for new behavior and fix any failing tests before submitting a PR.

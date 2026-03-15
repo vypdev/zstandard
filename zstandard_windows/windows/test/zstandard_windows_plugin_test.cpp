@@ -43,5 +43,18 @@ TEST(ZstandardWindowsPlugin, GetPlatformVersion) {
   EXPECT_TRUE(result_string.rfind("Windows ", 0) == 0);
 }
 
+TEST(ZstandardWindowsPlugin, GetPlatformVersionNonEmpty) {
+  ZstandardWindowsPlugin plugin;
+  std::string result_string;
+  plugin.HandleMethodCall(
+      MethodCall("getPlatformVersion", std::make_unique<EncodableValue>()),
+      std::make_unique<MethodResultFunctions<>>(
+          [&result_string](const EncodableValue* result) {
+            result_string = std::get<std::string>(*result);
+          },
+          nullptr, nullptr));
+  EXPECT_FALSE(result_string.empty());
+}
+
 }  // namespace test
 }  // namespace zstandard_windows

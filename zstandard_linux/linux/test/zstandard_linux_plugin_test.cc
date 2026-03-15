@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <flutter_linux/flutter_linux.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -22,6 +24,17 @@ TEST(ZstandardLinuxPlugin, GetPlatformVersion) {
   ASSERT_EQ(fl_value_get_type(result), FL_VALUE_TYPE_STRING);
   // The full string varies, so just validate that it has the right format.
   EXPECT_THAT(fl_value_get_string(result), testing::StartsWith("Linux "));
+}
+
+TEST(ZstandardLinuxPlugin, GetPlatformVersionReturnsNonEmpty) {
+  g_autoptr(FlMethodResponse) response = get_platform_version();
+  ASSERT_NE(response, nullptr);
+  ASSERT_TRUE(FL_IS_METHOD_SUCCESS_RESPONSE(response));
+  FlValue* result = fl_method_success_response_get_result(
+      FL_METHOD_SUCCESS_RESPONSE(response));
+  const gchar* str = fl_value_get_string(result);
+  ASSERT_NE(str, nullptr);
+  EXPECT_GT(strlen(str), 0u);
 }
 
 }  // namespace test

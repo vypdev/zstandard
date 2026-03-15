@@ -49,12 +49,12 @@ jobs:
         shell: cmd
         run: flutter test --coverage
 
-      - name: Upload coverage to Codecov
+      - name: Check coverage threshold (95%) and upload to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: zstandard_windows/coverage/lcov.info
           flags: windows
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows

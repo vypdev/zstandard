@@ -20,6 +20,28 @@ class MockZstandardPlatform with MockPlatformInterfaceMixin implements Zstandard
   }
 }
 
+class MockB with MockPlatformInterfaceMixin implements ZstandardPlatform {
+  @override
+  Future<String?> getPlatformVersion() => Future.value('PlatformB');
+  @override
+  Future<Uint8List?> compress(Uint8List data, int compressionLevel) =>
+      Future.value(Uint8List.fromList([9, 9]));
+  @override
+  Future<Uint8List?> decompress(Uint8List data) =>
+      Future.value(Uint8List.fromList([8, 8]));
+}
+
+class OtherMock with MockPlatformInterfaceMixin implements ZstandardPlatform {
+  @override
+  Future<String?> getPlatformVersion() => Future.value('Other');
+  @override
+  Future<Uint8List?> compress(Uint8List data, int compressionLevel) =>
+      Future.value(Uint8List.fromList([99]));
+  @override
+  Future<Uint8List?> decompress(Uint8List data) =>
+      Future.value(Uint8List.fromList([100]));
+}
+
 void main() {
   group('ZstandardPlatform default instance', () {
     test('MethodChannelZstandardPlatform is the default instance', () {
@@ -89,6 +111,41 @@ void main() {
       final decompressed = await ZstandardPlatform.instance.decompress(data);
       expect(decompressed, isNotNull);
       expect(decompressed, Uint8List.fromList(<int>[4, 5, 6]));
+    });
+  });
+
+  group('Multiple mock platforms', () {
+    ZstandardPlatform? savedInstance;
+
+    setUp(() {
+      savedInstance = ZstandardPlatform.instance;
+    });
+
+    tearDown(() {
+      ZstandardPlatform.instance = savedInstance!;
+    });
+
+    test('switching platforms at runtime', () async {
+      final mockA = MockZstandardPlatform();
+      ZstandardPlatform.instance = mockA;
+      expect(await ZstandardPlatform.instance.getPlatformVersion(), '42');
+
+      ZstandardPlatform.instance = MockB();
+      expect(await ZstandardPlatform.instance.getPlatformVersion(), 'PlatformB');
+      final data = Uint8List.fromList([1]);
+      final c = await ZstandardPlatform.instance.compress(data, 3);
+      expect(c, Uint8List.fromList([9, 9]));
+    });
+
+    test('platform A returns different results than platform B', () async {
+      ZstandardPlatform.instance = MockZstandardPlatform();
+      final data = Uint8List.fromList([1, 2, 3]);
+      final compA = await ZstandardPlatform.instance.compress(data, 3);
+      expect(compA, Uint8List.fromList([1, 2, 3]));
+
+      ZstandardPlatform.instance = OtherMock();
+      final compB = await ZstandardPlatform.instance.compress(data, 3);
+      expect(compB, Uint8List.fromList([99]));
     });
   });
 }

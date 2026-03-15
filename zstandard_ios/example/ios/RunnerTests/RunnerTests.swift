@@ -16,4 +16,15 @@ class RunnerTests: XCTestCase {
     // Verify the test bundle and app dependencies are loadable.
     XCTAssertNotNil(Bundle.main.bundleIdentifier)
   }
+
+  func testBundleExecutablePathExists() {
+    XCTAssertNotNil(Bundle.main.executablePath)
+  }
+
+  @available(iOS 13.0, *)
+  func testAsyncExample() async {
+    // Async test: verify we can await without blocking.
+    let value = await Task { true }.value
+    XCTAssertTrue(value)
+  }
 }

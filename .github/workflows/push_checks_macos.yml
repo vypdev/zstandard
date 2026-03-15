@@ -51,12 +51,23 @@ jobs:
         working-directory: zstandard_macos
         run: flutter test --coverage
 
+      - name: Install lcov
+        run: brew install lcov
+
+      - name: Check coverage threshold (95%)
+        working-directory: zstandard_macos
+        run: |
+          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Coverage: ${COVERAGE}%"
+          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
+          if (( $(echo "$COVERAGE < 95" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 95%"; exit 1; fi
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: zstandard_macos/coverage/lcov.info
           flags: macos
-          fail_ci_if_error: false
+          fail_ci_if_error: true
 
   check_macos_publish_dry_run:
     name: Dry Run Publish macOS
