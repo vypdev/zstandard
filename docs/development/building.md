@@ -10,7 +10,7 @@ From the repository root, you can run sync, bindings, all macOS-runnable builds,
 ./scripts/run_all_macos.sh
 ```
 
-This runs: sync zstd (from repo root `zstd/`) → regenerate bindings → build Android → build CLI (dylibs) → build iOS → build web → build macOS → test Android → test CLI → test iOS → test web → test macOS. Requires macOS, Flutter, Xcode, CocoaPods, Android SDK/NDK (for Android), and CMake. Ensure the canonical source exists at `zstd/` (see step 1 below). Stops on first failure.
+This runs: verify zstd at repo root → regenerate bindings → build Android → build CLI (dylibs) → build iOS → build web → build macOS → test Android → test CLI → test iOS → test web → test macOS. Requires macOS, Flutter, Xcode, CocoaPods, Android SDK/NDK (for Android), and CMake. All platforms use the single canonical source at `zstd/` (see workflow below). Stops on first failure.
 
 ## Flutter Plugin (All Platforms)
 
@@ -42,35 +42,32 @@ The native libraries (e.g. Android .so, iOS framework, Windows DLL, Linux .so) a
 
 ## Native Libraries (Platform Packages)
 
+All platforms use a **single source of truth** for the zstd C library: **`zstd/`** at the repository root. Each platform references this directory (via `zstd_build/` CMake wrappers or podspec paths). There are no per-platform copies of the zstd source.
+
 If you are developing or modifying a platform package’s native code:
 
 ### Android
 
-- The native zstd code is under the platform package’s `android/` and/or `src/` (or as specified in the package).
+- The plugin builds the native library via `zstandard_android/zstd_build/CMakeLists.txt`, which compiles sources from `../../zstd/`.
 - Building the Android app (e.g. `flutter build apk` or running from Android Studio) triggers the native build via Gradle/CMake.
-- Ensure the NDK is installed and that `android/app/build.gradle` (or the plugin’s build config) is set up to compile the native library.
+- Ensure the NDK is installed and that the canonical `zstd/` directory exists at repo root.
 
 ### iOS / macOS
 
-- The zstd source is under `ios/Classes/zstd/` (iOS) and `macos/Classes/zstd/` (macOS); both are copies from the canonical source at repo root **`zstd/`**.
-- To update the zstd code in **both** iOS and macOS from that canonical source, run from the repo root:
-  ```bash
-  ./scripts/sync_zstd_ios_macos.sh
-  ```
+- The podspecs reference the canonical **`zstd/`** at repo root directly (`../../zstd/` from the pod directory).
+- Run `./scripts/sync_zstd_ios_macos.sh` to verify that `zstd/` exists (no copy is performed).
 - Build the example app for iOS or macOS; Xcode/CocoaPods will build the native target.
 - For macOS, the product may be a framework or dylib that the Dart code loads by name.
 
 ### Linux
 
-- Native code is under the package’s `src/`; the build is usually under `linux/` using CMake.
-- From the example app: `flutter build linux` or `flutter run -d linux` will invoke CMake and produce `libzstandard_linux_plugin.so` (or the configured name).
-- You can also run CMake manually from the package’s `linux/` directory if the project documents it.
+- The plugin builds the zstd library via `zstandard_linux/zstd_build/CMakeLists.txt`, which compiles sources from `../../zstd/`, and links it into the plugin.
+- From the example app: `flutter build linux` or `flutter run -d linux` will invoke CMake and produce `libzstandard_linux_plugin.so`.
 
 ### Windows
 
-- Native code is under the package’s `src/`; the build is usually under `windows/` using CMake.
-- From the example app: `flutter build windows` or `flutter run -d windows` will invoke CMake and produce the plugin DLL.
-- You can run CMake manually from the package’s `windows/` directory if needed.
+- The plugin builds the zstd DLL via `zstandard_windows/zstd_build/CMakeLists.txt`, which compiles sources from `../../zstd/`.
+- From the example app: `flutter build windows` or `flutter run -d windows` will invoke CMake and produce the plugin DLL and the bundled `zstandard_windows.dll`.
 
 ### Web
 
@@ -107,22 +104,21 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
 
 ## Workflow: updating zstd and running the app (do not edit native zstd)
 
-**Do not modify the native zstd C library by hand.** The flow is:
+**Do not modify the native zstd C library by hand.** All platforms use the single **`zstd/`** directory at the repo root. The flow is:
 
 1. **Update the canonical zstd source**  
-   The source of truth is **`zstd/`** at the repo root. Update it from the [official repo](https://github.com/facebook/zstd) (do not edit the C files manually).  
    From repo root:
    ```bash
    ./scripts/update_zstd.sh        # latest from dev (upstream default)
    ./scripts/update_zstd.sh v1.5.6 # specific tag or branch
    ```
-   If you prefer to do it manually: `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && mkdir -p zstd && cp -R /tmp/zstd/lib/* zstd/`. If you previously had the canonical source at `zstandard_macos/src/`, move it once: `mv zstandard_macos/src zstd`.
+   This fetches from the [official repo](https://github.com/facebook/zstd) and updates `zstd/`. If you prefer to do it manually: `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && mkdir -p zstd && cp -R /tmp/zstd/lib/* zstd/`.
 
-2. **Sync zstd to iOS and macOS** (from repo root):
+2. **Verify zstd is present** (from repo root):
    ```bash
    ./scripts/sync_zstd_ios_macos.sh
    ```
-   This copies `zstd/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`, and removes `module.modulemap` on both so the pods build correctly (legacy and module conflicts).
+   This only checks that `zstd/` exists; iOS and macOS reference it directly.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash
@@ -132,7 +128,7 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
 
 4. **Run the app** (e.g. `flutter run` from `zstandard/example` for the desired platform).
 
-Android, Linux, and Windows each have their own `src/` tree; they are not synced from the iOS/macOS script. If you update zstd for those platforms, update their `src/` accordingly (again, without editing the C code by hand), then run the bindings script.
+Because all platforms reference the same `zstd/` directory, a single `update_zstd.sh` updates every platform at once.
 
 ## FFI Bindings Regeneration (manual)
 

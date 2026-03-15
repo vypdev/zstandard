@@ -13,26 +13,23 @@ A new Flutter FFI plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
 
-  # Classes/ contains the plugin (Swift + forwarder .c) and Classes/zstd/ is a
-  # copy of ../src so the zstd C library is compiled into the framework.
-  # The framework must export ZSTD_* symbols (e.g. ZSTD_compressBound) for FFI.
-  # Keep zstd headers private so the module umbrella does not break relative includes.
-  s.source           = { :path => '.' }
+  # Zstd C sources live at repo root ../../zstd (single source of truth).
   # Exclude deprecated/ (zbuff) to avoid module/macro issues; include legacy for decompress.
+  s.source           = { :path => '.' }
   s.source_files     = 'Classes/zstandard_macos.c', 'Classes/**/*.swift',
-                       'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
-                       'Classes/zstd/compress/*.c', 'Classes/zstd/compress/*.h',
-                       'Classes/zstd/decompress/*.c', 'Classes/zstd/decompress/*.h',
-                       'Classes/zstd/dictBuilder/*.c', 'Classes/zstd/dictBuilder/*.h',
-                       'Classes/zstd/legacy/*.c', 'Classes/zstd/legacy/*.h',
-                       'Classes/zstd/*.h'
-  s.private_header_files = 'Classes/zstd/**/*.h'
+                       '../../zstd/common/*.c', '../../zstd/common/*.h',
+                       '../../zstd/compress/*.c', '../../zstd/compress/*.h',
+                       '../../zstd/decompress/*.c', '../../zstd/decompress/*.h',
+                       '../../zstd/dictBuilder/*.c', '../../zstd/dictBuilder/*.h',
+                       '../../zstd/legacy/*.c', '../../zstd/legacy/*.h',
+                       '../../zstd/*.h'
+  s.private_header_files = '../../zstd/**/*.h'
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.11'
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/zstd',
+    'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/../../zstd',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
     'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY',
   }

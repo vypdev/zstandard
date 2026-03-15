@@ -21,7 +21,7 @@ echo "Using zstd from $ZSTD_SRC"
 echo "Building macOS Intel x64..."
 cd "$CLI/builders/macos_intel"
 rm -rf build && mkdir build && cd build
-cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 -DZSTD_SRC_DIR="$ZSTD_SRC" ..
+cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
 cmake --build . --config Release
 mv libzstandard_macos.dylib "$BIN/libzstandard_macos_intel.dylib"
 cd .. && rm -rf build
@@ -29,7 +29,7 @@ cd .. && rm -rf build
 echo "Building macOS ARM64..."
 cd "$CLI/builders/macos_arm"
 rm -rf build && mkdir build && cd build
-cmake -DCMAKE_OSX_ARCHITECTURES=arm64 -DZSTD_SRC_DIR="$ZSTD_SRC" ..
+cmake -DCMAKE_OSX_ARCHITECTURES=arm64 ..
 cmake --build . --config Release
 mv libzstandard_macos.dylib "$BIN/libzstandard_macos_arm.dylib"
 cd .. && rm -rf build

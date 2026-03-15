@@ -5,11 +5,12 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_linux_library VERSION 0.0.1 LANGUAGES C)
 
-set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../zstd")
+set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../zstd")
+
 file(GLOB ZSTD_SRC
-        "${ZSTD_ROOT}/common/*.c"
-        "${ZSTD_ROOT}/compress/*.c"
-        "${ZSTD_ROOT}/decompress/*.c"
+    "${ZSTD_ROOT}/common/*.c"
+    "${ZSTD_ROOT}/compress/*.c"
+    "${ZSTD_ROOT}/decompress/*.c"
 )
 
 add_library(zstandard_linux SHARED ${ZSTD_SRC})
@@ -22,12 +23,7 @@ target_include_directories(zstandard_linux PUBLIC
 )
 
 set_target_properties(zstandard_linux PROPERTIES
-  OUTPUT_NAME "zstandard_linux"
+    OUTPUT_NAME "zstandard_linux"
 )
 
-target_compile_definitions(zstandard_linux PUBLIC
-        DYNAMIC_BMI2=0
-        HUF_NEED_BMI2_FUNCTION=0
-        ZSTD_ENABLE_ASM_X86_64_BMI2=0
-        DART_SHARED_LIB
-)
+target_compile_definitions(zstandard_linux PUBLIC DART_SHARED_LIB)

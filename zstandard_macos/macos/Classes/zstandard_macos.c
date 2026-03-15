@@ -1,2 +1,2 @@
-// Pull in zstd; Classes/zstd is a symlink to ../src so the library is compiled in.
-#include "zstd/zstd.h"
+// Pull in zstd from repo root (HEADER_SEARCH_PATHS set in podspec).
+#include "zstd.h"

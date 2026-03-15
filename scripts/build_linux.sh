@@ -1,25 +1,22 @@
 #!/usr/bin/env bash
 # Build Linux precompiled zstd libraries for zstandard_cli (x64 and optionally ARM64).
+# Uses the canonical zstd source at repo root zstd/. Run ./scripts/update_zstd.sh if needed.
 # Usage: from repo root, run: ./scripts/build_linux.sh
 # Requires: CMake, gcc, git. For ARM64: aarch64-linux-gnu-gcc or native ARM host.
 
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLI="$ROOT/zstandard_cli"
+ZSTD="$ROOT/zstd"
 BIN="$CLI/lib/src/bin"
 mkdir -p "$BIN"
 
-echo "Fetching zstd sources into zstandard_cli/src..."
-cd "$CLI"
-if [[ -d "src" && -f "src/zstd.h" ]]; then
-  echo "Using existing zstandard_cli/src (delete it to re-fetch)."
-else
-  rm -rf zstd src
-  git clone --depth 1 https://github.com/facebook/zstd.git
-  mkdir -p src
-  mv zstd/lib/* src/
-  rm -rf zstd
+if [[ ! -d "$ZSTD" || ! -f "$ZSTD/zstd.h" ]]; then
+  echo "Error: Canonical zstd source not found at $ZSTD"
+  echo "Run: ./scripts/update_zstd.sh"
+  exit 1
 fi
+echo "Using zstd from $ZSTD"
 
 echo "Building Linux x64..."
 cd "$CLI/builders/linux_x64"
