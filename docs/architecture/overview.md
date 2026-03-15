@@ -51,8 +51,8 @@ Defines the contract all platform implementations must satisfy:
 | Package | Technology | Notes |
 |---------|------------|--------|
 | zstandard_android | FFI + JNI | Native zstd library in `android/`, Dart bindings via FFI |
-| zstandard_ios | FFI | Native zstd in `ios/Classes/zstd/`, CocoaPods |
-| zstandard_macos | FFI | Native zstd in `src/`, framework build |
+| zstandard_ios | FFI | Native zstd in `Classes/zstd/` (synced from repo root `zstd/`), CocoaPods |
+| zstandard_macos | FFI | Native zstd in `Classes/zstd/` (synced from repo root `zstd/`), CocoaPods |
 | zstandard_linux | FFI | Native zstd in `src/`, CMake in `linux/` |
 | zstandard_windows | FFI | Native zstd in `src/`, CMake in `windows/` |
 | zstandard_web | JS interop + WASM | zstd.js / zstd.wasm loaded from `web/` |

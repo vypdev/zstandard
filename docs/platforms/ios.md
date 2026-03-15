@@ -22,7 +22,7 @@ No additional setup is required for normal use. The plugin registers the iOS imp
 
 ## Architecture
 
-- **Native layer**: The facebook/zstd C library lives under `ios/Classes/zstd/` and is built as part of the iOS project (e.g. via CocoaPods or Xcode). It is linked into the app and loaded by the Dart plugin via FFI.
+- **Native layer**: The facebook/zstd C library is synced from the repo root `zstd/` into the package’s `ios/Classes/zstd/` (via the podspec’s prepare_command and script phases) and built as part of the CocoaPods target. It is linked into the app and loaded by the Dart plugin via FFI.
 - **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
 - **Isolates**: The implementation may use a helper isolate for async compression/decompression to avoid blocking the UI thread.
 
@@ -49,8 +49,8 @@ final decompressed = await compressed?.decompress();
 
 If you are developing the zstandard_ios package:
 
-1. The native zstd source is under `zstandard_ios/ios/Classes/zstd/`.
-2. The project may use a Podspec and CocoaPods to build the static library or framework.
+1. The canonical zstd source is at the repo root `zstd/`; the podspec syncs it into `ios/Classes/zstd/` at install/build time.
+2. The project uses a Podspec and CocoaPods to build the framework.
 3. FFI bindings are generated (e.g. with `ffigen`) from the zstd headers.
 
 See the package’s `ios/` directory and the repo’s [Building](development/building.md) guide.

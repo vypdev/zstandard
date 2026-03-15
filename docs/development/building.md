@@ -42,7 +42,7 @@ The native libraries (e.g. Android .so, iOS framework, Windows DLL, Linux .so) a
 
 ## Native Libraries (Platform Packages)
 
-All platforms use a **single source of truth** for the zstd C library: **`zstd/`** at the repository root. Each platform references this directory (via `zstd_build/` CMake wrappers or podspec paths). There are no per-platform copies of the zstd source.
+All platforms use a **single source of truth** for the zstd C library: **`zstd/`** at the repository root. Android, Linux, and Windows compile directly from `zstd/` via CMake (`zstd_build/`). iOS and macOS copy `zstd/` into the plugin’s `Classes/zstd/` at pod install or build time (see below); that copy is temporary and should not be edited.
 
 If you are developing or modifying a platform package’s native code:
 
@@ -54,10 +54,9 @@ If you are developing or modifying a platform package’s native code:
 
 ### iOS / macOS
 
-- The podspecs reference the canonical **`zstd/`** at repo root directly (`../../zstd/` from the pod directory).
-- Run `./scripts/sync_zstd_ios_macos.sh` to verify that `zstd/` exists (no copy is performed).
-- Build the example app for iOS or macOS; Xcode/CocoaPods will build the native target.
-- For macOS, the product may be a framework or dylib that the Dart code loads by name.
+- The canonical source is **`zstd/`** at repo root. CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy `zstd/` into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
+- Ensure `zstd/` exists at repo root (e.g. run `./scripts/update_zstd.sh` if needed). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
+- The product is a framework that the Dart code loads via FFI.
 
 ### Linux
 
@@ -118,9 +117,9 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
    ```bash
    ./scripts/sync_zstd_ios_macos.sh
    ```
-   This copies `zstd/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`. If you build the **example app** (`zstandard/example`), the Podfile runs this script automatically in a `pre_install` hook, so you don't need to run it by hand. For other apps that depend on the plugin, run the script once after updating zstd, or add the same `pre_install` snippet to your app's Podfile (see the example app's `ios/Podfile` and `macos/Podfile`).
+   This copies `zstd/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`. The **podspecs** handle the sync automatically: `prepare_command` runs at pod install when applicable, and a script phase runs before headers at build time. You only need to run the script by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
 
-After each build, the iOS and macOS podspecs run a script phase that **removes** the copied `Classes/zstd` directory, so the copy is only present during the build. The next build runs `pod install` again (and thus `pre_install` → sync), so the copy is recreated automatically.
+   After each build, the iOS and macOS podspecs run a script phase that **removes** the copied `Classes/zstd` directory. The next build recreates it via the podspec’s sync phase.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash
