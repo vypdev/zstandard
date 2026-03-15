@@ -1,3 +1,2 @@
-// Relative import to be able to reuse the C sources.
-// See the comment in ../zstandard_macos.podspec for more information.
-#include "../../src/zstd.h"
+// Pull in zstd; Classes/zstd is a symlink to ../src so the library is compiled in.
+#include "zstd/zstd.h"
