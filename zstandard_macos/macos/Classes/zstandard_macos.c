@@ -1,2 +1,2 @@
-// Pull in zstd from repo root (HEADER_SEARCH_PATHS set in podspec).
-#include "zstd.h"
+// Pull in zstd; Classes/zstd is synced from repo root by scripts/sync_zstd_ios_macos.sh.
+#include "zstd/zstd.h"

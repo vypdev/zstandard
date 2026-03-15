@@ -13,25 +13,32 @@ A new Flutter FFI plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
 
-  # Zstd C sources live at repo root ../../zstd (single source of truth).
-  # Exclude deprecated/ (zbuff) to avoid module/macro issues; include legacy for decompress.
+  # Zstd C sources: synced from repo root zstd/ into Classes/zstd/ by
+  # scripts/sync_zstd_ios_macos.sh. Exclude deprecated/ (zbuff); include legacy.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/zstandard_macos.c', 'Classes/**/*.swift',
-                       '../../zstd/common/*.c', '../../zstd/common/*.h',
-                       '../../zstd/compress/*.c', '../../zstd/compress/*.h',
-                       '../../zstd/decompress/*.c', '../../zstd/decompress/*.h',
-                       '../../zstd/dictBuilder/*.c', '../../zstd/dictBuilder/*.h',
-                       '../../zstd/legacy/*.c', '../../zstd/legacy/*.h',
-                       '../../zstd/*.h'
-  s.private_header_files = '../../zstd/**/*.h'
+                       'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
+                       'Classes/zstd/compress/*.c', 'Classes/zstd/compress/*.h',
+                       'Classes/zstd/decompress/*.c', 'Classes/zstd/decompress/*.h',
+                       'Classes/zstd/decompress/*.S',
+                       'Classes/zstd/dictBuilder/*.c', 'Classes/zstd/dictBuilder/*.h',
+                       'Classes/zstd/legacy/*.c', 'Classes/zstd/legacy/*.h',
+                       'Classes/zstd/*.h'
+  s.private_header_files = 'Classes/zstd/**/*.h'
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.11'
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
-    'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/../../zstd',
+    'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/zstd',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
     'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY',
   }
+
+  # Remove synced zstd copy after compile so Classes/zstd is not left on disk.
+  s.script_phases = [
+    { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
+  ]
+
   s.swift_version = '5.0'
 end

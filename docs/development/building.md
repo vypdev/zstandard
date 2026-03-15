@@ -114,11 +114,13 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
    ```
    This fetches from the [official repo](https://github.com/facebook/zstd) and updates `zstd/`. If you prefer to do it manually: `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && mkdir -p zstd && cp -R /tmp/zstd/lib/* zstd/`.
 
-2. **Verify zstd is present** (from repo root):
+2. **Sync zstd into iOS and macOS** (so CocoaPods can see the C sources):
    ```bash
    ./scripts/sync_zstd_ios_macos.sh
    ```
-   This only checks that `zstd/` exists; iOS and macOS reference it directly.
+   This copies `zstd/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`. If you build the **example app** (`zstandard/example`), the Podfile runs this script automatically in a `pre_install` hook, so you don't need to run it by hand. For other apps that depend on the plugin, run the script once after updating zstd, or add the same `pre_install` snippet to your app's Podfile (see the example app's `ios/Podfile` and `macos/Podfile`).
+
+After each build, the iOS and macOS podspecs run a script phase that **removes** the copied `Classes/zstd` directory, so the copy is only present during the build. The next build runs `pod install` again (and thus `pre_install` → sync), so the copy is recreated automatically.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash

@@ -27,6 +27,13 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+# Sync zstd from repo root into iOS/macOS plugin Classes before CocoaPods globs source_files.
+# Ensures Classes/zstd exists so the zstandard_ios pod sees its C sources (single source: ../../../zstd).
+pre_install do |installer|
+  script = File.expand_path('../../../scripts/sync_zstd_ios_macos.sh', __FILE__)
+  system(script) if File.executable?(script)
+end
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
