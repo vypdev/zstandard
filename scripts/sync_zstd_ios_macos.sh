@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
-# Sync the canonical zstd C source from the repo root zstd/ into the iOS and
+# Sync the canonical zstd C source from the repo root zstd/ into the iOS and/or
 # macOS plugin Class trees so CocoaPods can see the sources (it only globs
 # inside the pod directory). Single source of truth remains zstd/ at repo root.
 #
-# Usage: from repo root, run: ./scripts/sync_zstd_ios_macos.sh
-# Or: called automatically by the example app Podfile pre_install hook.
+# Usage:
+#   ./scripts/sync_zstd_ios_macos.sh ios   # sync only to zstandard_ios/ios/Classes/zstd/
+#   ./scripts/sync_zstd_ios_macos.sh macos # sync only to zstandard_macos/macos/Classes/zstd/
+#   ./scripts/sync_zstd_ios_macos.sh       # sync both (e.g. when run manually from repo root)
 #
-# Source of truth: zstd/ (at repo root)
-# Targets:
-#   - zstandard_ios/ios/Classes/zstd/
-#   - zstandard_macos/macos/Classes/zstd/
-#
-# After syncing, module.modulemap is removed from both copies so the pods build
-# without legacy ZSTD_parameters conflicts.
+# Each pod runs this with its platform in before_compile and removes its copy in after_compile.
 
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -26,34 +22,38 @@ if [[ ! -d "$SRC" || ! -f "$SRC/zstd.h" ]]; then
   exit 1
 fi
 
-echo "Syncing zstd from $SRC"
-echo "  -> iOS:  $IOS_ZSTD"
-echo "  -> macOS: $MACOS_ZSTD"
+sync_ios() {
+  echo "Syncing zstd from $SRC -> iOS $IOS_ZSTD"
+  rm -rf "$IOS_ZSTD"
+  mkdir -p "$IOS_ZSTD"
+  rsync -a "$SRC/" "$IOS_ZSTD/"
+  if [[ -f "$IOS_ZSTD/module.modulemap" ]]; then
+    rm -f "$IOS_ZSTD/module.modulemap"
+    echo "  Removed module.modulemap from iOS copy (legacy ZSTD_parameters conflict)."
+  fi
+}
 
-# Remove existing copies so the sync is a clean copy (no leftover files from older zstd).
-rm -rf "$IOS_ZSTD"
-rm -rf "$MACOS_ZSTD"
+sync_macos() {
+  echo "Syncing zstd from $SRC -> macOS $MACOS_ZSTD"
+  rm -rf "$MACOS_ZSTD"
+  mkdir -p "$MACOS_ZSTD"
+  rsync -a "$SRC/" "$MACOS_ZSTD/"
+  if [[ -f "$MACOS_ZSTD/module.modulemap" ]]; then
+    rm -f "$MACOS_ZSTD/module.modulemap"
+    echo "  Removed module.modulemap from macOS copy (not used by the pod)."
+  fi
+}
 
-# Copy from canonical source
-mkdir -p "$IOS_ZSTD"
-rsync -a "$SRC/" "$IOS_ZSTD/"
-
-# iOS pod: remove module map so the compiler does not load zstd.h for every .c file.
-# Legacy files (e.g. zstd_v04.c) define their own ZSTD_parameters with .windowLog; the
-# public zstd.h has .cParams.windowLog — without the module map, legacy use their local type.
-if [[ -f "$IOS_ZSTD/module.modulemap" ]]; then
-  rm -f "$IOS_ZSTD/module.modulemap"
-  echo "  Removed module.modulemap from iOS copy (legacy ZSTD_parameters conflict)."
-fi
-
-# Copy to macOS
-mkdir -p "$MACOS_ZSTD"
-rsync -a "$SRC/" "$MACOS_ZSTD/"
-
-# macOS pod builds without the zstd module map to avoid macro/module issues.
-if [[ -f "$MACOS_ZSTD/module.modulemap" ]]; then
-  rm -f "$MACOS_ZSTD/module.modulemap"
-  echo "  Removed module.modulemap from macOS copy (not used by the pod)."
-fi
-
-echo "Done. iOS and macOS plugin Class trees are in sync with zstd/."
+case "${1:-}" in
+  ios)
+    sync_ios
+    ;;
+  macos)
+    sync_macos
+    ;;
+  *)
+    sync_ios
+    sync_macos
+    echo "Done. iOS and macOS plugin Class trees are in sync with zstd/."
+    ;;
+esac

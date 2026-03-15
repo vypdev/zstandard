@@ -74,18 +74,18 @@ Referencias:
 - [What happens when I clone a repository with symlinks on Windows?](https://stackoverflow.com/questions/11662868/what-happens-when-i-clone-a-repository-with-symlinks-on-windows)
 - [Git for Windows - Symbolic Links](https://gitforwindows.org/symbolic-links.html)
 
-## Automatización sin script_phase: pre_install en el Podfile
+## Automatización: script_phases en el podspec (before_compile / after_compile)
 
-Un **script_phase** que copie `zstd` a `Classes/zstd` en tiempo de compilación no sirve: CocoaPods resuelve `source_files` en **pod install** (con un glob). Si en ese momento `Classes/zstd` no existe, la lista de archivos del target queda vacía y no se compila nada de zstd. El script_phase corre después, cuando ya es tarde.
+CocoaPods resuelve `source_files` en **pod install** (con un glob). Si en ese momento `Classes/zstd` no existe, la lista de archivos del target queda vacía. Por eso el sync debe ejecutarse **antes** de que CocoaPods haga el glob; en la práctica eso se hace en un **script_phase** con `execution_position => :before_compile`, que corre en cada compilación del target del pod (y así `Classes/zstd` existe cuando se compila).
 
-La solución automática es ejecutar el sync **antes** de `pod install`, usando el hook **pre_install** del Podfile:
+Cada plataforma solo sincroniza y borra su propia copia:
 
-- En **zstandard/example**: los Podfiles de `ios` y `macos` tienen un `pre_install` que llama a `../../../scripts/sync_zstd_ios_macos.sh`. Así, al hacer `flutter build ios` o `flutter build macos` (o `pod install`), el sync se ejecuta solo y CocoaPods ve ya los archivos en `Classes/zstd/`.
-- Otras apps que usen el plugin pueden: (1) ejecutar `./scripts/sync_zstd_ios_macos.sh` una vez tras actualizar zstd, o (2) añadir el mismo bloque `pre_install` a su Podfile (copiando el del ejemplo).
+- **iOS**: el podspec de `zstandard_ios` tiene una fase "Sync zstd" que ejecuta `scripts/sync_zstd_ios_macos.sh ios` (solo copia a `zstandard_ios/ios/Classes/zstd/`) y otra "Remove synced zstd" que borra esa carpeta tras compilar.
+- **macOS**: el podspec de `zstandard_macos` hace lo mismo con `sync_zstd_ios_macos.sh macos` (solo copia a `zstandard_macos/macos/Classes/zstd/`) y borra su copia en after_compile.
 
-El plugin aporta el script; la app (o el ejemplo) lo invoca desde el Podfile. No hace falta que el usuario recuerde ejecutar el sync manualmente cuando usa el ejemplo.
+El script acepta `ios`, `macos` o sin argumentos (sincroniza ambas plataformas, útil al ejecutarlo manualmente desde la raíz). No hace falta **pre_install** en el Podfile: el plugin se encarga del sync en sus script_phases.
 
 ## Recomendación práctica
 
-- **Hoy**: Usar el **script de sync que copia** `zstd/` a `Classes/zstd/` (single source of truth en `zstd/`) y **pre_install** en el Podfile del ejemplo (y opcionalmente en el de la app) para que sea automático al construir.
+- **Hoy**: Usar el **script de sync** que copia `zstd/` a `Classes/zstd/` solo para la plataforma que se está compilando (single source of truth en `zstd/`). Cada pod ejecuta el script con su plataforma en before_compile y borra su copia en after_compile; no se depende del Podfile.
 - **Symlinks**: Solo serían una alternativa estable cuando CocoaPods soporte seguir symlinks en los globs y se defina cómo manejar Git en Windows.

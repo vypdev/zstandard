@@ -14,7 +14,7 @@ A new Flutter FFI plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
 
   # Zstd C sources: synced from repo root zstd/ into Classes/zstd/ by
-  # scripts/sync_zstd_ios_macos.sh (run manually or via example app Podfile pre_install).
+  # scripts/sync_zstd_ios_macos.sh (run in a before_compile script phase when present).
   s.source           = { :path => '.' }
   s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h', 'Classes/*.swift'
   s.public_header_files = 'Classes/zstd/zstd.h'
@@ -29,9 +29,19 @@ A new Flutter FFI plugin project.
     'OTHER_CFLAGS' => '-DZSTD_STATIC_LINKING_ONLY -DZSTD_DISABLE_ASM'
   }
 
-  # Remove synced zstd copy after compile so Classes/zstd is not left on disk.
-  # Next build will run pre_install (in example app) or sync script, which repopulates it.
+  # Sync zstd before compile when script exists (local dev); no need for Podfile pre_install.
+  # After compile, remove synced copy so Classes/zstd is not left on disk.
   s.script_phases = [
+    {
+      :name => 'Sync zstd',
+      :script => <<~SCRIPT,
+        SCRIPT="${PODS_TARGET_SRCROOT}/../../scripts/sync_zstd_ios_macos.sh"
+        if [ -x "$SCRIPT" ]; then
+          "$SCRIPT" ios
+        fi
+      SCRIPT
+      :execution_position => :before_compile
+    },
     { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
   ]
 

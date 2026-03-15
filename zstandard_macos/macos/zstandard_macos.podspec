@@ -35,8 +35,18 @@ A new Flutter FFI plugin project.
     'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY',
   }
 
-  # Remove synced zstd copy after compile so Classes/zstd is not left on disk.
+  # Sync zstd before compile when script exists (local dev); remove copy after compile.
   s.script_phases = [
+    {
+      :name => 'Sync zstd',
+      :script => <<~SCRIPT,
+        SCRIPT="${PODS_TARGET_SRCROOT}/../../scripts/sync_zstd_ios_macos.sh"
+        if [ -x "$SCRIPT" ]; then
+          "$SCRIPT" macos
+        fi
+      SCRIPT
+      :execution_position => :before_compile
+    },
     { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
   ]
 
