@@ -60,10 +60,17 @@ See the package’s `windows/` and `src/` directories and the repo’s [Building
 - **Unit tests**: From the package directory: `flutter test`
 - **Integration tests**: Run the example Windows app and execute `integration_test` from the example.
 
-## Limitations
+## Performance characteristics
+
+- **Compression/decompression**: Typically runs in a background isolate.
+- **Memory**: Scales with input and output size; high levels use more memory.
+- **Throughput**: Level 1–3 fastest; level 22 slowest. Supports x64 and ARM64.
+
+## Known limitations
 
 - Only Windows is supported; for other platforms use the corresponding platform package.
-- Very large inputs may use significant memory; consider chunking for very large data.
+- Very large inputs may use significant memory; consider chunking (see [Advanced usage](../guides/advanced-usage.md)).
+- The DLL must be next to the executable or on the path when the app runs.
 
 ## Troubleshooting
 

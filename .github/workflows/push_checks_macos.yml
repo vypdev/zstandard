@@ -49,7 +49,14 @@ jobs:
 
       - name: Test check
         working-directory: zstandard_macos
-        run: flutter test
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: zstandard_macos/coverage/lcov.info
+          flags: macos
+          fail_ci_if_error: false
 
   check_macos_publish_dry_run:
     name: Dry Run Publish macOS

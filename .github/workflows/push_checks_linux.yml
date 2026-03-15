@@ -51,6 +51,17 @@ jobs:
         working-directory: zstandard_linux
         run: flutter pub get
 
+      - name: Test check
+        working-directory: zstandard_linux
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: zstandard_linux/coverage/lcov.info
+          flags: linux
+          fail_ci_if_error: false
+
   check_linux_publish_dry_run:
     name: Dry Run Publish Linux
     runs-on: [self-hosted, Linux]

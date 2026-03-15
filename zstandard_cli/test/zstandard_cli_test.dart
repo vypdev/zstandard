@@ -96,5 +96,21 @@ void main() {
       final result = await nullData.decompress();
       expect(result, isNull);
     });
+
+    test('decompress corrupted data returns null', () async {
+      if (skipPlatform) return;
+      final corrupted = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      final cli = ZstandardCLI();
+      final result = await cli.decompress(corrupted);
+      expect(result, isNull);
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
+
+    test('decompress random bytes returns null', () async {
+      if (skipPlatform) return;
+      final random = Uint8List.fromList(List.generate(64, (i) => (i * 31) % 256));
+      final cli = ZstandardCLI();
+      final result = await cli.decompress(random);
+      expect(result, isNull);
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
   });
 }

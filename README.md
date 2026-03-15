@@ -1,5 +1,6 @@
 [![pub package](https://img.shields.io/pub/v/zstandard.svg)](https://pub.dev/packages/zstandard)  
-[![pub package](https://img.shields.io/pub/v/zstandard_cli.svg)](https://pub.dev/packages/zstandard_cli)
+[![pub package](https://img.shields.io/pub/v/zstandard_cli.svg)](https://pub.dev/packages/zstandard_cli)  
+[![codecov](https://codecov.io/gh/landamessenger/zstandard/graph/badge.svg)](https://codecov.io/gh/landamessenger/zstandard)
 
 # Zstandard
 

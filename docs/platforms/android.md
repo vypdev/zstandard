@@ -61,10 +61,18 @@ See the package’s `android/` and `src/` directories and the main repo’s [Bui
 - **Unit tests**: Run from the package directory: `flutter test`
 - **Integration tests**: Use the example app: run the app on an Android device or emulator and execute `integration_test` (e.g. `flutter test integration_test/` from the example).
 
-## Limitations
+## Performance characteristics
 
-- Requires a device/emulator with the supported ABI; otherwise the native library may fail to load.
-- Very large inputs may use significant memory (input + output buffers); consider chunking for very large data.
+- **Compression/decompression**: Runs on a background isolate by default, so the UI thread stays responsive.
+- **Memory**: Peak usage is proportional to input size plus compressed/decompressed output; lower compression levels (1–3) use less memory than high levels (19–22).
+- **Throughput**: Comparable to native zstd; actual speed depends on device CPU and thermal state. Level 1–3 are fastest; level 22 is slowest.
+- **16KB page size**: The build supports Android 15+ 16KB page size; no extra configuration needed.
+
+## Known limitations
+
+- Requires a device/emulator with a supported ABI; otherwise the native library may fail to load.
+- Very large inputs may use significant memory (input + output buffers); consider chunking for very large data (see [Advanced usage](../guides/advanced-usage.md)).
+- Assembly optimizations (e.g. BMI2) are disabled in the Android build for compatibility; compression may be slightly slower than a fully optimized build.
 
 ## Troubleshooting
 

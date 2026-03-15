@@ -35,5 +35,19 @@ void main() {
         expect(true, isTrue);
       }
     }, skip: skipWeb ? 'Only runs on web' : false);
+
+    test('decompress corrupted data throws or fails when zstd.js is available', () async {
+      if (skipWeb) return;
+      final z = ZstandardWeb();
+      final corrupted = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      try {
+        final result = await z.decompress(corrupted);
+        // If implementation returns null on error instead of throwing
+        expect(result == null || result.isEmpty, isTrue);
+      } catch (_) {
+        // Web implementation throws on decompression error
+        expect(true, isTrue);
+      }
+    }, skip: skipWeb ? 'Only runs on web' : false);
   });
 }

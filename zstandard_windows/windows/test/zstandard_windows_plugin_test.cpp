@@ -10,6 +10,10 @@
 
 #include "zstandard_windows_plugin.h"
 
+// Unit tests for the Windows plugin's C++ portion (method channel, platform version).
+// Compression and decompression are implemented in Dart via FFI; see the main
+// plugin's integration_test/ and platform unit tests for compression behaviour.
+
 namespace zstandard_windows {
 namespace test {
 

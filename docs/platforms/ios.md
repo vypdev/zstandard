@@ -60,10 +60,17 @@ See the package’s `ios/` directory and the repo’s [Building](development/bui
 - **Unit tests**: From the package directory: `flutter test`
 - **Integration tests**: Run the example app on an iOS device or simulator and run `integration_test` (e.g. `flutter test integration_test/` from the example).
 
-## Limitations
+## Performance characteristics
+
+- **Compression/decompression**: Runs on a background isolate so the UI thread stays responsive.
+- **Memory**: Peak usage scales with input and output size; high levels (19–22) use more memory.
+- **Throughput**: Level 1–3 are fastest; level 22 is slowest. Assembly is disabled in the iOS build for compatibility.
+
+## Known limitations
 
 - Simulator and device use different architectures; ensure the correct slice is built for the target.
-- Very large inputs may use significant memory; consider chunking for very large data.
+- Very large inputs may use significant memory; consider chunking (see [Advanced usage](../guides/advanced-usage.md)).
+- Static linking only; no dynamic zstd loading.
 
 ## Troubleshooting
 

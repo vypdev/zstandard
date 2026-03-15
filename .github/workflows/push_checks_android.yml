@@ -52,7 +52,14 @@ jobs:
 
       - name: Test check
         working-directory: zstandard_android
-        run: flutter test
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: zstandard_android/coverage/lcov.info
+          flags: android
+          fail_ci_if_error: false
 
   check_android_publish_dry_run:
     name: Dry Run Publish Android

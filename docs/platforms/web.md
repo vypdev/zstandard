@@ -87,11 +87,17 @@ For very small inputs (e.g. less than 9 bytes), the implementation may return th
 - **Unit tests**: From the package directory: `flutter test` (some tests may require a browser or mock the JS API).
 - **Integration tests**: The example app has web integration tests (e.g. `example/integration_test/zstandard_web_integration_test.dart`) that run in the browser.
 
-## Limitations
+## Performance characteristics
+
+- **Single-threaded**: Compression and decompression run on the main thread (no isolates on web). Large payloads can block the UI.
+- **Throughput**: Generally slower than native; level 1–3 are faster than high levels.
+- **Memory**: WASM heap usage scales with input and output; consider smaller chunks for large data.
+
+## Known limitations
 
 - Requires `zstd.js` and `zstd.wasm` to be deployed with your app and loaded before use.
-- No isolate-based offloading; heavy work runs on the main thread. For large data, consider chunking or a Web Worker.
-- Behavior may differ slightly from native (e.g. small-data handling, error codes).
+- No isolate-based offloading; heavy work runs on the main thread. For large data, consider chunking or a Web Worker (see [Advanced usage](../guides/advanced-usage.md)).
+- Behavior may differ slightly from native (e.g. small-data handling, error codes). Decompress failure may throw instead of returning null.
 
 ## Troubleshooting
 

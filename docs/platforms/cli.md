@@ -86,10 +86,16 @@ dart test
 
 The package has a solid set of unit tests (small/large/empty data, compression levels, roundtrip). Run them on the target platform to ensure the native library loads and behaves correctly.
 
-## Limitations
+## Performance characteristics
+
+- **No isolates**: Runs in the current isolate; suitable for CLI or server where blocking is acceptable.
+- **Throughput**: Comparable to native zstd; level 1–3 fastest, level 22 slowest.
+- **Memory**: Proportional to input and output; precompiled libs are built with standard zstd options.
+
+## Known limitations
 
 - **Desktop only**: macOS, Windows, Linux. For mobile or web, use the main **zstandard** Flutter plugin.
-- **Precompiled binaries**: You depend on the package’s shipped libraries; for custom builds or other platforms you would need to build and load your own library and adjust the loader.
+- **Precompiled binaries**: You depend on the package’s shipped libraries; for custom builds or other platforms you would need to build and load your own library (see [Building](development/building.md) and `scripts/build_*.sh`).
 
 ## Troubleshooting
 

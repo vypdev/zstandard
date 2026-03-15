@@ -51,5 +51,19 @@ void main() {
         expect(decompressed, equals(data));
       }
     }, skip: skipPlatform ? 'Only runs on Linux' : false);
+
+    test('decompress corrupted data returns null', () async {
+      if (skipPlatform) return;
+      final corrupted = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      final result = await zstandard.decompress(corrupted);
+      expect(result, isNull);
+    }, skip: skipPlatform ? 'Only runs on Linux' : false);
+
+    test('decompress random bytes returns null', () async {
+      if (skipPlatform) return;
+      final random = Uint8List.fromList(List.generate(64, (i) => (i * 31) % 256));
+      final result = await zstandard.decompress(random);
+      expect(result, isNull);
+    }, skip: skipPlatform ? 'Only runs on Linux' : false);
   });
 }

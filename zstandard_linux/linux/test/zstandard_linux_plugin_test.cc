@@ -5,13 +5,10 @@
 #include "include/zstandard_linux/zstandard_linux_plugin.h"
 #include "zstandard_linux_plugin_private.h"
 
-// This demonstrates a simple unit test of the C portion of this plugin's
-// implementation.
-//
-// Once you have built the plugin's example app, you can run these tests
-// from the command line. For instance, for a plugin called my_plugin
-// built for x64 debug, run:
-// $ build/linux/x64/debug/plugins/my_plugin/my_plugin_test
+// Unit tests for the Linux plugin's C++ portion (method channel, platform version).
+// Compression and decompression are implemented in Dart via FFI against the zstd
+// library; see the main plugin's integration_test/ and platform unit tests for
+// compression roundtrip and error handling.
 
 namespace zstandard_linux {
 namespace test {

@@ -44,6 +44,18 @@ jobs:
         shell: cmd
         run: flutter pub get
 
+      - name: Test check
+        working-directory: zstandard_windows
+        shell: cmd
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: zstandard_windows/coverage/lcov.info
+          flags: windows
+          fail_ci_if_error: false
+
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows
     runs-on: [self-hosted, Windows]

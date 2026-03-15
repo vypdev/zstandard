@@ -60,10 +60,17 @@ See the package’s build configuration and the repo’s [Building](development/
 - **Unit tests**: From the package directory: `flutter test`
 - **Integration tests**: Run the example macOS app and execute `integration_test` from the example.
 
-## Limitations
+## Performance characteristics
+
+- **Compression/decompression**: Typically runs in a background isolate.
+- **Memory**: Proportional to input and output; lower levels use less memory.
+- **Throughput**: Level 1–3 fastest; level 22 slowest. Supports both Intel and Apple Silicon.
+
+## Known limitations
 
 - Only macOS is supported; for other platforms use the corresponding platform package.
-- Very large inputs may use significant memory; consider chunking for very large data.
+- Very large inputs may use significant memory; consider chunking (see [Advanced usage](../guides/advanced-usage.md)).
+- The native library must be built for the current architecture (x64 or arm64) or as a universal binary.
 
 ## Troubleshooting
 

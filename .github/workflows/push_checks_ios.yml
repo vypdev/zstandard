@@ -53,7 +53,14 @@ jobs:
 
       - name: Test check
         working-directory: zstandard_ios
-        run: flutter test
+        run: flutter test --coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: zstandard_ios/coverage/lcov.info
+          flags: ios
+          fail_ci_if_error: false
 
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS

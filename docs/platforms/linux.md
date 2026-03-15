@@ -60,10 +60,17 @@ See the package’s `linux/` and `src/` directories and the repo’s [Building](
 - **Unit tests**: From the package directory: `flutter test`
 - **Integration tests**: Run the example Linux app and execute `integration_test` from the example.
 
-## Limitations
+## Performance characteristics
+
+- **Compression/decompression**: Typically runs in a background isolate so the UI thread is not blocked.
+- **Memory**: Allocations scale with input and output size; high compression levels (19–22) use more memory.
+- **Throughput**: Similar to native zstd; level 1–3 are fastest, level 22 slowest. Depends on host CPU.
+
+## Known limitations
 
 - Only Linux is supported; for other platforms use the corresponding platform package.
-- Very large inputs may use significant memory; consider chunking for very large data.
+- Very large inputs may use significant memory; consider chunking (see [Advanced usage](../guides/advanced-usage.md)).
+- The shared library must be on the library path (e.g. next to the executable or `LD_LIBRARY_PATH`) when the app runs.
 
 ## Troubleshooting
 

@@ -11,6 +11,7 @@ Welcome to the Zstandard Flutter plugin documentation. This directory contains c
 - [FFI Implementation](architecture/ffi-implementation.md) — Native FFI pattern for mobile and desktop
 - [Web Implementation](architecture/web-implementation.md) — WebAssembly and JS interop approach
 - [Isolate Pattern](architecture/isolate-pattern.md) — Async compression with isolates
+- [Performance](architecture/performance.md) — Benchmarks and optimization techniques
 
 ### API Reference
 
@@ -26,6 +27,9 @@ Welcome to the Zstandard Flutter plugin documentation. This directory contains c
 - [Usage Examples](guides/usage-examples.md) — Real-world examples
 - [Compression Levels](guides/compression-levels.md) — Performance vs ratio guide
 - [Error Handling](guides/error-handling.md) — Error scenarios and recovery
+- [Security](guides/security.md) — Input validation and handling untrusted data
+- [Advanced Usage](guides/advanced-usage.md) — Large files, chunking, and memory optimization
+- [Best Practices](guides/best-practices.md) — Production checklist and anti-patterns
 - [Performance Tips](guides/performance-tips.md) — Optimization guide
 - [Migration Guide](guides/migration-guide.md) — Version migration
 
@@ -46,6 +50,7 @@ Welcome to the Zstandard Flutter plugin documentation. This directory contains c
 - [Building](development/building.md) — Build instructions
 - [Testing](development/testing.md) — Testing guidelines
 - [Code Style](development/code-style.md) — Coding standards
+- [CI/CD](development/ci-cd.md) — GitHub Actions and automation
 - [Release Process](development/release-process.md) — Release workflow
 
 ### Troubleshooting
@@ -53,6 +58,8 @@ Welcome to the Zstandard Flutter plugin documentation. This directory contains c
 - [Common Issues](troubleshooting/common-issues.md) — FAQ and solutions
 - [Platform Issues](troubleshooting/platform-issues.md) — Platform-specific issues
 - [Debugging](troubleshooting/debugging.md) — Debug techniques
+
+- [Glossary](GLOSSARY.md) — Terms and acronyms
 
 ## Package Overview
 
