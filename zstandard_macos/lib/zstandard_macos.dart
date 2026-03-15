@@ -13,20 +13,14 @@ export 'zstandard_ext.dart';
 
 const String _libName = 'zstandard_macos';
 
-DynamicLibrary? _dylibStorage;
-DynamicLibrary get _dylib {
-  _dylibStorage ??= () {
-    if (Platform.isMacOS) {
-      return DynamicLibrary.open('$_libName.framework/$_libName');
-    }
-    throw UnsupportedError('Platform not supported: ${Platform.operatingSystem}');
-  }();
-  return _dylibStorage!;
-}
+final DynamicLibrary _dylib = () {
+  if (Platform.isMacOS) {
+    return DynamicLibrary.open('$_libName.framework/$_libName');
+  }
+  throw UnsupportedError('Platform not supported: ${Platform.operatingSystem}');
+}();
 
-ZstandardMacosBindings? _bindingsStorage;
-ZstandardMacosBindings get _bindings =>
-    _bindingsStorage ??= ZstandardMacosBindings(_dylib);
+final ZstandardMacosBindings _bindings = ZstandardMacosBindings(_dylib);
 
 /// macOS implementation of [ZstandardPlatform] using FFI and the native zstd library.
 ///

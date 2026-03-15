@@ -51,9 +51,9 @@ jobs:
         working-directory: zstandard_web
         run: flutter pub get
 
-      - name: Test check
+      - name: Test check (Chrome)
         working-directory: zstandard_web
-        run: flutter test --coverage
+        run: flutter test -d chrome --coverage
 
       - name: Install lcov
         run: brew install lcov

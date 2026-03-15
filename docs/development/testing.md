@@ -2,6 +2,66 @@
 
 This document describes how to run and write tests for the Zstandard plugin and CLI.
 
+## Integration Tests for Platform Packages
+
+Platform-specific packages (Android, iOS, macOS, Web) use **integration tests** that run on real devices, emulators, or Chrome. This gives full coverage without skips.
+
+- **Android**: Tests run in `zstandard_android/example/integration_test/` on an Android emulator.
+- **iOS**: Tests run in `zstandard_ios/example/integration_test/` on an iOS simulator.
+- **macOS**: Tests run in `zstandard_macos/example/integration_test/` after the native framework is built.
+- **Web**: Unit tests run with `flutter test -d chrome` (Chrome required; no VM execution).
+
+Linux and Windows tests still run only on their native OS in CI.
+
+### Prerequisites (macOS)
+
+1. **Android**: Android SDK with emulator (API 28+). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
+2. **iOS**: Xcode with simulators installed.
+3. **macOS**: Xcode command-line tools.
+4. **Web**: Chrome browser.
+
+See [Emulator and simulator setup](emulator-setup.md) for details.
+
+### Running all tests (no skipeos)
+
+From the repository root:
+
+```bash
+./scripts/test_all_integration.sh
+```
+
+This runs unit tests for pure Dart packages, then integration tests for Android (emulator), iOS (simulator), macOS (after building the framework), and Web (Chrome).
+
+### Running individual platform tests
+
+**Android** (starts emulator if needed; first boot can take 2–4 minutes):
+
+```bash
+./scripts/test_android_integration.sh
+```
+
+To skip Android when running the full suite (e.g. if no emulator or slow machine): `ZSTANDARD_SKIP_ANDROID=1 ./scripts/test_all_integration.sh`. To allow more time for boot: `ZSTANDARD_AVD_BOOT_TIMEOUT=300 ./scripts/test_android_integration.sh`.
+
+**iOS** (boots simulator if needed):
+
+```bash
+./scripts/test_ios_integration.sh
+```
+
+**macOS** (builds framework if needed):
+
+```bash
+./scripts/ensure_macos_framework.sh
+cd zstandard_macos/example
+flutter test integration_test/ -d macos
+```
+
+**Web** (Chrome):
+
+```bash
+./scripts/test_web_integration.sh
+```
+
 ## Running Tests
 
 ### Main plugin (zstandard)
@@ -20,12 +80,9 @@ flutter test
 
 ### Platform implementations
 
-From each platform package directory:
-
-```bash
-cd zstandard_android   # or ios, macos, linux, windows, web
-flutter test
-```
+- **Android, iOS, macOS**: Platform tests live in each package’s `example/integration_test/`. Use the scripts above (e.g. `./scripts/test_android_integration.sh`). The package `test/` directory only contains a pointer test.
+- **Linux, Windows**: From the package directory, `flutter test` (run on the corresponding OS).
+- **Web**: From `zstandard_web`, run `flutter test -d chrome` (Chrome required).
 
 ### CLI package
 
@@ -34,39 +91,29 @@ cd zstandard_cli
 dart test
 ```
 
-### All packages (from repo root)
-
-You can run tests in each package in sequence, or use a script if the project provides one. Example:
+### All packages (quick run, may skip platform-specific tests)
 
 ```bash
-for dir in zstandard zstandard_platform_interface zstandard_android zstandard_ios zstandard_macos zstandard_linux zstandard_windows zstandard_web zstandard_cli; do
-  if [ -d "$dir" ]; then
-    (cd "$dir" && flutter test 2>/dev/null || dart test 2>/dev/null) || true
-  fi
-done
+./scripts/test_all.sh
 ```
 
-### Integration tests
+Use `./scripts/test_all_integration.sh` for full coverage without skipeos (see above).
 
-Integration tests run inside the example app on a device or simulator.
+### Integration tests (main plugin)
+
+The main plugin’s example app also has integration tests:
 
 ```bash
 cd zstandard/example
 flutter test integration_test/
 ```
 
-For a specific platform:
-
-```bash
-flutter test integration_test/ -d <device_id>
-```
-
-Web integration tests may require running with a browser (e.g. `flutter test integration_test/ -d chrome`).
+Use `-d <device_id>` to run on a specific device or simulator.
 
 ## Test Structure
 
-- **Unit tests**: In each package’s `test/` directory. Use `test()` and `group()` from `package:test` or `package:flutter_test`. Mock the platform when testing the main plugin or platform interface.
-- **Integration tests**: In the example app’s `integration_test/` directory. These run on a real (or emulated) device and exercise the full plugin stack.
+- **Unit tests**: In each package’s `test/` directory. Use `test()` and `group()` from `package:test` or `package:flutter_test`. Mock the platform when testing the main plugin or platform interface. For Android, iOS, macOS, and Web, the main platform tests have been moved to integration tests.
+- **Integration tests**: In each platform example’s `integration_test/` directory. They run on a real device, emulator, simulator, or Chrome and exercise the full native/WASM stack with no skipeos.
 
 ## Writing Tests
 
@@ -83,12 +130,16 @@ Web integration tests may require running with a browser (e.g. `flutter test int
 
 ### Platform implementations (native)
 
-- **Compression roundtrip**: For the platform’s implementation class (e.g. `ZstandardLinux`), test that compressing then decompressing returns the original data for small, large, and empty input.
-- **Compression levels**: Test levels 1, 3, 10, 22.
-- **Error handling**: Test invalid input (e.g. corrupted data for decompress); expect `null` or appropriate handling.
-- **Edge cases**: Empty input, highly compressible data (e.g. repeated bytes), large data.
+For Android, iOS, and macOS, platform tests are **integration tests** in `example/integration_test/`. They include:
 
-These tests may be skipped or stubbed when the native library is not available (e.g. on a host that cannot load the Linux .so). Use `skip` or platform checks if needed.
+- **Compression roundtrip**: Small, large, and empty input.
+- **Compression levels**: 1, 3, 10, 22.
+- **Error handling**: Corrupted or random bytes for decompress; expect `null` or appropriate handling.
+- **Edge cases**: Empty input, highly compressible data, large data.
+- **Property-based tests**: Roundtrip property with generative input (e.g. kiri_check).
+- **Leak tracking**: Where applicable, ensure no leaks after compress/decompress.
+
+Linux and Windows keep unit tests in `test/` that run only when the host OS matches. Web tests run in Chrome via `flutter test -d chrome`.
 
 ### CLI
 
@@ -116,4 +167,12 @@ Mutation testing measures test quality by mutating source code and checking whet
 
 ## CI
 
-The project’s CI (e.g. GitHub Actions) should run `flutter test` (or `dart test`) for the relevant packages. Ensure your changes do not break these jobs. Add new tests for new behavior and fix any failing tests before submitting a PR.
+CI runs platform-specific tests as follows:
+
+- **Android**: Starts an emulator, runs `zstandard_android/example` integration tests, then stops the emulator.
+- **iOS**: Boots a simulator, runs `zstandard_ios/example` integration tests.
+- **macOS**: Builds the native framework (if needed), then runs `zstandard_macos/example` integration tests.
+- **Web**: Runs `flutter test -d chrome` in the `zstandard_web` package.
+- **Linux / Windows**: Run `flutter test` on their respective runners.
+
+Ensure your changes do not break these jobs. Add new tests for new behavior and fix any failing tests before submitting a PR.

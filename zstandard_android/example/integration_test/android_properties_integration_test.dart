@@ -1,12 +1,13 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:kiri_check/kiri_check.dart';
-import 'package:zstandard_ios/zstandard_ios.dart';
+import 'package:zstandard_android/zstandard_android.dart';
 
+/// Property-based integration tests for Android. Run on device/emulator. No skips.
 void main() {
-  final bool skipPlatform = !Platform.isIOS;
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Property-based tests', () {
     property(
@@ -15,9 +16,8 @@ void main() {
         forAll(
           binary(minLength: 0, maxLength: 1000),
           (List<int> data) async {
-            if (skipPlatform) return;
             final input = Uint8List.fromList(data);
-            final z = ZstandardIOS();
+            final z = ZstandardAndroid();
             final compressed = await z.compress(input, 3);
             if (compressed == null) return;
             final decompressed = await z.decompress(compressed);
@@ -27,7 +27,6 @@ void main() {
           maxExamples: 100,
         );
       },
-      skip: skipPlatform ? 'Only runs on iOS' : null,
     );
   });
 }
