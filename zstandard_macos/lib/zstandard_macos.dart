@@ -22,13 +22,20 @@ final DynamicLibrary _dylib = () {
 
 final ZstandardMacosBindings _bindings = ZstandardMacosBindings(_dylib);
 
+/// macOS implementation of [ZstandardPlatform] using FFI and the native zstd library.
+///
+/// Loads the zstandard_macos framework and uses ZSTD_compress, ZSTD_decompress,
+/// ZSTD_compressBound, and ZSTD_getFrameContentSize. The main [zstandard]
+/// plugin registers this implementation automatically on macOS.
 class ZstandardMacOS extends ZstandardPlatform {
-  /// A constructor that allows tests to override the window object used by the plugin.
+  /// Creates the macOS platform implementation.
   ZstandardMacOS();
 
   final methodChannel = const MethodChannel('plugins.flutter.io/zstandard');
 
   /// Registers this class as the default instance of [ZstandardPlatform].
+  ///
+  /// Called by the main plugin when running on macOS.
   static void registerWith() {
     ZstandardPlatform.instance = ZstandardMacOS();
   }

@@ -1,29 +1,11 @@
-/*
-import 'package:flutter/services.dart';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zstandard_windows/zstandard_windows_method_channel.dart';
+import 'package:zstandard_windows/zstandard_windows.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  MethodChannelZstandardWindows platform = MethodChannelZstandardWindows();
-  const MethodChannel channel = MethodChannel('zstandard_windows');
-
-  setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (MethodCall methodCall) async {
-        return '42';
-      },
-    );
-  });
-
-  tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
-  });
-
-  test('getPlatformVersion', () async {
-    expect(await platform.getPlatformVersion(), '42');
-  });
+  test('ZstandardWindows can be instantiated on Windows', () {
+    if (!Platform.isWindows) return;
+    expect(ZstandardWindows(), isA<ZstandardWindows>());
+  }, skip: !Platform.isWindows ? 'Only runs on Windows' : false);
 }
-*/

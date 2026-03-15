@@ -22,13 +22,20 @@ final DynamicLibrary _dylib = () {
 
 final ZstandardIosBindings _bindings = ZstandardIosBindings(_dylib);
 
+/// iOS implementation of [ZstandardPlatform] using FFI and the native zstd library.
+///
+/// Loads the zstandard_ios framework and uses ZSTD_compress, ZSTD_decompress,
+/// ZSTD_compressBound, and ZSTD_getFrameContentSize. The main [zstandard]
+/// plugin registers this implementation automatically on iOS.
 class ZstandardIOS extends ZstandardPlatform {
-  /// A constructor that allows tests to override the window object used by the plugin.
+  /// Creates the iOS platform implementation.
   ZstandardIOS();
 
   final methodChannel = const MethodChannel('plugins.flutter.io/zstandard');
 
   /// Registers this class as the default instance of [ZstandardPlatform].
+  ///
+  /// Called by the main plugin when running on iOS.
   static void registerWith() {
     ZstandardPlatform.instance = ZstandardIOS();
   }

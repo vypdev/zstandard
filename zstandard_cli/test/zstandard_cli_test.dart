@@ -1,10 +1,25 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
 import 'package:zstandard_cli/zstandard_cli.dart';
 
 void main() {
+  final bool skipPlatform = !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux;
+
   group('Zstandard CLI tests', () {
+    test('getPlatformVersion returns non-null string on supported platform', () async {
+      if (skipPlatform) return;
+      final cli = ZstandardCLI();
+      final version = await cli.getPlatformVersion();
+      expect(version, isNotNull);
+      expect(version, isNotEmpty);
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
+
+    test('ZstandardCLI can be instantiated on supported platform', () {
+      if (skipPlatform) return;
+      expect(ZstandardCLI(), isA<ZstandardCLI>());
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
     test('Compress and decompress small Uint8List', () async {
       final Uint8List sample = Uint8List.fromList([1, 2, 3, 4, 5]);
       final compressed = await sample.compress(compressionLevel: 3);
@@ -60,6 +75,26 @@ void main() {
       expect(sample, isNot(equals(compressed)));
       expect(sample.length, isNot(equals(compressed?.length)));
       expect(decompressed, equals(sample));
+    });
+
+    test('Compress with level 22 produces valid decompressible output', () async {
+      final Uint8List sample = Uint8List.fromList(List.filled(500, 7));
+      final compressed = await sample.compress(compressionLevel: 22);
+      expect(compressed, isNotNull);
+      final decompressed = await compressed!.decompress();
+      expect(decompressed, equals(sample));
+    });
+
+    test('Null extension receiver returns null from compress', () async {
+      const Uint8List? nullData = null;
+      final result = await nullData.compress();
+      expect(result, isNull);
+    });
+
+    test('Null extension receiver returns null from decompress', () async {
+      const Uint8List? nullData = null;
+      final result = await nullData.decompress();
+      expect(result, isNull);
     });
   });
 }

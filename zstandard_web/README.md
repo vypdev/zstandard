@@ -137,3 +137,31 @@ function decompressData(compressedData) {
     }
 }
 ```
+
+## API
+
+- **ZstandardWeb()** — Creates the web platform implementation.
+- **compress(Uint8List data, int compressionLevel)** — Compresses `data` (level 1–22). Returns compressed bytes or throws on failure. Inputs smaller than 9 bytes may be returned unchanged.
+- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or throws on failure.
+- **getPlatformVersion()** — Returns the browser user agent string.
+
+## Architecture
+
+This package uses JavaScript interop and WebAssembly. It calls the global `compressData` and `decompressData` functions provided by `zstd.js`, which in turn use the compiled zstd C library in `zstd.wasm`. No Dart FFI; runs on the main thread.
+
+## Testing
+
+From the package directory:
+
+```bash
+flutter test
+```
+
+Unit tests run only on web (skipped on other platforms). Full integration tests are in `example/integration_test/` and require a browser (e.g. `flutter test integration_test/ -d chrome`).
+
+## Troubleshooting
+
+- **compressData / decompressData is not defined**: Ensure `zstd.js` is included in your `web/index.html` and loads before the Flutter app.
+- **WASM load failed**: Ensure `zstd.wasm` is served from the same origin and the path is correct. Check the browser console and network tab.
+
+See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.

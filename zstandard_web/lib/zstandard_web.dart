@@ -9,14 +9,22 @@ import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 
 export 'zstandard_ext.dart';
 
-/// The web implementation of [ZstandardPlatform].
+/// Web implementation of [ZstandardPlatform] using JavaScript and WebAssembly.
 ///
-/// This class implements the `package:zstandard` functionality for the web.
+/// Calls the global `compressData` and `decompressData` functions provided by
+/// zstd.js / zstd.wasm. Requires zstd.js and zstd.wasm to be loaded in the
+/// page (e.g. via a script tag in index.html). The main [zstandard] plugin
+/// registers this implementation automatically on web.
 class ZstandardWeb extends ZstandardPlatform {
-  /// A constructor that allows tests to override the window object used by the plugin.
+  /// Creates the web platform implementation.
+  ///
+  /// [debugWindow] is visible for testing to override the window object.
   ZstandardWeb({@visibleForTesting html.Window? debugWindow});
 
-  /// Registers this class as the default instance of [ZstandardPlatformInterface].
+  /// Registers this class as the default instance of [ZstandardPlatform].
+  ///
+  /// Called by the main plugin when running on web. [registrar] is the
+  /// web plugin registrar.
   static void registerWith(Registrar registrar) {
     ZstandardPlatform.instance = ZstandardWeb();
   }

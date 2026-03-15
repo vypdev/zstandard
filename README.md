@@ -29,6 +29,19 @@ This repository contains a federated Flutter plugin and a CLI package for `zstan
 
 ---
 
+## Documentation
+
+Full documentation is in the [**docs/**](docs/README.md) directory, including:
+
+- [Getting started](docs/guides/getting-started.md)
+- [Architecture](docs/architecture/overview.md)
+- [API reference](docs/api/main-api.md)
+- [Platform guides](docs/platforms/)
+- [Development and contributing](docs/development/CONTRIBUTING.md)
+- [Troubleshooting](docs/troubleshooting/common-issues.md)
+
+---
+
 ## Basic Usage
 
 ### In-App (Flutter)

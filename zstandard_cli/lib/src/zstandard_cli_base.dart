@@ -8,11 +8,22 @@ import 'utils/lib_loader.dart';
 import 'zstandard_cli_bindings_generated.dart';
 import 'zstandard_interface.dart';
 
+/// Command-line and in-code Zstandard compression for macOS, Windows, and Linux.
+///
+/// Uses FFI with precompiled native zstd libraries. Supports [compress] and
+/// [decompress] with the same semantics as the Flutter plugin. Use this
+/// package in pure Dart (non-Flutter) desktop apps or CLI tools.
+///
+/// Example:
+/// ```dart
+/// final cli = ZstandardCLI();
+/// final compressed = await cli.compress(data, compressionLevel: 3);
+/// final decompressed = await cli.decompress(compressed!);
+/// ```
 class ZstandardCLI implements ZstandardInterface {
   final ZstandardCLIBindings _bindings =
       ZstandardCLIBindings(openZstdLibrary());
 
-  @override
   @override
   Future<Uint8List?> compress(
     Uint8List data, {
