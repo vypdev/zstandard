@@ -15,10 +15,18 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependency_overrides:
   # Use local plugins from repo when developing (e.g. macOS zstd symbol fix).
+  zstandard_android:
+    path: ../../zstandard_android
   zstandard_macos:
     path: ../../zstandard_macos
   zstandard_ios:
     path: ../../zstandard_ios
+  zstandard_web:
+    path: ../../zstandard_web
+  zstandard_windows:
+    path: ../../zstandard_windows
+  zstandard_linux:
+    path: ../../zstandard_linux
 
 dependencies:
   flutter:

@@ -8,9 +8,10 @@
 // ignore_for_file: type=lint
 import 'dart:ffi' as ffi;
 
-/// Bindings for `zstd/zstd.h`.
+/// Bindings for zstd.h (canonical source at ../zstandard_macos/src/).
 ///
-/// Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
+/// Regenerate bindings from repo root: ./scripts/regenerate_bindings.sh
+/// Or from this dir: dart run ffigen --config ffigen.yaml
 ///
 class ZstandardCLIBindings {
   /// Holds the symbol lookup function.

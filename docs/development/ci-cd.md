@@ -77,7 +77,7 @@ Scripts under [**scripts/**](https://github.com/landamessenger/zstandard/tree/ma
 
 - `build_macos.sh`, `build_linux.sh`, `build_windows.bat`: Build precompiled zstd libraries for the CLI.
 - `build_android.sh`, `build_ios.sh`: Build or prepare the Android/iOS plugin.
-- `sync_zstd_ios_macos.sh`: Sync the canonical zstd C source (`zstandard_macos/src/`) into the iOS and macOS plugin `Classes/zstd/` trees.
+- `sync_zstd_ios_macos.sh`: Sync the canonical zstd C source (`zstd/` at repo root) into the iOS and macOS plugin `Classes/zstd/` trees.
 - `regenerate_bindings.sh`: Regenerate FFI bindings (ffigen) for all platform packages after zstd source updates.
 - `test_all.sh` / `test_all.bat`: Run tests in all packages.
 - `coverage_report.sh` / `coverage_report.bat`: Generate coverage reports.

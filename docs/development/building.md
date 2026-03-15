@@ -2,6 +2,16 @@
 
 This document describes how to build the Zstandard plugin, its native libraries, and the CLI package.
 
+## All-in-one (macOS)
+
+From the repository root, you can run sync, bindings, all macOS-runnable builds, and all tests in sequence:
+
+```bash
+./scripts/run_all_macos.sh
+```
+
+This runs: sync zstd (from repo root `zstd/`) → regenerate bindings → build Android → build CLI (dylibs) → build iOS → build web → build macOS → test Android → test CLI → test iOS → test web → test macOS. Requires macOS, Flutter, Xcode, CocoaPods, Android SDK/NDK (for Android), and CMake. Ensure the canonical source exists at `zstd/` (see step 1 below). Stops on first failure.
+
 ## Flutter Plugin (All Platforms)
 
 ### Build the example app
@@ -42,7 +52,7 @@ If you are developing or modifying a platform package’s native code:
 
 ### iOS / macOS
 
-- The zstd source is typically under `ios/Classes/zstd/` (iOS) or `macos/Classes/zstd/` (macOS). The canonical source is `zstandard_macos/src/`.
+- The zstd source is under `ios/Classes/zstd/` (iOS) and `macos/Classes/zstd/` (macOS); both are copies from the canonical source at repo root **`zstd/`**.
 - To update the zstd code in **both** iOS and macOS from that canonical source, run from the repo root:
   ```bash
   ./scripts/sync_zstd_ios_macos.sh
@@ -100,14 +110,14 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
 **Do not modify the native zstd C library by hand.** The flow is:
 
 1. **Update the canonical zstd source**  
-   The source of truth for iOS and macOS is `zstandard_macos/src/`. Update it only by replacing it with an upstream release (e.g. from [facebook/zstd](https://github.com/facebook/zstd)) or by running a script that fetches it; do not edit the C files manually.  
-   If `zstandard_macos/src/` or the iOS/macOS `Classes/zstd/` trees are missing (e.g. after a clean clone), copy the contents of the upstream `lib/` directory into `zstandard_macos/src/` (e.g. `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && cp -R /tmp/zstd/lib/* zstandard_macos/src/`).
+   The source of truth is **`zstd/`** at the repo root. Update it only by replacing it with an upstream release (e.g. from [facebook/zstd](https://github.com/facebook/zstd)); do not edit the C files manually.  
+   If `zstd/` or the iOS/macOS `Classes/zstd/` trees are missing (e.g. after a clean clone), copy the contents of the upstream `lib/` directory into `zstd/` (e.g. `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && mkdir -p zstd && cp -R /tmp/zstd/lib/* zstd/`). If you previously had the canonical source at `zstandard_macos/src/`, move it once: `mv zstandard_macos/src zstd`.
 
 2. **Sync zstd to iOS and macOS** (from repo root):
    ```bash
    ./scripts/sync_zstd_ios_macos.sh
    ```
-   This copies `zstandard_macos/src/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`, and removes `module.modulemap` on both so the pods build correctly (legacy and module conflicts).
+   This copies `zstd/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`, and removes `module.modulemap` on both so the pods build correctly (legacy and module conflicts).
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash

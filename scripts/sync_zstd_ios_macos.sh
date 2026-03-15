@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Sync the canonical zstd C source from zstandard_macos/src into the iOS and
+# Sync the canonical zstd C source from the repo root zstd/ into the iOS and
 # macOS plugin Class trees so both platforms use the same zstd version.
 #
 # Usage: from repo root, run: ./scripts/sync_zstd_ios_macos.sh
 #
-# Source of truth: zstandard_macos/src/
+# Source of truth: zstd/ (at repo root)
 # Targets:
 #   - zstandard_ios/ios/Classes/zstd/
 #   - zstandard_macos/macos/Classes/zstd/
@@ -14,12 +14,13 @@
 
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC="$ROOT/zstandard_macos/src"
+SRC="$ROOT/zstd"
 IOS_ZSTD="$ROOT/zstandard_ios/ios/Classes/zstd"
 MACOS_ZSTD="$ROOT/zstandard_macos/macos/Classes/zstd"
 
 if [[ ! -d "$SRC" || ! -f "$SRC/zstd.h" ]]; then
   echo "Error: Canonical zstd source not found at $SRC (expected zstd.h and subdirs)."
+  echo "Copy upstream lib/ there, e.g.: git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && cp -R /tmp/zstd/lib/* $SRC/"
   exit 1
 fi
 
@@ -49,4 +50,4 @@ if [[ -f "$MACOS_ZSTD/module.modulemap" ]]; then
   echo "  Removed module.modulemap from macOS copy (not used by the pod)."
 fi
 
-echo "Done. iOS and macOS plugin Class trees are in sync with zstandard_macos/src."
+echo "Done. iOS and macOS plugin Class trees are in sync with zstd/."
