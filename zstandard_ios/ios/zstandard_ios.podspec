@@ -34,7 +34,8 @@ A new Flutter FFI plugin project.
     'OTHER_CFLAGS' => '-DZSTD_STATIC_LINKING_ONLY -DZSTD_DISABLE_ASM'
   }
 
-  # before_compile: sync again so build sees latest zstd; after_compile: remove copy from disk.
+  # before_compile: sync again so build sees latest zstd. Remove uses :any so it runs last and
+  # does not delete the source before another target that might need it has run.
   s.script_phases = [
     {
       :name => 'Sync zstd',
@@ -46,7 +47,7 @@ A new Flutter FFI plugin project.
       SCRIPT
       :execution_position => :before_compile
     },
-    { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
+    { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :any }
   ]
 
   s.swift_version = '5.0'

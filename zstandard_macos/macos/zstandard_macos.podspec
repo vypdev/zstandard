@@ -35,19 +35,26 @@ A new Flutter FFI plugin project.
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.11'
+  # Export zstd C symbols so Dart FFI (DynamicLibrary.lookup) can find them in the framework.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/zstd',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY',
+    'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY -fvisibility=default',
+    'DEAD_CODE_STRIPPING' => 'NO',
+    'STRIP_INSTALLED_PRODUCT' => 'NO',
   }
 
   # script_phases run at BUILD time; source_files glob runs at POD INSTALL time. So if Classes/zstd
   # doesn't exist at pod install (e.g. path pod, prepare_command not run), the target gets no zstd
-  # files. before_compile sync ensures latest zstd at build; after_compile removes the copy.
+  # files. before_headers sync ensures latest zstd at build.
   # Sync must run BEFORE Headers (Copy Headers reads Classes/zstd). CocoaPods runs Headers before
   # Compile, so we use :before_headers so the sync runs first. Find repo root by walking up from
   # the resolved pod path; use SRCROOT when PODS_TARGET_SRCROOT is relative (e.g. Flutter .symlinks).
+  # Remove synced zstd uses :any so it runs in the default (last) position and is not reordered
+  # before other targets/phases that might still need the source (e.g. another target reading from
+  # this pod's SRCROOT). CocoaPods only supports :before_headers, :after_headers, :before_compile,
+  # :after_compile; :any leaves the phase at the end of the target's build phases.
   s.script_phases = [
     {
       :name => 'Sync zstd',
@@ -72,7 +79,7 @@ A new Flutter FFI plugin project.
       :execution_position => :before_headers,
       :output_files => ['$(PODS_TARGET_SRCROOT)/Classes/zstd/zstd.h']
     },
-    { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :after_compile }
+    { :name => 'Remove synced zstd', :script => 'rm -rf "${PODS_TARGET_SRCROOT}/Classes/zstd"', :execution_position => :any }
   ]
 
   s.swift_version = '5.0'

@@ -8,7 +8,7 @@
 #   ./scripts/sync_zstd_ios_macos.sh macos # sync only to zstandard_macos/macos/Classes/zstd/
 #   ./scripts/sync_zstd_ios_macos.sh       # sync both (e.g. when run manually from repo root)
 #
-# Each pod runs this with its platform in before_compile and removes its copy in after_compile.
+# Each pod runs this with its platform in before_compile/before_headers and removes its copy in a script phase with execution_position :any (as late as possible).
 
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

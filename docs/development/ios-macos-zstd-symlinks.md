@@ -74,18 +74,18 @@ Referencias:
 - [What happens when I clone a repository with symlinks on Windows?](https://stackoverflow.com/questions/11662868/what-happens-when-i-clone-a-repository-with-symlinks-on-windows)
 - [Git for Windows - Symbolic Links](https://gitforwindows.org/symbolic-links.html)
 
-## Automatización: script_phases en el podspec (before_compile / after_compile)
+## Automatización: script_phases en el podspec (before_compile / before_headers; remove con :any)
 
-CocoaPods resuelve `source_files` en **pod install** (con un glob). Si en ese momento `Classes/zstd` no existe, la lista de archivos del target queda vacía. Un **script_phase** con `before_compile` corre en cada **build**, no en pod install; cuando se compila, el sync ya creó `Classes/zstd`, pero el glob de `source_files` se hizo antes (en pod install), así que si entonces no existía la carpeta, esos archivos no se añaden al target. Además, cuando el pod se usa con `:path`, CocoaPods **no ejecuta** `prepare_command` del podspec, por lo que el sync del podspec no se dispara en el primer install. Por tanto, el sync debe ejecutarse **antes de pod install** (p. ej. con `pre_install` en el Podfile o manualmente).
+CocoaPods resuelve `source_files` en **pod install** (con un glob). Si en ese momento `Classes/zstd` no existe, la lista de archivos del target queda vacía. Un **script_phase** con `before_compile`/`before_headers` corre en cada **build**, no en pod install; cuando se compila, el sync ya creó `Classes/zstd`, pero el glob de `source_files` se hizo antes (en pod install), así que si entonces no existía la carpeta, esos archivos no se añaden al target. Además, cuando el pod se usa con `:path`, CocoaPods **no ejecuta** `prepare_command` del podspec, por lo que el sync del podspec no se dispara en el primer install. Por tanto, el sync debe ejecutarse **antes de pod install** (p. ej. con `pre_install` en el Podfile o manualmente).
 
 Cada plataforma solo sincroniza y borra su propia copia:
 
-- **iOS**: el podspec de `zstandard_ios` tiene una fase "Sync zstd" que ejecuta `scripts/sync_zstd_ios_macos.sh ios` (solo copia a `zstandard_ios/ios/Classes/zstd/`) y otra "Remove synced zstd" que borra esa carpeta tras compilar.
-- **macOS**: el podspec de `zstandard_macos` hace lo mismo con `sync_zstd_ios_macos.sh macos` (solo copia a `zstandard_macos/macos/Classes/zstd/`) y borra su copia en after_compile.
+- **iOS**: el podspec de `zstandard_ios` tiene una fase "Sync zstd" que ejecuta `scripts/sync_zstd_ios_macos.sh ios` (solo copia a `zstandard_ios/ios/Classes/zstd/`) y otra "Remove synced zstd" que borra esa carpeta. La fase de remove usa `execution_position => :any` para que se ejecute al final del target y no borre la fuente antes de que otro target o fase la necesite.
+- **macOS**: el podspec de `zstandard_macos` hace lo mismo con `sync_zstd_ios_macos.sh macos` (solo copia a `zstandard_macos/macos/Classes/zstd/`) y borra su copia con `:any` por el mismo motivo.
 
 El script acepta `ios`, `macos` o sin argumentos (sincroniza ambas plataformas, útil al ejecutarlo manualmente desde la raíz). **Sí** hace falta que el sync se ejecute antes del primer pod install (pre_install en el Podfile o ejecutar `./scripts/sync_zstd_ios_macos.sh macos` desde la raíz); las script_phases solo corren en el build, no en install.
 
 ## Recomendación práctica
 
-- **Hoy**: Usar el **script de sync** que copia `zstd/` a `Classes/zstd/` solo para la plataforma que se está compilando (single source of truth en `zstd/`). Cada pod ejecuta el script con su plataforma en before_compile y borra su copia en after_compile; no se depende del Podfile.
+- **Hoy**: Usar el **script de sync** que copia `zstd/` a `Classes/zstd/` solo para la plataforma que se está compilando (single source of truth en `zstd/`). Cada pod ejecuta el script con su plataforma en before_compile/before_headers y borra su copia en una fase con `:any` (lo más tarde posible); no se depende del Podfile.
 - **Symlinks**: Solo serían una alternativa estable cuando CocoaPods soporte seguir symlinks en los globs y se defina cómo manejar Git en Windows.
