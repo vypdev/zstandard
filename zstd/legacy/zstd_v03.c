@@ -1111,7 +1111,7 @@ static unsigned FSE_isError(size_t code) { return ERR_isError(code); }
 ****************************************************************/
 static short FSE_abs(short a)
 {
-    return a<0 ? -a : a;
+    return a<0 ? (short)-a : a;
 }
 
 static size_t FSE_readNCount (short* normalizedCounter, unsigned* maxSVPtr, unsigned* tableLogPtr,
@@ -2362,7 +2362,7 @@ typedef struct {
     BYTE* matchLength;
     BYTE* dumpsStart;
     BYTE* dumps;
-} seqStore_t;
+} SeqStore_t;
 
 
 /* *************************************

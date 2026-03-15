@@ -110,8 +110,13 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
 **Do not modify the native zstd C library by hand.** The flow is:
 
 1. **Update the canonical zstd source**  
-   The source of truth is **`zstd/`** at the repo root. Update it only by replacing it with an upstream release (e.g. from [facebook/zstd](https://github.com/facebook/zstd)); do not edit the C files manually.  
-   If `zstd/` or the iOS/macOS `Classes/zstd/` trees are missing (e.g. after a clean clone), copy the contents of the upstream `lib/` directory into `zstd/` (e.g. `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && mkdir -p zstd && cp -R /tmp/zstd/lib/* zstd/`). If you previously had the canonical source at `zstandard_macos/src/`, move it once: `mv zstandard_macos/src zstd`.
+   The source of truth is **`zstd/`** at the repo root. Update it from the [official repo](https://github.com/facebook/zstd) (do not edit the C files manually).  
+   From repo root:
+   ```bash
+   ./scripts/update_zstd.sh        # latest from dev (upstream default)
+   ./scripts/update_zstd.sh v1.5.6 # specific tag or branch
+   ```
+   If you prefer to do it manually: `git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && mkdir -p zstd && cp -R /tmp/zstd/lib/* zstd/`. If you previously had the canonical source at `zstandard_macos/src/`, move it once: `mv zstandard_macos/src zstd`.
 
 2. **Sync zstd to iOS and macOS** (from repo root):
    ```bash

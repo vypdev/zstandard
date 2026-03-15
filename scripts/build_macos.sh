@@ -13,7 +13,7 @@ mkdir -p "$BIN"
 
 if [[ ! -d "$ZSTD_SRC" || ! -f "$ZSTD_SRC/zstd.h" ]]; then
   echo "Error: Canonical zstd source not found at $ZSTD_SRC"
-  echo "Copy upstream lib/ there, e.g.: git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && cp -R /tmp/zstd/lib/* $ZSTD_SRC/"
+  echo "Run: ./scripts/update_zstd.sh   # fetches from github.com/facebook/zstd"
   exit 1
 fi
 echo "Using zstd from $ZSTD_SRC"

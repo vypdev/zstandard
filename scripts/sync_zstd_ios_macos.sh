@@ -20,7 +20,7 @@ MACOS_ZSTD="$ROOT/zstandard_macos/macos/Classes/zstd"
 
 if [[ ! -d "$SRC" || ! -f "$SRC/zstd.h" ]]; then
   echo "Error: Canonical zstd source not found at $SRC (expected zstd.h and subdirs)."
-  echo "Copy upstream lib/ there, e.g.: git clone --depth 1 https://github.com/facebook/zstd.git /tmp/zstd && cp -R /tmp/zstd/lib/* $SRC/"
+  echo "Run: ./scripts/update_zstd.sh   # fetches from github.com/facebook/zstd"
   exit 1
 fi
 

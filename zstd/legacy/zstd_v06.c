@@ -552,9 +552,9 @@ typedef struct {
     U32  cachedLitLength;
     const BYTE* cachedLiterals;
     ZSTDv06_stats_t stats;
-} seqStore_t;
+} SeqStore_t;
 
-void ZSTDv06_seqToCodes(const seqStore_t* seqStorePtr, size_t const nbSeq);
+void ZSTDv06_seqToCodes(const SeqStore_t* seqStorePtr, size_t const nbSeq);
 
 
 #endif   /* ZSTDv06_CCOMMON_H_MODULE */
@@ -1202,7 +1202,7 @@ static unsigned HUFv06_isError(size_t code) { return ERR_isError(code); }
 /*-**************************************************************
 *  FSE NCount encoding-decoding
 ****************************************************************/
-static short FSEv06_abs(short a) { return a<0 ? -a : a; }
+static short FSEv06_abs(short a) { return a<0 ? (short)-a : a; }
 
 size_t FSEv06_readNCount (short* normalizedCounter, unsigned* maxSVPtr, unsigned* tableLogPtr,
                  const void* headerBuffer, size_t hbSize)
