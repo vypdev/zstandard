@@ -9,15 +9,29 @@ set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-AVD_NAME="${ZSTANDARD_AVD_NAME:-zstandard_test}"
+# Architecture: on Apple Silicon (arm64) use arm64-v8a system image; on Intel (x86_64) use x86_64.
+# Using x86_64 on M1/M2 often causes the emulator process to exit immediately.
+ARCH=$(uname -m)
+if [[ "$ARCH" == "arm64" ]]; then
+  SYSIMG_ABI="arm64-v8a"
+  DEFAULT_AVD_SUFFIX="arm64"
+else
+  SYSIMG_ABI="x86_64"
+  DEFAULT_AVD_SUFFIX="x86_64"
+fi
+
+AVD_NAME="${ZSTANDARD_AVD_NAME:-zstandard_test_${DEFAULT_AVD_SUFFIX}}"
 PID_FILE="${ROOT}/.android_emulator.pid"
+EMULATOR_LOG="${ROOT}/.android_emulator.log"
 API_LEVEL="${ZSTANDARD_AVD_API_LEVEL:-30}"
 BOOT_TIMEOUT="${ZSTANDARD_AVD_BOOT_TIMEOUT:-240}"
 DEVICE_READY_TIMEOUT="${ZSTANDARD_AVD_DEVICE_READY_TIMEOUT:-60}"
+SYSIMG_PKG="system-images;android-${API_LEVEL};google_apis;${SYSIMG_ABI}"
 
-log() { echo "[android-emulator] $*"; }
-log_step() { echo "[android-emulator] [step] $*"; }
-log_wait() { echo "[android-emulator] [wait ${1}s] $2"; }
+# Log to stderr so that "device-id" and "start" stdout contain only the device id for capture.
+log() { echo "[android-emulator] $*" >&2; }
+log_step() { echo "[android-emulator] [step] $*" >&2; }
+log_wait() { echo "[android-emulator] [wait ${1}s] $2" >&2; }
 
 # Resolve SDK path
 log "Using command: ${1:-unknown}"
@@ -37,7 +51,8 @@ ADB="${SDK}/platform-tools/adb"
 AVDMANAGER="${SDK}/cmdline-tools/latest/bin/avdmanager"
 SDKMANAGER="${SDK}/cmdline-tools/latest/bin/sdkmanager"
 
-log "adb=$ADB emulator=$EMULATOR avdmanager=$AVDMANAGER"
+log "arch=$ARCH abi=$SYSIMG_ABI AVD=$AVD_NAME system_image=$SYSIMG_PKG"
+log "adb=$ADB emulator=$EMULATOR"
 
 if [[ ! -x "$ADB" ]]; then
   echo "Error: adb not found at $ADB. Install platform-tools." >&2
@@ -55,16 +70,17 @@ cmd_create() {
     log "AVD $AVD_NAME already exists."
     return 0
   fi
-  log_step "Creating AVD $AVD_NAME (API $API_LEVEL)..."
+  log_step "Creating AVD $AVD_NAME (API $API_LEVEL, $SYSIMG_ABI)..."
   if [[ -x "$SDKMANAGER" ]]; then
-    log "Ensuring system image is installed..."
-    "$SDKMANAGER" --install "system-images;android-${API_LEVEL};google_apis;x86_64" 2>/dev/null || true
+    log "Installing system image: $SYSIMG_PKG"
+    "$SDKMANAGER" --install "$SYSIMG_PKG" 2>/dev/null || true
   fi
-  log "Running avdmanager create avd..."
+  log "Running avdmanager create avd (device pixel_4)..."
   echo no | "$AVDMANAGER" create avd --force -n "$AVD_NAME" \
-    -k "system-images;android-${API_LEVEL};google_apis;x86_64" \
+    -k "$SYSIMG_PKG" \
     -d "pixel_4" 2>/dev/null || {
-    echo "Note: If create failed, install system image: $SDKMANAGER --install \"system-images;android-${API_LEVEL};google_apis;x86_64\"" >&2
+    log "Create failed. Install the image manually: $SDKMANAGER --install \"$SYSIMG_PKG\""
+    log "List available: $SDKMANAGER --list | grep system-images"
     exit 1
   }
   log "AVD $AVD_NAME created."
@@ -133,7 +149,11 @@ wait_for_boot() {
         log_wait "$elapsed" "emulator process alive (PID $pid), adb devices: $(echo "$dev_out" | head -3 | tr '\n' ' ')"
       else
         log "Emulator process (PID $pid) has exited. Last adb devices: $dev_out"
-        echo "Error: Emulator process died before device appeared." >&2
+        if [[ -f "$EMULATOR_LOG" ]]; then
+          log "Last 40 lines of emulator log ($EMULATOR_LOG):"
+          tail -40 "$EMULATOR_LOG" | while read -r line; do echo "[android-emulator]   $line"; done
+        fi
+        echo "Error: Emulator process died before device appeared. See $EMULATOR_LOG for emulator output." >&2
         return 1
       fi
     else
@@ -190,12 +210,15 @@ cmd_start() {
     log "AVD $AVD_NAME exists."
   fi
 
-  log_step "Launching emulator binary: $EMULATOR"
-  log "  AVD=$AVD_NAME (headless, no-snapshot, no-audio)"
-  "$EMULATOR" -avd "$AVD_NAME" -no-window -gpu swiftshader_indirect -no-snapshot -no-audio -no-boot-anim -no-accelerometer -no-gyroscope -no-sensors -noaudio &
+  log_step "Launching emulator: $EMULATOR"
+  log "  AVD=$AVD_NAME | ABI=$SYSIMG_ABI | log=$EMULATOR_LOG"
+  : > "$EMULATOR_LOG"
+  # Use only flags supported by current emulator (36.x); -no-accelerometer/-no-gyroscope/-no-sensors were removed.
+  "$EMULATOR" -avd "$AVD_NAME" -no-window -gpu swiftshader_indirect -no-snapshot -no-audio -no-boot-anim \
+    >> "$EMULATOR_LOG" 2>&1 &
   local pid=$!
   echo $pid > "$PID_FILE"
-  log "Emulator started with PID $pid (saved to $PID_FILE)"
+  log "Emulator started with PID $pid (stderr/stdout -> $EMULATOR_LOG)"
   log_step "Sleeping 8s before polling adb..."
   sleep 8
   wait_for_boot

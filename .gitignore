@@ -7,3 +7,5 @@ zstandard_cli/zstd/
 
 */*.lock
 .env
+.android_emulator.pid
+.android_emulator.log
