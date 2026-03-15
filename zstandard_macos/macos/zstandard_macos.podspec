@@ -14,7 +14,7 @@ A new Flutter FFI plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
 
   # Zstd C sources: synced from repo root zstd/ into Classes/zstd/ by
-  # scripts/sync_zstd_ios_macos.sh. Exclude deprecated/ (zbuff); include legacy.
+  # scripts/sync_zstd_ios_macos.sh. Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/zstandard_macos.c', 'Classes/**/*.swift',
                        'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
@@ -25,6 +25,12 @@ A new Flutter FFI plugin project.
                        'Classes/zstd/legacy/*.c', 'Classes/zstd/legacy/*.h',
                        'Classes/zstd/*.h'
   s.private_header_files = 'Classes/zstd/**/*.h'
+
+  # Run at pod install so Classes/zstd exists when CocoaPods globs source_files (path pods only).
+  s.prepare_command = <<~CMD
+    bash -c '[ -x "../../scripts/sync_zstd_ios_macos.sh" ] && "../../scripts/sync_zstd_ios_macos.sh" macos'
+  CMD
+
   s.dependency 'FlutterMacOS'
 
   s.platform = :osx, '10.11'
@@ -35,7 +41,7 @@ A new Flutter FFI plugin project.
     'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY',
   }
 
-  # Sync zstd before compile when script exists (local dev); remove copy after compile.
+  # before_compile: sync again so build sees latest zstd; after_compile: remove copy from disk.
   s.script_phases = [
     {
       :name => 'Sync zstd',

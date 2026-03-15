@@ -14,10 +14,15 @@ A new Flutter FFI plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
 
   # Zstd C sources: synced from repo root zstd/ into Classes/zstd/ by
-  # scripts/sync_zstd_ios_macos.sh (run in a before_compile script phase when present).
+  # scripts/sync_zstd_ios_macos.sh. Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
   s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h', 'Classes/*.swift'
   s.public_header_files = 'Classes/zstd/zstd.h'
+
+  # Run at pod install so Classes/zstd exists when CocoaPods globs source_files (path pods only).
+  s.prepare_command = <<~CMD
+    bash -c '[ -x "../../scripts/sync_zstd_ios_macos.sh" ] && "../../scripts/sync_zstd_ios_macos.sh" ios'
+  CMD
 
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
@@ -29,8 +34,7 @@ A new Flutter FFI plugin project.
     'OTHER_CFLAGS' => '-DZSTD_STATIC_LINKING_ONLY -DZSTD_DISABLE_ASM'
   }
 
-  # Sync zstd before compile when script exists (local dev); no need for Podfile pre_install.
-  # After compile, remove synced copy so Classes/zstd is not left on disk.
+  # before_compile: sync again so build sees latest zstd; after_compile: remove copy from disk.
   s.script_phases = [
     {
       :name => 'Sync zstd',
