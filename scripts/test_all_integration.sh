@@ -57,21 +57,23 @@ fi
 # 4. macOS (framework + integration tests)
 echo ""
 echo "6/8 Testing macOS (build framework + integration tests)..."
-if [[ "$(uname)" == "Darwin" ]]; then
-  run "$SCRIPT_DIR/ensure_macos_framework.sh"
-  run bash -c "cd $ROOT/zstandard_macos/example && flutter test integration_test/ -d macos" || true
-else
-  echo "Skipped (macOS tests require Darwin)."
-fi
+run "$SCRIPT_DIR/test_macos_integration.sh" || true
 
 # 5. Web (Chrome)
 echo ""
 echo "7/8 Testing Web (Chrome)..."
 run "$SCRIPT_DIR/test_web_integration.sh" || true
 
-# 6. Linux/Windows
+# 6. Linux (when on Linux)
 echo ""
-echo "8/8 Linux/Windows: run on native OS (push_checks_linux.yml / push_checks_windows.yml)."
+echo "8/8 Testing Linux / Windows..."
+if [[ "$(uname -s)" == "Linux" ]]; then
+  run "$SCRIPT_DIR/test_linux_integration.sh" || true
+elif [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
+  run bash -c "cd \"$ROOT\" && cmd //c 'scripts\\\\test_windows_integration.bat'" || true
+else
+  echo "Linux/Windows: run on native OS: ./scripts/test_linux_integration.sh or scripts\\test_windows_integration.bat"
+fi
 
 echo ""
 if [[ $FAILED -eq 1 ]]; then
