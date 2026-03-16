@@ -13,6 +13,21 @@ environment:
 # dependencies can be manually updated by changing the version numbers below to
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
+dependency_overrides:
+  # Use local plugins from repo when developing (e.g. macOS zstd symbol fix).
+  zstandard_android:
+    path: ../../zstandard_android
+  zstandard_macos:
+    path: ../../zstandard_macos
+  zstandard_ios:
+    path: ../../zstandard_ios
+  zstandard_web:
+    path: ../../zstandard_web
+  zstandard_windows:
+    path: ../../zstandard_windows
+  zstandard_linux:
+    path: ../../zstandard_linux
+
 dependencies:
   flutter:
     sdk: flutter

@@ -1,3 +1,2 @@
-// Relative import to be able to reuse the C sources.
-// See the comment in ../zstandard_macos.podspec for more information.
-#include "../../src/zstd.h"
+// Pull in zstd; Classes/zstd is synced from repo root by scripts/sync_zstd_ios_macos.sh.
+#include "zstd/zstd.h"

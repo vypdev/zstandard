@@ -1,16 +1,43 @@
-# zstandard_example
+# Zstandard Example
 
-Demonstrates how to use the zstandard plugin.
+This example demonstrates how to use the [zstandard](https://pub.dev/packages/zstandard) Flutter plugin for compression and decompression on all supported platforms.
 
-## Getting Started
+## What it demonstrates
 
-This project is a starting point for a Flutter application.
+- **Compression**: Compress raw bytes using the Zstandard algorithm with a configurable compression level (1–22).
+- **Decompression**: Decompress previously compressed data back to the original bytes.
+- **Extension methods**: Use `Uint8List?.compress()` and `Uint8List?.decompress()` for a concise API.
+- **Platform detection**: The plugin automatically uses the correct implementation (Android, iOS, macOS, Windows, Linux, or web) based on the current platform.
 
-A few resources to get you started if this is your first Flutter project:
+## Running the example
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+From this directory (`zstandard/example`):
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+flutter run
+```
+
+Then select your target platform (e.g. Android, iOS, macOS, Windows, Linux, or Chrome for web).
+
+For web, ensure `zstd.js` and `zstd.wasm` are in the app’s `web/` directory and that `web/index.html` includes `<script src="zstd.js"></script>`. See the [web platform guide](../../docs/platforms/web.md) for details.
+
+## Integration tests
+
+To run integration tests (requires a device or emulator for the target platform):
+
+```bash
+flutter test integration_test/
+```
+
+## Documentation
+
+- [Getting started](../../docs/guides/getting-started.md)
+- [API reference](../../docs/api/main-api.md)
+- [Platform guides](../../docs/platforms/)
+- [Troubleshooting](../../docs/troubleshooting/common-issues.md)
+
+## Resources
+
+- [Flutter documentation](https://docs.flutter.dev/)
+- [Zstandard (zstd) algorithm](https://github.com/facebook/zstd)

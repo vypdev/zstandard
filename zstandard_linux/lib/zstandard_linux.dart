@@ -22,13 +22,20 @@ final DynamicLibrary _dylib = () {
 
 final ZstandardLinuxBindings _bindings = ZstandardLinuxBindings(_dylib);
 
+/// Linux implementation of [ZstandardPlatform] using FFI and the native zstd library.
+///
+/// Uses [DynamicLibrary] to load libzstandard_linux_plugin.so and calls
+/// ZSTD_compress, ZSTD_decompress, ZSTD_compressBound, and ZSTD_getFrameContentSize.
+/// The main [zstandard] plugin registers this implementation automatically on Linux.
 class ZstandardLinux extends ZstandardPlatform {
-  /// A constructor that allows tests to override the window object used by the plugin.
+  /// Creates the Linux platform implementation.
   ZstandardLinux();
 
   final methodChannel = const MethodChannel('plugins.flutter.io/zstandard');
 
   /// Registers this class as the default instance of [ZstandardPlatform].
+  ///
+  /// Called by the main plugin when running on Linux.
   static void registerWith() {
     ZstandardPlatform.instance = ZstandardLinux();
   }
@@ -71,15 +78,21 @@ class ZstandardLinux extends ZstandardPlatform {
 
   @override
   Future<Uint8List?> decompress(Uint8List data) async {
+    const int contentSizeUnknown = -1;
+    const int contentSizeError = -2;
+
     final int compressedSize = data.lengthInBytes;
     final Pointer<Uint8> src = malloc.allocate<Uint8>(compressedSize);
     src.asTypedList(compressedSize).setAll(0, data);
 
     final int decompressedSizeExpected =
-        _bindings.ZSTD_getDecompressedSize(src.cast(), compressedSize);
-    final int dstCapacity = decompressedSizeExpected > 0
-        ? decompressedSizeExpected
-        : compressedSize * 20;
+        _bindings.ZSTD_getFrameContentSize(src.cast(), compressedSize);
+    final int dstCapacity =
+        (decompressedSizeExpected != contentSizeUnknown &&
+                decompressedSizeExpected != contentSizeError &&
+                decompressedSizeExpected > 0)
+            ? decompressedSizeExpected
+            : compressedSize * 20;
     final Pointer<Uint8> dst = malloc.allocate<Uint8>(dstCapacity);
 
     try {
@@ -90,11 +103,10 @@ class ZstandardLinux extends ZstandardPlatform {
         compressedSize,
       );
 
-      if (decompressedSize > 0) {
-        return Uint8List.fromList(dst.asTypedList(decompressedSize));
-      } else {
+      if (decompressedSize < 0) {
         return null;
       }
+      return Uint8List.fromList(dst.asTypedList(decompressedSize));
     } finally {
       malloc.free(src);
       malloc.free(dst);

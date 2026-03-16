@@ -8,7 +8,7 @@
 // ignore_for_file: type=lint
 import 'dart:ffi' as ffi;
 
-/// Bindings for `src/zstandard_macos.h`.
+/// Bindings for zstd.h from repo root zstd/.
 ///
 /// Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
 ///
@@ -51,7 +51,7 @@ class ZstandardMacosBindings {
   late final _ZSTD_versionString =
       _ZSTD_versionStringPtr.asFunction<ffi.Pointer<ffi.Char> Function()>();
 
-  /// Simple API
+  /// Simple Core API
   /// /
   /// /*! ZSTD_compress() :
   /// Compresses `src` content as a single zstd compressed frame into already allocated `dst`.
@@ -130,8 +130,8 @@ class ZstandardMacosBindings {
   late final _ZSTD_getFrameContentSize = _ZSTD_getFrameContentSizePtr
       .asFunction<int Function(ffi.Pointer<ffi.Void>, int)>();
 
-  /// ! ZSTD_getDecompressedSize() :
-  /// NOTE: This function is now obsolete, in favor of ZSTD_getFrameContentSize().
+  /// ! ZSTD_getDecompressedSize() (obsolete):
+  /// This function is now obsolete, in favor of ZSTD_getFrameContentSize().
   /// Both functions work the same way, but ZSTD_getDecompressedSize() blends
   /// "empty", "unknown" and "error" results to the same return value (0),
   /// while ZSTD_getFrameContentSize() gives them separate return values.
@@ -159,6 +159,11 @@ class ZstandardMacosBindings {
   /// @return : the compressed size of the first frame starting at `src`,
   /// suitable to pass as `srcSize` to `ZSTD_decompress` or similar,
   /// or an error code if input is invalid
+  /// Note 1: this method is called _find*() because it's not enough to read the header,
+  /// it may have to scan through the frame's content, to reach its end.
+  /// Note 2: this method also works with Skippable Frames. In which case,
+  /// it returns the size of the complete skippable frame,
+  /// which is always equal to its content size + 8 bytes for headers.
   int ZSTD_findFrameCompressedSize(
     ffi.Pointer<ffi.Void> src,
     int srcSize,
@@ -190,15 +195,16 @@ class ZstandardMacosBindings {
   late final _ZSTD_compressBound =
       _ZSTD_compressBoundPtr.asFunction<int Function(int)>();
 
-  /// ZSTD_isError() :
+  /// ======  Error helper functions  ======*/
+  /// /* ZSTD_isError() :
   /// Most ZSTD_* functions returning a size_t value can be tested for error,
   /// using ZSTD_isError().
   /// @return 1 if error, 0 otherwise
   int ZSTD_isError(
-    int code,
+    int result,
   ) {
     return _ZSTD_isError(
-      code,
+      result,
     );
   }
 
@@ -207,11 +213,25 @@ class ZstandardMacosBindings {
           'ZSTD_isError');
   late final _ZSTD_isError = _ZSTD_isErrorPtr.asFunction<int Function(int)>();
 
+  int ZSTD_getErrorCode(
+    int functionResult,
+  ) {
+    return _ZSTD_getErrorCode(
+      functionResult,
+    );
+  }
+
+  late final _ZSTD_getErrorCodePtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Size)>>(
+          'ZSTD_getErrorCode');
+  late final _ZSTD_getErrorCode =
+      _ZSTD_getErrorCodePtr.asFunction<int Function(int)>();
+
   ffi.Pointer<ffi.Char> ZSTD_getErrorName(
-    int code,
+    int result,
   ) {
     return _ZSTD_getErrorName(
-      code,
+      result,
     );
   }
 
@@ -276,7 +296,7 @@ class ZstandardMacosBindings {
   /// this function compresses at the requested compression level,
   /// __ignoring any other advanced parameter__ .
   /// If any advanced parameter was set using the advanced API,
-  /// they will all be reset. Only `compressionLevel` remains.
+  /// they will all be reset. Only @compressionLevel remains.
   int ZSTD_compressCCtx(
     ffi.Pointer<ZSTD_CCtx> cctx,
     ffi.Pointer<ffi.Void> dst,
@@ -1502,19 +1522,75 @@ class ZstandardMacosBindings {
       _ZSTD_sizeof_DDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_DDict>)>();
 }
 
+/// -*********************************************
+/// Error codes list
+/// -*********************************************
+/// Error codes _values_ are pinned down since v1.3.1 only.
+/// Therefore, don't rely on values if you may link to any version < v1.3.1.
+///
+/// Only values < 100 are considered stable.
+///
+/// note 1 : this API shall be used with static linking only.
+/// dynamic linking is not yet officially supported.
+/// note 2 : Prefer relying on the enum than on its value whenever possible
+/// This is the only supported way to use the error list < v1.3.1
+/// note 3 : ZSTD_isError() is always correct, whatever the library version.
+abstract class ZSTD_ErrorCode {
+  static const int ZSTD_error_no_error = 0;
+  static const int ZSTD_error_GENERIC = 1;
+  static const int ZSTD_error_prefix_unknown = 10;
+  static const int ZSTD_error_version_unsupported = 12;
+  static const int ZSTD_error_frameParameter_unsupported = 14;
+  static const int ZSTD_error_frameParameter_windowTooLarge = 16;
+  static const int ZSTD_error_corruption_detected = 20;
+  static const int ZSTD_error_checksum_wrong = 22;
+  static const int ZSTD_error_literals_headerWrong = 24;
+  static const int ZSTD_error_dictionary_corrupted = 30;
+  static const int ZSTD_error_dictionary_wrong = 32;
+  static const int ZSTD_error_dictionaryCreation_failed = 34;
+  static const int ZSTD_error_parameter_unsupported = 40;
+  static const int ZSTD_error_parameter_combination_unsupported = 41;
+  static const int ZSTD_error_parameter_outOfBound = 42;
+  static const int ZSTD_error_tableLog_tooLarge = 44;
+  static const int ZSTD_error_maxSymbolValue_tooLarge = 46;
+  static const int ZSTD_error_maxSymbolValue_tooSmall = 48;
+  static const int ZSTD_error_cannotProduce_uncompressedBlock = 49;
+  static const int ZSTD_error_stabilityCondition_notRespected = 50;
+  static const int ZSTD_error_stage_wrong = 60;
+  static const int ZSTD_error_init_missing = 62;
+  static const int ZSTD_error_memory_allocation = 64;
+  static const int ZSTD_error_workSpace_tooSmall = 66;
+  static const int ZSTD_error_dstSize_tooSmall = 70;
+  static const int ZSTD_error_srcSize_wrong = 72;
+  static const int ZSTD_error_dstBuffer_null = 74;
+  static const int ZSTD_error_noForwardProgress_destFull = 80;
+  static const int ZSTD_error_noForwardProgress_inputEmpty = 82;
+
+  /// following error codes are __NOT STABLE__, they can be removed or changed in future versions
+  static const int ZSTD_error_frameIndex_tooLarge = 100;
+  static const int ZSTD_error_seekableIO = 102;
+  static const int ZSTD_error_dstBuffer_wrong = 104;
+  static const int ZSTD_error_srcBuffer_wrong = 105;
+  static const int ZSTD_error_sequenceProducer_failed = 106;
+  static const int ZSTD_error_externalSequences_invalid = 107;
+
+  /// never EVER use this value directly, it can change in future versions! Use ZSTD_isError() instead
+  static const int ZSTD_error_maxCode = 120;
+}
+
 final class ZSTD_CCtx_s extends ffi.Opaque {}
 
 /// Explicit context
 /// /
 /// /*= Compression context
 /// When compressing many times,
-/// it is recommended to allocate a context just once,
+/// it is recommended to allocate a compression context just once,
 /// and reuse it for each successive compression operation.
-/// This will make workload friendlier for system's memory.
+/// This will make the workload easier for system's memory.
 /// Note : re-using context is just a speed / resource optimization.
 /// It doesn't change the compression ratio, which remains identical.
-/// Note 2 : In multi-threaded environments,
-/// use one different context per thread for parallel execution.
+/// Note 2: For parallel execution in multi-threaded environments,
+/// use one different context per thread .
 typedef ZSTD_CCtx = ZSTD_CCtx_s;
 
 final class ZSTD_DCtx_s extends ffi.Opaque {}
@@ -1722,7 +1798,8 @@ abstract class ZSTD_cParameter {
   /// ZSTD_c_stableOutBuffer
   /// ZSTD_c_blockDelimiters
   /// ZSTD_c_validateSequences
-  /// ZSTD_c_useBlockSplitter
+  /// ZSTD_c_blockSplitterLevel
+  /// ZSTD_c_splitAfterSequences
   /// ZSTD_c_useRowMatchFinder
   /// ZSTD_c_prefetchCDictTables
   /// ZSTD_c_enableSeqProducerFallback
@@ -1750,6 +1827,7 @@ abstract class ZSTD_cParameter {
   static const int ZSTD_c_experimentalParam17 = 1014;
   static const int ZSTD_c_experimentalParam18 = 1015;
   static const int ZSTD_c_experimentalParam19 = 1016;
+  static const int ZSTD_c_experimentalParam20 = 1017;
 }
 
 final class ZSTD_bounds extends ffi.Struct {
@@ -1957,13 +2035,13 @@ typedef ZSTD_DDict = ZSTD_DDict_s;
 
 const int ZSTD_VERSION_MAJOR = 1;
 
-const int ZSTD_VERSION_MINOR = 5;
+const int ZSTD_VERSION_MINOR = 6;
 
-const int ZSTD_VERSION_RELEASE = 6;
+const int ZSTD_VERSION_RELEASE = 0;
 
-const int ZSTD_VERSION_NUMBER = 10506;
+const int ZSTD_VERSION_NUMBER = 10600;
 
-const String ZSTD_VERSION_STRING = '1.5.6';
+const String ZSTD_VERSION_STRING = '1.6.0';
 
 const int ZSTD_CLEVEL_DEFAULT = 3;
 

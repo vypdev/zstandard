@@ -1,0 +1,33 @@
+name: Quality Report
+
+on:
+  push:
+    branches: [develop, master]
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  generate_report:
+    name: Generate quality report
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: '3.35.6'
+
+      - name: Collect coverage from all packages
+        run: chmod +x scripts/collect_all_coverage.sh && ./scripts/collect_all_coverage.sh || true
+
+      - name: Generate quality summary
+        run: dart run scripts/generate_quality_report.dart
+
+      - name: Upload quality summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: quality_summary.md

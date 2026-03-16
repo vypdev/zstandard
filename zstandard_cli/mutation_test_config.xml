@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.2">
+  <directories>
+    <directory>lib</directory>
+  </directories>
+  <commands>
+    <command expected-return="0" timeout="300">dart test</command>
+  </commands>
+  <exclude>
+    <file>**/*_generated.dart</file>
+    <file>**/*.g.dart</file>
+    <file>**/generated/**</file>
+  </exclude>
+  <threshold failure="90">
+    <rating over="100" name="A"/>
+    <rating over="90" name="B"/>
+    <rating over="80" name="C"/>
+    <rating over="70" name="D"/>
+    <rating over="60" name="E"/>
+    <rating over="0" name="F"/>
+  </threshold>
+</mutations>

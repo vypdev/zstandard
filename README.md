@@ -1,5 +1,6 @@
 [![pub package](https://img.shields.io/pub/v/zstandard.svg)](https://pub.dev/packages/zstandard)  
-[![pub package](https://img.shields.io/pub/v/zstandard_cli.svg)](https://pub.dev/packages/zstandard_cli)
+[![pub package](https://img.shields.io/pub/v/zstandard_cli.svg)](https://pub.dev/packages/zstandard_cli)  
+[![codecov](https://codecov.io/gh/landamessenger/zstandard/graph/badge.svg)](https://codecov.io/gh/landamessenger/zstandard)
 
 # Zstandard
 
@@ -26,6 +27,19 @@ This repository contains a federated Flutter plugin and a CLI package for `zstan
 |     x64     |          :heavy_check_mark:          |           :heavy_check_mark:           |          :heavy_check_mark:          |
 |    arm64    |      :heavy_check_mark:              |           :heavy_check_mark:           |       :heavy_check_mark:             |
 | Precompiled |                 Yes                  |                  Yes                   |                 Yes                  |
+
+---
+
+## Documentation
+
+Full documentation is in the [**docs/**](docs/README.md) directory, including:
+
+- [Getting started](docs/guides/getting-started.md)
+- [Architecture](docs/architecture/overview.md)
+- [API reference](docs/api/main-api.md)
+- [Platform guides](docs/platforms/)
+- [Development and contributing](docs/development/CONTRIBUTING.md)
+- [Troubleshooting](docs/troubleshooting/common-issues.md)
 
 ---
 
