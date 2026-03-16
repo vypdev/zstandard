@@ -57,6 +57,14 @@ jobs:
         working-directory: zstandard_web/example
         run: flutter pub get
 
+      - name: Update Google Chrome (match ChromeDriver)
+        run: |
+          if brew list --cask google-chrome &>/dev/null; then
+            brew upgrade --cask google-chrome
+          else
+            echo "Chrome not installed via Homebrew, skipping upgrade"
+          fi
+
       - name: Install ChromeDriver
         run: brew install chromedriver
 
