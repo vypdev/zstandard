@@ -21,7 +21,7 @@ jobs:
     name: Analyze Linux
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
@@ -40,7 +40,7 @@ jobs:
     name: Test Linux
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
@@ -85,7 +85,7 @@ jobs:
     name: Dry Run Publish Linux
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:

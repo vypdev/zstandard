@@ -20,7 +20,7 @@ jobs:
     name: Analyze CLI
     runs-on: [self-hosted, macOS]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
@@ -40,7 +40,7 @@ jobs:
     runs-on: [self-hosted, macOS]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
@@ -95,7 +95,7 @@ jobs:
     name: Dry Run Publish CLI
     runs-on: [self-hosted, macOS]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:

@@ -21,7 +21,7 @@ jobs:
     name: Analyze Windows
     runs-on: [self-hosted, Windows]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get dependencies
         working-directory: zstandard_windows
@@ -37,7 +37,7 @@ jobs:
     name: Test Windows
     runs-on: [self-hosted, Windows]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get dependencies
         working-directory: zstandard_windows
@@ -70,7 +70,7 @@ jobs:
     name: Dry Run Publish Windows
     runs-on: [self-hosted, Windows]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get dependencies
         working-directory: zstandard_windows

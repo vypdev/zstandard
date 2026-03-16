@@ -22,7 +22,7 @@ jobs:
     name: Analyze Platform Interface
     runs-on: [self-hosted, macOS]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
@@ -41,7 +41,7 @@ jobs:
     name: Test Platform Interface
     runs-on: [self-hosted, macOS]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
@@ -78,7 +78,7 @@ jobs:
     name: Dry Run Publish Platform Interface
     runs-on: [self-hosted, macOS]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: subosito/flutter-action@v1
         with:
