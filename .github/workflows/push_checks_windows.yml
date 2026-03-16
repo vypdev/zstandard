@@ -60,7 +60,7 @@ jobs:
         run: flutter test integration_test/ -d windows
 
       - name: Check coverage threshold (95%) and upload to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: zstandard_windows/coverage/lcov.info
           flags: windows

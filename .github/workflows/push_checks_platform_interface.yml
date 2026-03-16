@@ -72,7 +72,7 @@ jobs:
           if (( $(echo "$COVERAGE < 85" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 85%"; exit 1; fi
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: zstandard_platform_interface/coverage/lcov.info
           flags: platform_interface
