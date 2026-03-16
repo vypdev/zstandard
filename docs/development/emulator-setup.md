@@ -104,21 +104,63 @@ Then run `./scripts/manage_android_emulator.sh create` again.
 
 ---
 
-## Web (Chrome)
+## Web (Chrome + ChromeDriver)
 
-Web tests do not use an emulator; they run in Chrome. Ensure Chrome is installed. From the repo root:
+Web tests run in Chrome. The script runs both **unit tests** (`flutter test -d chrome`) and **integration tests** (`flutter drive` with a local web server and ChromeDriver).
+
+### Prerequisites
+
+- **Chrome**: Installed and on PATH.
+- **ChromeDriver** (for integration tests only): Must be on PATH and listen on port **4444**. Flutter uses it to drive the browser for integration tests.
+  - Install: `brew install chromedriver` (macOS), or [download](https://googlechromelabs.github.io/chrome-for-testing/) a version that matches your Chrome.
+  - **macOS**: If a security popup says "chromedriver cannot be opened" or "Apple could not verify...", remove the quarantine attribute:  
+    `xattr -d com.apple.quarantine "$(which chromedriver)"`  
+    If that fails (e.g. symlink), use the real binary path (e.g. `/opt/homebrew/Caskroom/chromedriver/<version>/chromedriver-mac-arm64/chromedriver`).
+  - See [Flutter: Test in a web browser](https://docs.flutter.dev/testing/integration-tests#web).
+
+### Script: `scripts/test_web_integration.sh`
+
+From the repo root:
 
 ```bash
 ./scripts/test_web_integration.sh
 ```
 
-Or from `zstandard_web`:
+This runs:
+
+1. **Unit tests** in Chrome (`zstandard_web` package tests).
+2. **Integration tests** via `flutter drive --target=integration_test/... -d web-server`, which starts a local server and uses ChromeDriver to control Chrome (headless). If ChromeDriver is not running on port 4444, the script tries to start it; if that fails, integration tests are skipped and the script still succeeds if unit tests passed.
+
+### Running integration tests manually
+
+If the script skips integration tests (ChromeDriver not available), start ChromeDriver in another terminal, then run the script again:
+
+```bash
+# Terminal 1
+chromedriver --port=4444
+
+# Terminal 2 (repo root)
+./scripts/test_web_integration.sh
+```
+
+Or run only the integration tests from the example app:
+
+```bash
+chromedriver --port=4444 &
+cd zstandard_web/example
+flutter drive \
+  --driver=test_driver/integration_test.dart \
+  --target=integration_test/zstandard_web_integration_test.dart \
+  -d web-server --web-port=8080
+```
+
+### Unit tests only (no ChromeDriver)
+
+From `zstandard_web`:
 
 ```bash
 flutter test -d chrome
 ```
-
-If Chrome is not found, install it or ensure it is on the PATH. On CI, Chrome is typically available on the runner.
 
 ---
 
