@@ -1,7 +1,11 @@
 zstandard_cli/zstd/
+.zstd_upstream/
 .idea/
 */.idea/
 */build/
 */coverage/
 
 */*.lock
+.env
+.android_emulator.pid
+.android_emulator.log

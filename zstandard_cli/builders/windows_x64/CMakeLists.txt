@@ -5,28 +5,23 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_windows_library VERSION 0.0.1 LANGUAGES C)
 
-# Encuentra los archivos C de Zstd
+set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../zstd")
 file(GLOB ZSTD_SRC
-        "../../src/*.c"
-        "../../src/common/*.c"
-        "../../src/compress/*.c"
-        "../../src/decompress/*.c"
+        "${ZSTD_ROOT}/common/*.c"
+        "${ZSTD_ROOT}/compress/*.c"
+        "${ZSTD_ROOT}/decompress/*.c"
 )
 
-# Agrega el ejecutable para el plugin
-add_library(zstandard_windows SHARED
-        ${ZSTD_SRC}
-)
+add_library(zstandard_windows SHARED ${ZSTD_SRC})
 
 target_include_directories(zstandard_windows PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/common"
-    "${CMAKE_CURRENT_SOURCE_DIR}/compress"
-    "${CMAKE_CURRENT_SOURCE_DIR}/decompress"
+    "${ZSTD_ROOT}"
+    "${ZSTD_ROOT}/common"
+    "${ZSTD_ROOT}/compress"
+    "${ZSTD_ROOT}/decompress"
 )
 
 set_target_properties(zstandard_windows PROPERTIES
-  PUBLIC_HEADER zstandard_windows.h
   OUTPUT_NAME "zstandard_windows"
 )
 

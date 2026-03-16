@@ -5,28 +5,23 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_macos_library VERSION 0.0.1 LANGUAGES C)
 
-# Encuentra los archivos C de Zstd
-file(GLOB ZSTD_SRC
-        "../../src/common/*.c"
-        "../../src/compress/*.c"
-        "../../src/decompress/*.c"
+set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../zstd")
+file(GLOB ZSTD_SRC_FILES
+        "${ZSTD_ROOT}/common/*.c"
+        "${ZSTD_ROOT}/compress/*.c"
+        "${ZSTD_ROOT}/decompress/*.c"
 )
 
-# Agrega el ejecutable para el plugin
-add_library(zstandard_macos SHARED
-        # "Classes/plugin_code.cpp"
-        ${ZSTD_SRC}
-)
+add_library(zstandard_macos SHARED ${ZSTD_SRC_FILES})
 
 target_include_directories(zstandard_macos PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/common"
-    "${CMAKE_CURRENT_SOURCE_DIR}/compress"
-    "${CMAKE_CURRENT_SOURCE_DIR}/decompress"
+    "${ZSTD_ROOT}"
+    "${ZSTD_ROOT}/common"
+    "${ZSTD_ROOT}/compress"
+    "${ZSTD_ROOT}/decompress"
 )
 
 set_target_properties(zstandard_macos PROPERTIES
-  PUBLIC_HEADER zstandard_macos.h
   OUTPUT_NAME "zstandard_macos"
 )
 
