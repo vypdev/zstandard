@@ -53,6 +53,12 @@ jobs:
         working-directory: zstandard_android/example
         run: flutter pub get
 
+      - name: Set up JDK 17 (required by sdkmanager/avdmanager)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Create and start emulator
         run: |
           chmod +x scripts/manage_android_emulator.sh
