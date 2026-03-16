@@ -7,7 +7,7 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-      - '!master'
+    #  - '!master'
     #paths:
     #  - "zstandard_macos/**"
 
@@ -29,7 +29,6 @@ jobs:
         with:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          architecture: x64
 
       - name: Get dependencies
         working-directory: zstandard_macos
@@ -49,7 +48,6 @@ jobs:
         with:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          architecture: x64
 
       - name: Ensure macOS framework and get dependencies
         run: |
@@ -89,7 +87,6 @@ jobs:
         with:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          architecture: x64
 
       - name: Get dependencies
         working-directory: zstandard_macos
