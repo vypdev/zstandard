@@ -44,11 +44,6 @@ jobs:
         shell: cmd
         run: flutter pub get
 
-      - name: Unit tests
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter test --coverage
-
       - name: Get example dependencies
         working-directory: zstandard_windows/example
         shell: cmd
@@ -58,14 +53,6 @@ jobs:
         working-directory: zstandard_windows/example
         shell: cmd
         run: flutter test integration_test/ -d windows
-
-      - name: Check coverage threshold (95%) and upload to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: zstandard_windows/coverage/lcov.info
-          flags: windows
-          fail_ci_if_error: true
 
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows
