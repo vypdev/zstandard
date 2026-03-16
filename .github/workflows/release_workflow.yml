@@ -830,6 +830,21 @@ jobs:
         shell: cmd
         run: flutter pub get
 
+      - name: Unit tests
+        working-directory: zstandard_windows
+        shell: cmd
+        run: flutter test
+
+      - name: Get example dependencies
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter pub get
+
+      - name: Run integration tests
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter test integration_test/ -d windows
+
   windows_publish_dry_run:
     name: Dry Run Publish Windows
     runs-on: [self-hosted, Windows]
@@ -929,6 +944,18 @@ jobs:
       - name: Get dependencies
         working-directory: zstandard_linux
         run: flutter pub get
+
+      - name: Unit tests
+        working-directory: zstandard_linux
+        run: flutter test
+
+      - name: Get example dependencies
+        working-directory: zstandard_linux/example
+        run: flutter pub get
+
+      - name: Run integration tests
+        working-directory: zstandard_linux/example
+        run: flutter test integration_test/ -d linux
 
   linux_publish_dry_run:
     name: Dry Run Publish Linux
@@ -1033,9 +1060,43 @@ jobs:
         working-directory: zstandard_web
         run: flutter pub get
 
-      - name: Test check
+      - name: Unit tests
         working-directory: zstandard_web
-        run: flutter test
+        run: flutter test -d chrome
+
+      - name: Get example dependencies
+        working-directory: zstandard_web/example
+        run: flutter pub get
+
+      - name: Install ChromeDriver
+        run: brew install chromedriver
+
+      - name: Remove ChromeDriver quarantine (macOS)
+        run: |
+          CHROMEDRIVER_BIN=$(command -v chromedriver)
+          while [[ -L "$CHROMEDRIVER_BIN" ]]; do
+            NEXT=$(readlink "$CHROMEDRIVER_BIN")
+            [[ "$NEXT" != /* ]] && NEXT="$(dirname "$CHROMEDRIVER_BIN")/$NEXT"
+            CHROMEDRIVER_BIN=$NEXT
+          done
+          if [[ -f "$CHROMEDRIVER_BIN" ]] && xattr "$CHROMEDRIVER_BIN" 2>/dev/null | grep -q com.apple.quarantine; then
+            xattr -d com.apple.quarantine "$CHROMEDRIVER_BIN" 2>/dev/null || true
+          fi
+
+      - name: Start ChromeDriver
+        run: |
+          chromedriver --port=4444 &
+          sleep 3
+          lsof -i:4444 || (echo "ChromeDriver failed to start"; exit 1)
+
+      - name: Run integration tests (flutter drive + ChromeDriver)
+        working-directory: zstandard_web/example
+        run: |
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/zstandard_web_integration_test.dart \
+            -d web-server \
+            --web-port=8080
 
   web_publish_dry_run:
     name: Dry Run Publish Web

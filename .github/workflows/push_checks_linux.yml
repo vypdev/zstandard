@@ -51,9 +51,17 @@ jobs:
         working-directory: zstandard_linux
         run: flutter pub get
 
-      - name: Test check
+      - name: Unit tests
         working-directory: zstandard_linux
         run: flutter test --coverage
+
+      - name: Get example dependencies
+        working-directory: zstandard_linux/example
+        run: flutter pub get
+
+      - name: Run integration tests
+        working-directory: zstandard_linux/example
+        run: flutter test integration_test/ -d linux
 
       - name: Install lcov
         run: sudo apt-get update && sudo apt-get install -y lcov
