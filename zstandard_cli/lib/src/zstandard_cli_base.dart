@@ -85,11 +85,10 @@ class ZstandardCLI implements ZstandardInterface {
         compressedSize,
       );
 
-      if (decompressedSize > 0) {
-        return Uint8List.fromList(dst.asTypedList(decompressedSize));
-      } else {
+      if (decompressedSize < 0) {
         return null;
       }
+      return Uint8List.fromList(dst.asTypedList(decompressedSize));
     } finally {
       malloc.free(src);
       malloc.free(dst);
