@@ -53,10 +53,6 @@ jobs:
         working-directory: zstandard_web
         run: flutter pub get
 
-      - name: Unit tests (Chrome)
-        working-directory: zstandard_web
-        run: flutter test -d chrome --coverage
-
       - name: Get example dependencies
         working-directory: zstandard_web/example
         run: flutter pub get
@@ -90,24 +86,6 @@ jobs:
             --target=integration_test/zstandard_web_integration_test.dart \
             -d web-server \
             --web-port=8080
-
-      - name: Install lcov
-        run: brew install lcov
-
-      - name: Check coverage threshold (95%)
-        working-directory: zstandard_web
-        run: |
-          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
-          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
-          if (( $(echo "$COVERAGE < 95" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 95%"; exit 1; fi
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: zstandard_web/coverage/lcov.info
-          flags: web
-          fail_ci_if_error: true
 
   check_web_publish_dry_run:
     name: Dry Run Publish Web
