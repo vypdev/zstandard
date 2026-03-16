@@ -12,9 +12,11 @@ on:
     #  - "zstandard_macos/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_macos_analyze:
@@ -26,7 +28,8 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: x64
 
       - name: Get dependencies
         working-directory: zstandard_macos
@@ -45,7 +48,8 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: x64
 
       - name: Ensure macOS framework and get dependencies
         run: |
@@ -84,7 +88,8 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          architecture: x64
 
       - name: Get dependencies
         working-directory: zstandard_macos

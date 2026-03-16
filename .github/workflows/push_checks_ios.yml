@@ -12,9 +12,11 @@ on:
     #  - "zstandard_ios/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_ios_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_ios
@@ -45,7 +47,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_ios/example
@@ -89,7 +91,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_ios

@@ -7,6 +7,9 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+
 jobs:
   generate_report:
     name: Generate quality report
@@ -18,7 +21,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Collect coverage from all packages
         run: chmod +x scripts/collect_all_coverage.sh && ./scripts/collect_all_coverage.sh || true

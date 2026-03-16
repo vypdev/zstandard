@@ -32,9 +32,9 @@ defaults:
 permissions:
   contents: read
 
-# Tool versions in one place. zstd source is at repo root (zstd/); update it manually when needed.
+# Tool versions: FLUTTER_VERSION from org variable vars.FLUTTER_VERSION (fallback for forks/local).
 env:
-  FLUTTER_VERSION: "3.41.4"
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   update_files:
