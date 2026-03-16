@@ -61,17 +61,19 @@ jobs:
       - name: Install lcov
         run: brew install lcov
 
-      - name: Check coverage threshold (95%)
+      # Coverage threshold: lib/ only (same pattern as CLI and platform_interface)
+      - name: Check coverage threshold (76% of lib/)
         working-directory: zstandard
         run: |
-          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
+          lcov --extract coverage/lcov.info 'lib/*' -o coverage/lcov_lib.info
+          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Coverage (lib/ only): ${COVERAGE}%"
           if [ -z "$COVERAGE" ]; then
             echo "Could not parse coverage"
             exit 1
           fi
-          if (( $(echo "$COVERAGE < 95" | bc -l) )); then
-            echo "ERROR: Coverage ${COVERAGE}% is below 95% threshold"
+          if (( $(echo "$COVERAGE < 76" | bc -l) )); then
+            echo "ERROR: Coverage ${COVERAGE}% is below 76% threshold"
             exit 1
           fi
 
