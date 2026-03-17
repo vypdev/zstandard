@@ -6,7 +6,27 @@ cmake_minimum_required(VERSION 3.14)
 
 project(zstandard_windows_library VERSION 0.0.1 LANGUAGES C)
 
-set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../zstd")
+# Find zstd: allow override, else search upward from plugin dir (works from repo and from example symlink)
+if(DEFINED ENV{ZSTD_ROOT})
+  set(ZSTD_ROOT "$ENV{ZSTD_ROOT}")
+endif()
+if(NOT ZSTD_ROOT OR NOT EXISTS "${ZSTD_ROOT}/common")
+  set(ZSTD_ROOT "")
+  get_filename_component(SEARCH_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)  # plugin root
+  while(SEARCH_DIR)
+    if(EXISTS "${SEARCH_DIR}/zstd/common")
+      set(ZSTD_ROOT "${SEARCH_DIR}/zstd")
+      break()
+    endif()
+    get_filename_component(SEARCH_DIR "${SEARCH_DIR}" DIRECTORY)
+    if(SEARCH_DIR STREQUAL "")
+      break()
+    endif()
+  endwhile()
+endif()
+if(NOT ZSTD_ROOT OR NOT EXISTS "${ZSTD_ROOT}/common")
+  message(FATAL_ERROR "zstd source not found. Set ZSTD_ROOT or ensure zstd is a sibling of the repo (e.g. zstandard/zstd).")
+endif()
 
 file(GLOB ZSTD_SRC
     "${ZSTD_ROOT}/common/*.c"
