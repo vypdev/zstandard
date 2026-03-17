@@ -5,8 +5,6 @@ on:
     branches:
       - '**'
       - '!develop'
-      - '!release/**'
-      - '!hotfix/**'
       - '!master'
     #paths:
     #  - "zstandard_cli/**"
@@ -70,7 +68,7 @@ jobs:
         working-directory: zstandard_cli
         run: |
           lcov --extract coverage/lcov.info '*zstandard_cli/lib/*' -o coverage/lcov_lib.info
-          lcov --remove coverage/lcov_lib.info '*bindings_generated*' -o coverage/lcov_lib.info
+          lcov --remove coverage/lcov_lib.info '*bindings_generated*' -o coverage/lcov_lib.info --ignore-errors unused
           COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
           echo "Coverage (lib/ excluding generated): ${COVERAGE}%"
           if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
