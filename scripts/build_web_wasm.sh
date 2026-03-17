@@ -16,6 +16,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ZSTD_ROOT="$ROOT/zstd"
 OUT_BLOB="$ROOT/zstandard_web/blob"
 OUT_EXAMPLE_WEB="$ROOT/zstandard_web/example/web"
+OUT_ZSTANDARD_EXAMPLE_WEB="$ROOT/zstandard/example/web"
 
 if [[ ! -d "$ZSTD_ROOT" || ! -f "$ZSTD_ROOT/zstd.h" ]]; then
   echo "Error: Canonical zstd source not found at $ZSTD_ROOT (expected zstd.h)."
@@ -147,7 +148,7 @@ async function decompressData(compressedData) {
 }
 WRAPPER_JS
 
-mkdir -p "$OUT_BLOB" "$OUT_EXAMPLE_WEB"
+mkdir -p "$OUT_BLOB" "$OUT_EXAMPLE_WEB" "$OUT_ZSTANDARD_EXAMPLE_WEB"
 
 # Replace the wasm filename in the generated JS to match what we'll copy
 sed -i.bak 's/zstd_generated\.wasm/zstd.wasm/g' zstd_generated.js
@@ -155,11 +156,14 @@ rm -f zstd_generated.js.bak
 
 cp zstd_generated.wasm "$OUT_BLOB/zstd.wasm"
 cp zstd_generated.wasm "$OUT_EXAMPLE_WEB/zstd.wasm"
+cp zstd_generated.wasm "$OUT_ZSTANDARD_EXAMPLE_WEB/zstd.wasm"
 cp zstd_generated.js "$OUT_BLOB/zstd.js"
 cp zstd_generated.js "$OUT_EXAMPLE_WEB/zstd.js"
+cp zstd_generated.js "$OUT_ZSTANDARD_EXAMPLE_WEB/zstd.js"
 rm -f "$ZSTD_ROOT/zstd_generated.js" "$ZSTD_ROOT/zstd_generated.wasm"
 
 echo "Done. zstd.js and zstd.wasm have been written to:"
 echo "  - $OUT_BLOB/"
 echo "  - $OUT_EXAMPLE_WEB/"
+echo "  - $OUT_ZSTANDARD_EXAMPLE_WEB/"
 echo "Built from the same zstd/ source used by Android, iOS, macOS, Windows, Linux, and CLI."
