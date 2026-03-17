@@ -51,6 +51,9 @@ emcc -O3 \
   -s EXPORT_NAME="zstdWasmModule" \
   -s EXPORTED_FUNCTIONS="['_ZSTD_compress','_ZSTD_decompress','_malloc','_free','_ZSTD_getFrameContentSize','_ZSTD_compressBound']" \
   -s EXPORTED_RUNTIME_METHODS="['HEAPU8']" \
+  -s INITIAL_MEMORY=134217728 \
+  -s ALLOW_MEMORY_GROWTH=1 \
+  -s MAXIMUM_MEMORY=2147483648 \
   -o zstd_generated.js
 
 if [[ ! -f zstd_generated.js || ! -f zstd_generated.wasm ]]; then
