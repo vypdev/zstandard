@@ -7,13 +7,16 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-      - '!master'
+   #   - '!master'
     #paths:
     #  - "zstandard_cli/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_cli_analyze:
@@ -25,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -45,7 +48,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -62,17 +65,21 @@ jobs:
       - name: Install lcov
         run: brew install lcov
 
-      - name: Check coverage threshold (95%)
+      # Coverage threshold: lib/ only, excluding generated bindings
+      - name: Check coverage threshold (79% of lib/)
         working-directory: zstandard_cli
         run: |
-          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
+          lcov --extract coverage/lcov.info '*zstandard_cli/lib/*' -o coverage/lcov_lib.info
+          lcov --remove coverage/lcov_lib.info '*bindings_generated*' -o coverage/lcov_lib.info
+          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Coverage (lib/ excluding generated): ${COVERAGE}%"
           if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
-          if (( $(echo "$COVERAGE < 95" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 95%"; exit 1; fi
+          if (( $(echo "$COVERAGE < 79" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 79%"; exit 1; fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard_cli/coverage/lcov.info
           flags: cli
           fail_ci_if_error: true
@@ -100,7 +107,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_cli

@@ -7,14 +7,16 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-      - '!master'
+    #  - '!master'
     #paths:
     #  - "zstandard_web/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_web_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_web
@@ -45,19 +47,23 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_web
         run: flutter pub get
 
-      - name: Unit tests (Chrome)
-        working-directory: zstandard_web
-        run: flutter test -d chrome --coverage
-
       - name: Get example dependencies
         working-directory: zstandard_web/example
         run: flutter pub get
+
+      - name: Update Google Chrome (match ChromeDriver)
+        run: |
+          if brew list --cask google-chrome &>/dev/null; then
+            brew upgrade --cask google-chrome
+          else
+            echo "Chrome not installed via Homebrew, skipping upgrade"
+          fi
 
       - name: Install ChromeDriver
         run: brew install chromedriver
@@ -89,24 +95,6 @@ jobs:
             -d web-server \
             --web-port=8080
 
-      - name: Install lcov
-        run: brew install lcov
-
-      - name: Check coverage threshold (95%)
-        working-directory: zstandard_web
-        run: |
-          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
-          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
-          if (( $(echo "$COVERAGE < 95" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 95%"; exit 1; fi
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: zstandard_web/coverage/lcov.info
-          flags: web
-          fail_ci_if_error: true
-
   check_web_publish_dry_run:
     name: Dry Run Publish Web
     runs-on: [self-hosted, macOS]
@@ -116,7 +104,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_web

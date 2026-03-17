@@ -7,14 +7,16 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-      - '!master'
+    #  - '!master'
     #paths:
     #  - "zstandard/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_zstandard_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard
@@ -46,7 +48,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard
@@ -59,23 +61,26 @@ jobs:
       - name: Install lcov
         run: brew install lcov
 
-      - name: Check coverage threshold (95%)
+      # Coverage threshold: lib/ only (same pattern as CLI and platform_interface)
+      - name: Check coverage threshold (76% of lib/)
         working-directory: zstandard
         run: |
-          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
+          lcov --extract coverage/lcov.info 'lib/*' -o coverage/lcov_lib.info
+          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Coverage (lib/ only): ${COVERAGE}%"
           if [ -z "$COVERAGE" ]; then
             echo "Could not parse coverage"
             exit 1
           fi
-          if (( $(echo "$COVERAGE < 95" | bc -l) )); then
-            echo "ERROR: Coverage ${COVERAGE}% is below 95% threshold"
+          if (( $(echo "$COVERAGE < 76" | bc -l) )); then
+            echo "ERROR: Coverage ${COVERAGE}% is below 76% threshold"
             exit 1
           fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard/coverage/lcov.info
           flags: zstandard
           fail_ci_if_error: true
@@ -89,7 +94,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard

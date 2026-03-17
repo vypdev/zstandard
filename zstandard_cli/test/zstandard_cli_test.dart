@@ -6,6 +6,7 @@ import 'package:leak_tracker_testing/leak_tracker_testing.dart';
 import 'package:test/test.dart';
 import 'package:zstandard_cli/zstandard_cli.dart';
 import 'package:zstandard_cli/src/utils/constants.dart';
+import 'package:zstandard_cli/src/utils/lib_loader.dart';
 
 void main() {
   final bool skipPlatform = !Platform.isMacOS && !Platform.isWindows && !Platform.isLinux;
@@ -23,6 +24,36 @@ void main() {
       final version = await cli.getPlatformVersion();
       expect(version, isNotNull);
       expect(version, isNotEmpty);
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
+
+    test('getPlatformVersion starts with platform name', () async {
+      if (skipPlatform) return;
+      final cli = ZstandardCLI();
+      final version = await cli.getPlatformVersion();
+      if (Platform.isMacOS) {
+        expect(version, startsWith('macOS '));
+      } else if (Platform.isWindows) {
+        expect(version, startsWith('Windows '));
+      } else if (Platform.isLinux) {
+        expect(version, startsWith('Linux '));
+      }
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
+
+    test('getZstdLibraryPath returns path with lib/src/bin and platform extension', () {
+      if (skipPlatform) return;
+      final libPath = getZstdLibraryPath();
+      expect(libPath, contains('lib'));
+      expect(libPath, contains('src'));
+      expect(libPath, contains('bin'));
+      if (Platform.isWindows) {
+        expect(libPath, endsWith('.dll'));
+        expect(libPath, anyOf(contains('arm64'), contains('x64')));
+      } else if (Platform.isMacOS) {
+        expect(libPath, endsWith('.dylib'));
+      } else if (Platform.isLinux) {
+        expect(libPath, endsWith('.so'));
+        expect(libPath, anyOf(contains('arm64'), contains('x64')));
+      }
     }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
 
     test('ZstandardCLI can be instantiated on supported platform', () {

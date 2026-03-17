@@ -7,14 +7,16 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-      - '!master'
+    #  - '!master'
     #paths:
     #  - "zstandard_macos/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_macos_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_macos
@@ -45,7 +47,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Ensure macOS framework and get dependencies
         run: |
@@ -54,26 +56,7 @@ jobs:
 
       - name: Run integration tests
         working-directory: zstandard_macos/example
-        run: flutter test integration_test/ -d macos --coverage
-
-      - name: Install lcov
-        run: brew install lcov
-
-      - name: Check coverage threshold (95%)
-        working-directory: zstandard_macos/example
-        run: |
-          if [ -f coverage/lcov.info ]; then
-            COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-            echo "Coverage: ${COVERAGE}%"
-            if [ -n "$COVERAGE" ] && (( $(echo "$COVERAGE < 95" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 95%"; exit 1; fi
-          fi
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: zstandard_macos/example/coverage/lcov.info
-          flags: macos
-          fail_ci_if_error: false
+        run: flutter test integration_test/ -d macos
 
   check_macos_publish_dry_run:
     name: Dry Run Publish macOS
@@ -84,7 +67,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_macos

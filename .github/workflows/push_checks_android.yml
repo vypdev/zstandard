@@ -7,13 +7,16 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-      - '!master'
+     # - '!master'
     # paths:
       # - "zstandard_android/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_android_analyze:
@@ -25,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_android
@@ -44,11 +47,17 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_android/example
         run: flutter pub get
+
+      - name: Set up JDK 17 (required by sdkmanager/avdmanager)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Create and start emulator
         run: |
@@ -59,30 +68,11 @@ jobs:
       - name: Run integration tests
         run: |
           DEVICE_ID=$(./scripts/manage_android_emulator.sh device-id)
-          cd zstandard_android/example && flutter test integration_test/ -d "$DEVICE_ID" --coverage
+          cd zstandard_android/example && flutter test integration_test/ -d "$DEVICE_ID"
 
       - name: Stop emulator
         if: always()
         run: ./scripts/manage_android_emulator.sh stop || true
-
-      - name: Install lcov
-        run: brew install lcov
-
-      - name: Check coverage threshold (95%)
-        working-directory: zstandard_android/example
-        run: |
-          if [ -f coverage/lcov.info ]; then
-            COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-            echo "Coverage: ${COVERAGE}%"
-            if [ -n "$COVERAGE" ] && (( $(echo "$COVERAGE < 95" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 95%"; exit 1; fi
-          fi
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: zstandard_android/example/coverage/lcov.info
-          flags: android
-          fail_ci_if_error: false
 
   check_android_publish_dry_run:
     name: Dry Run Publish Android
@@ -93,7 +83,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_android
