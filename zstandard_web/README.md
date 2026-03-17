@@ -37,13 +37,13 @@ void act() async {
 
 ## Generation
 
-The repo builds `zstd.js` and `zstd.wasm` from the **same** `zstd/` C source used by Android, iOS, macOS, Windows, Linux, and the CLI. From the repository root:
+The repo builds `zstd.js` and `zstd.wasm` from the **same** `zstandard_native/src/zstd/` C source used by Android, iOS, macOS, Windows, Linux, and the CLI. From the repository root:
 
 ```bash
 ./scripts/build_web_wasm.sh
 ```
 
-This script temporarily clones [Emscripten SDK (emsdk)](https://github.com/emscripten-core/emsdk), installs and activates the latest toolchain, compiles `zstd/` with `emcc`, appends the `compressData`/`decompressData` wrappers, and writes `zstd.js` and `zstd.wasm` to both `zstandard_web/blob/` and `zstandard_web/example/web/`. Requires `git` and a shell; the emsdk directory is removed after the build.
+This script temporarily clones [Emscripten SDK (emsdk)](https://github.com/emscripten-core/emsdk), installs and activates the latest toolchain, compiles `zstandard_native/src/zstd/` with `emcc`, appends the `compressData`/`decompressData` wrappers, and writes `zstd.js` and `zstd.wasm` to both `zstandard_web/blob/` and `zstandard_web/example/web/`. Requires `git` and a shell; the emsdk directory is removed after the build.
 
 ### Manual generation (optional)
 
@@ -62,8 +62,8 @@ If you prefer to build by hand (e.g. from upstream facebook/zstd or a custom ems
 2. From the **repo root** (so the single source `zstd/` is used), or from a clone of [facebook/zstd](https://github.com/facebook/zstd) (using `lib/` in place of `zstd/`), run:
 
    ```bash
-   # If using this repo's zstd/ (from repo root):
-   cd zstd
+   # If using this repo's zstandard_native (from repo root):
+   cd zstandard_native/src/zstd
    emcc -O3 \
        $(find common -name "*.c") \
        $(find compress -name "*.c") \
