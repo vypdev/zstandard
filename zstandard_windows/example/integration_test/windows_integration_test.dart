@@ -2,11 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:kiri_check/kiri_check.dart';
 import 'package:leak_tracker/leak_tracker.dart';
 import 'package:leak_tracker_testing/leak_tracker_testing.dart';
 import 'package:zstandard_windows/zstandard_windows.dart';
 
-/// Windows integration tests: run on device. No platform skips.
+/// Windows integration tests: single file to avoid Flutter bug with multiple
+/// integration test files on desktop (second file fails to start app).
+/// Run: flutter test integration_test/ -d windows
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -15,6 +18,11 @@ void main() {
 
     setUp(() {
       zstandard = ZstandardWindows();
+    });
+
+    test('getPlatformVersion returns non-empty string', () async {
+      final String? version = await zstandard.getPlatformVersion();
+      expect(version?.isNotEmpty, true);
     });
 
     test('compress and decompress small data', () async {
@@ -74,5 +82,26 @@ void main() {
         expect(leaks, isLeakFree);
       }
     });
+  });
+
+  group('Property-based tests', () {
+    property(
+      'roundtrip: decompress(compress(x)) == x',
+      () {
+        forAll(
+          binary(minLength: 0, maxLength: 1000),
+          (List<int> data) async {
+            final input = Uint8List.fromList(data);
+            final z = ZstandardWindows();
+            final compressed = await z.compress(input, 3);
+            if (compressed == null) return;
+            final decompressed = await z.decompress(compressed);
+            expect(decompressed, isNotNull);
+            expect(List<int>.from(decompressed!), data);
+          },
+          maxExamples: 100,
+        );
+      },
+    );
   });
 }

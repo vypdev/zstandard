@@ -13,15 +13,19 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Running Windows integration tests...
 cd zstandard_windows\example
-flutter test integration_test/ -d windows
+call flutter clean
+call flutter pub get
+echo Running Windows integration tests...
+call flutter test integration_test\windows_integration_test.dart -d windows
 set EXIT_CODE=%errorlevel%
 cd /d "%ROOT%"
 
 if %EXIT_CODE% equ 0 (
+  echo.
   echo Windows integration tests passed.
 ) else (
+  echo.
   echo Windows integration tests failed.
 )
 exit /b %EXIT_CODE%
