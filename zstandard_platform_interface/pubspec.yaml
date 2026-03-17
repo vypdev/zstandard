@@ -1,6 +1,6 @@
 name: zstandard_platform_interface
 description: A common platform interface for the zstandard plugin.
-version: 1.3.30
+version: 1.3.31
 
 homepage: https://landamessenger.com
 repository: https://github.com/landamessenger/zstandard/tree/master/zstandard_platform_interface
