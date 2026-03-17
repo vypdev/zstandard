@@ -7,7 +7,7 @@ on:
       - '!develop'
       - '!release/**'
       - '!hotfix/**'
-    #  - '!master'
+      - '!master'
     #paths:
     #  - "zstandard_linux/**"
 
