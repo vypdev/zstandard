@@ -37,7 +37,6 @@ class ZstandardWeb extends ZstandardPlatform {
 
   @override
   Future<Uint8List?> compress(Uint8List data, int compressionLevel) async {
-    if (data.length < 9) return data;
     var promise = html.window.callMethodVarArgs('compressData'.toJS, [
       data.toJS,
       compressionLevel.toJS,
@@ -52,7 +51,6 @@ class ZstandardWeb extends ZstandardPlatform {
 
   @override
   Future<Uint8List?> decompress(Uint8List data) async {
-    if (data.length < 9) return data;
     var promise = html.window.callMethodVarArgs('decompressData'.toJS, [
       data.toJS,
     ]) as JSPromise;
