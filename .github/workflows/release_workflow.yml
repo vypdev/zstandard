@@ -86,6 +86,7 @@ jobs:
       - name: Copy CHANGELOG.md
         run: |
           cp CHANGELOG.md "zstandard_platform_interface/CHANGELOG.md"
+          cp CHANGELOG.md "zstandard_native/CHANGELOG.md"
           cp CHANGELOG.md "zstandard_android/CHANGELOG.md"
           cp CHANGELOG.md "zstandard_ios/CHANGELOG.md"
           cp CHANGELOG.md "zstandard_macos/CHANGELOG.md"
@@ -419,10 +420,78 @@ jobs:
           max_attempts: 200
           command: cd zstandard_android && flutter pub get
 
+  zstandard_native_publish_dry_run:
+    name: Dry Run Publish zstandard_native
+    runs-on: [self-hosted, macOS, X64]
+    needs: platform_interface_publish
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update branch
+        run: |
+          git pull origin ${{ github.ref }} --rebase
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Get dependencies
+        working-directory: zstandard_native
+        run: flutter pub get
+
+      - name: Publish Dry Run
+        working-directory: zstandard_native
+        run: dart pub publish --dry-run
+
+  zstandard_native_publish:
+    name: Publish zstandard_native
+    runs-on: [self-hosted, macOS, X64]
+    needs: [zstandard_native_publish_dry_run]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update branch
+        run: |
+          git pull origin ${{ github.ref }} --rebase
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Get dependencies
+        working-directory: zstandard_native
+        run: flutter pub get
+
+      - name: Publish
+        working-directory: zstandard_native
+        run: dart pub publish -f
+
+      - name: Compress folder
+        run: zip -r zstandard_native.zip ./zstandard_native
+
+      - name: Upload asset to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ github.event.inputs.version }}"
+          files: "./zstandard_native.zip"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_android && flutter pub get
+
   android_publish_dry_run:
     name: Dry Run Publish Android
     runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
+    needs: zstandard_native_publish
     steps:
       - uses: actions/checkout@v4
 
@@ -449,7 +518,7 @@ jobs:
   android_publish:
     name: Publish Android
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, android_publish_dry_run]
+    needs: [zstandard_native_publish, android_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -489,7 +558,7 @@ jobs:
   ios_publish_dry_run:
     name: Dry Run Publish iOS
     runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
+    needs: zstandard_native_publish
     steps:
       - uses: actions/checkout@v4
 
@@ -516,7 +585,7 @@ jobs:
   ios_publish:
     name: Publish iOS
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, ios_publish_dry_run]
+    needs: [zstandard_native_publish, ios_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -556,7 +625,7 @@ jobs:
   macos_publish_dry_run:
     name: Dry Run Publish macOS
     runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
+    needs: zstandard_native_publish
     steps:
       - uses: actions/checkout@v4
 
@@ -583,7 +652,7 @@ jobs:
   macos_publish:
     name: Publish macOS
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, macos_publish_dry_run]
+    needs: [zstandard_native_publish, macos_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -623,7 +692,7 @@ jobs:
   windows_publish_dry_run:
     name: Dry Run Publish Windows
     runs-on: [self-hosted, Windows]
-    needs: platform_interface_publish
+    needs: zstandard_native_publish
     steps:
       - uses: actions/checkout@v4
 
@@ -647,7 +716,7 @@ jobs:
   windows_publish:
     name: Publish Windows
     runs-on: [self-hosted, Windows]
-    needs: [platform_interface_publish, windows_publish_dry_run]
+    needs: [zstandard_native_publish, windows_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -685,7 +754,7 @@ jobs:
   linux_publish_dry_run:
     name: Dry Run Publish Linux
     runs-on: [self-hosted, Linux]
-    needs: platform_interface_publish
+    needs: zstandard_native_publish
     steps:
       - uses: actions/checkout@v4
 
@@ -712,7 +781,7 @@ jobs:
   linux_publish:
     name: Publish Linux
     runs-on: [self-hosted, Linux]
-    needs: [platform_interface_publish, linux_publish_dry_run]
+    needs: [zstandard_native_publish, linux_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -752,7 +821,7 @@ jobs:
   web_publish_dry_run:
     name: Dry Run Publish Web
     runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
+    needs: zstandard_native_publish
     steps:
       - uses: actions/checkout@v4
 
@@ -779,7 +848,7 @@ jobs:
   web_publish:
     name: Publish Web
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, web_publish_dry_run]
+    needs: [zstandard_native_publish, web_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -846,7 +915,7 @@ jobs:
   cli_publish:
     name: Publish CLI
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, cli_publish_dry_run]
+    needs: [zstandard_native_publish, cli_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -913,7 +982,7 @@ jobs:
   zstandard_publish:
     name: Publish Zstandard
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, zstandard_publish_dry_run]
+    needs: [zstandard_native_publish, zstandard_publish_dry_run]
     permissions:
       contents: write
     steps:
@@ -954,13 +1023,14 @@ jobs:
     name: Rollback / recovery guide
     runs-on: ubuntu-latest
     if: always()
-    needs: [ platform_interface_publish, android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish, cli_publish, zstandard_publish ]
+    needs: [ platform_interface_publish, zstandard_native_publish, android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish, cli_publish, zstandard_publish ]
     permissions:
       contents: read
     steps:
       - name: Output rollback guide
         if: >-
           needs.platform_interface_publish.result == 'failure' ||
+          needs.zstandard_native_publish.result == 'failure' ||
           needs.android_publish.result == 'failure' ||
           needs.ios_publish.result == 'failure' ||
           needs.web_publish.result == 'failure' ||
@@ -976,13 +1046,13 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### pub.dev cannot delete published versions. If some packages were published:" >> "$GITHUB_STEP_SUMMARY"
           echo "1. Decide whether to publish the remaining packages manually or bump to a new patch version." >> "$GITHUB_STEP_SUMMARY"
-          echo "2. To finish manually: run \`dart pub publish -f\` in each package directory (in dependency order: platform_interface → platforms → cli → zstandard)." >> "$GITHUB_STEP_SUMMARY"
+          echo "2. To finish manually: run \`dart pub publish -f\` in each package directory (in dependency order: platform_interface → zstandard_native → platforms → cli → zstandard)." >> "$GITHUB_STEP_SUMMARY"
           echo "3. Ensure \`dart pub login\` has been run on the runners (pub credentials available)." >> "$GITHUB_STEP_SUMMARY"
           echo "4. Re-run this workflow with the same version only to retry failed jobs; fix the cause first." >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "### Dependency order for manual publish:" >> "$GITHUB_STEP_SUMMARY"
           echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "zstandard_platform_interface → zstandard_android, zstandard_ios, zstandard_web, zstandard_macos, zstandard_windows, zstandard_linux → zstandard_cli → zstandard" >> "$GITHUB_STEP_SUMMARY"
+          echo "zstandard_platform_interface → zstandard_native → zstandard_android, zstandard_ios, zstandard_web, zstandard_macos, zstandard_windows, zstandard_linux → zstandard_cli → zstandard" >> "$GITHUB_STEP_SUMMARY"
           echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "See \`docs/deployment/RUNBOOK.md\` for full runbook." >> "$GITHUB_STEP_SUMMARY"
