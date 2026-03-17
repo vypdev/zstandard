@@ -1,6 +1,6 @@
 // The Android Gradle Plugin builds the native code with the Android NDK.
 
-group = "com.landamessenger.zstandard_android"
+group = "dev.vyp.zstandard_android"
 version = "1.0"
 
 buildscript {
@@ -12,7 +12,7 @@ buildscript {
 
     dependencies {
         // The Android Gradle Plugin knows how to build native code with the NDK.
-        classpath("com.android.tools.build:gradle:8.1.0")
+        classpath("com.android.tools.build:gradle:8.2.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }
@@ -29,7 +29,7 @@ apply plugin: "kotlin-android"
 
 android {
     if (project.android.hasProperty("namespace")) {
-        namespace = "com.landamessenger.zstandard_android"
+        namespace = "dev.vyp.zstandard_android"
     }
 
     // Bumping the plugin compileSdk version requires all clients of this plugin
@@ -45,7 +45,7 @@ android {
     // Invoke the shared CMake build with the Android Gradle Plugin.
     externalNativeBuild {
         cmake {
-            path = "../src/CMakeLists.txt"
+            path = "../zstd_build/CMakeLists.txt"
 
             // The default CMake version for the Android Gradle Plugin is 3.10.2.
             // https://developer.android.com/studio/projects/install-ndk#vanilla_cmake
@@ -72,6 +72,7 @@ android {
 
     defaultConfig {
         minSdk = 21
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Support 16KB page size for Android 15+
         externalNativeBuild {
@@ -81,4 +82,10 @@ android {
             }
         }
     }
+}
+
+dependencies {
+    androidTestImplementation "androidx.test:runner:1.5.2"
+    androidTestImplementation "androidx.test.ext:junit:1.1.5"
+    androidTestImplementation "androidx.test:rules:1.5.0"
 }

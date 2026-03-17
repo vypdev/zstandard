@@ -6,7 +6,7 @@ The web implementation of [`zstandard`](https://pub.dev/packages/zstandard).
 
 ## Installation
 
-Copy [`zstd.js`](https://github.com/landamessenger/zstandard/raw/refs/heads/master/zstandard_web/blob/zstd.js) and [`zstd.wasm`](https://github.com/landamessenger/zstandard/raw/refs/heads/master/zstandard_web/blob/zstd.wasm) on the `web/` folder.
+Copy `zstd.js` and `zstd.wasm` into your app's `web/` folder. In this repo they are built into `zstandard_web/blob/` and `zstandard_web/example/web/` (see Generation below).
 
 Include the library inside the `<head>`:
 
@@ -33,45 +33,51 @@ void act() async {
 }
 ```
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_web/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_web/images/sample.png"></p>
 
 ## Generation
 
-`zstd.js` and `zstd.wasm` generation:
+The repo builds `zstd.js` and `zstd.wasm` from the **same** `zstd/` C source used by Android, iOS, macOS, Windows, Linux, and the CLI. From the repository root:
 
 ```bash
-git clone https://github.com/emscripten-core/emsdk.git
-
-git clone https://github.com/facebook/zstd.git
+./scripts/build_web_wasm.sh
 ```
 
-```bash
-cd emsdk
+This script temporarily clones [Emscripten SDK (emsdk)](https://github.com/emscripten-core/emsdk), installs and activates the latest toolchain, compiles `zstd/` with `emcc`, appends the `compressData`/`decompressData` wrappers, and writes `zstd.js` and `zstd.wasm` to both `zstandard_web/blob/` and `zstandard_web/example/web/`. Requires `git` and a shell; the emsdk directory is removed after the build.
 
-./emsdk install latest
+### Manual generation (optional)
 
-./emsdk activate latest
+If you prefer to build by hand (e.g. from upstream facebook/zstd or a custom emsdk install):
 
-source "$HOME/Development/emsdk/emsdk_env.sh"
+1. Install and activate [Emscripten SDK](https://github.com/emscripten-core/emsdk):
 
-echo 'source "$HOME/Development/emsdk/emsdk_env.sh"' >> $HOME/.zprofile
+   ```bash
+   git clone https://github.com/emscripten-core/emsdk.git
+   cd emsdk
+   ./emsdk install latest
+   ./emsdk activate latest
+   source ./emsdk_env.sh
+   ```
 
-```
+2. From the **repo root** (so the single source `zstd/` is used), or from a clone of [facebook/zstd](https://github.com/facebook/zstd) (using `lib/` in place of `zstd/`), run:
 
-```bash
-cd zstd
+   ```bash
+   # If using this repo's zstd/ (from repo root):
+   cd zstd
+   emcc -O3 \
+       $(find common -name "*.c") \
+       $(find compress -name "*.c") \
+       $(find decompress -name "*.c") \
+       -I. -Icommon -Icompress -Idecompress \
+       -s WASM=1 \
+       -s EXPORT_NAME="zstdWasmModule" \
+       -s EXPORTED_FUNCTIONS="['_ZSTD_compress', '_ZSTD_decompress', '_malloc', '_free', '_ZSTD_getFrameContentSize', '_ZSTD_compressBound']" \
+       -o zstd.js
+   ```
 
-emcc -O3 \
-    $(find lib/compress -name "*.c") \
-    $(find lib/decompress -name "*.c") \
-    $(find lib/common -name "*.c") \
-    -s WASM=1 \
-    -s EXPORT_NAME="zstdWasmModule" \
-    -s EXPORTED_FUNCTIONS="['_ZSTD_compress', '_ZSTD_decompress', '_malloc', '_free', '_ZSTD_getFrameContentSize', '_ZSTD_compressBound']" \
-    -o zstd.js
-```
+   Then append the `compressData` and `decompressData` wrappers to the generated `zstd.js` (see below), and copy `zstd.js` and `zstd.wasm` into both `zstandard_web/blob/` and `zstandard_web/example/web/`.
 
-Include `compressData` and `decompressData` methods in `zstd.js`:
+Add these methods to `zstd.js` (the script does this automatically):
 
 ```js
 function compressData(inputData, compressionLevel) {
@@ -137,3 +143,31 @@ function decompressData(compressedData) {
     }
 }
 ```
+
+## API
+
+- **ZstandardWeb()** — Creates the web platform implementation.
+- **compress(Uint8List data, int compressionLevel)** — Compresses `data` (level 1–22). Returns compressed bytes or throws on failure. Inputs smaller than 9 bytes may be returned unchanged.
+- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or throws on failure.
+- **getPlatformVersion()** — Returns the browser user agent string.
+
+## Architecture
+
+This package uses JavaScript interop and WebAssembly. It calls the global `compressData` and `decompressData` functions provided by `zstd.js`, which in turn use the compiled zstd C library in `zstd.wasm`. No Dart FFI; runs on the main thread.
+
+## Testing
+
+From the package directory:
+
+```bash
+flutter test
+```
+
+Unit tests run only on web (skipped on other platforms). Full integration tests are in `example/integration_test/` and require a browser (e.g. `flutter test integration_test/ -d chrome`).
+
+## Troubleshooting
+
+- **compressData / decompressData is not defined**: Ensure `zstd.js` is included in your `web/index.html` and loads before the Flutter app.
+- **WASM load failed**: Ensure `zstd.wasm` is served from the same origin and the path is correct. Check the browser console and network tab.
+
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.

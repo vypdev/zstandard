@@ -52,13 +52,39 @@ dart run zstandard_cli:compress any_file 3
 dart run zstandard_cli:decompress any_file.zstd
 ```
 
+## API
+
+- **ZstandardCLI()** — Creates a CLI instance. The native library is loaded once per process.
+- **compress(Uint8List data, {int compressionLevel = 3})** — Compresses `data` (level 1–22). Returns compressed bytes or `null`.
+- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or `null`.
+- **getPlatformVersion()** — Returns a string like `"macOS 14.0"` or `"Windows 10"`.
+
+Extensions on `Uint8List?`: **compress({int compressionLevel = 3})** and **decompress()**; they return `null` when the receiver is null.
+
+## Testing
+
+From the package directory:
+
+```bash
+dart test
+```
+
+Tests run only on supported platforms (macOS, Windows, Linux). They cover small/large/empty data, compression levels, and null-safe extensions.
+
+## Troubleshooting
+
+- **Library not found**: Ensure you are on macOS, Windows, or Linux (x64 or arm64). Update the package with `dart pub upgrade zstandard_cli`.
+- **Compress/decompress returns null**: Check that input is valid; for decompress, ensure the data is a complete zstd frame.
+
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
+
 ---
 
 The images provided below illustrate how to use `zstandard_cli` for compression and decompression on different platforms.
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/macos_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/macos_decompression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/windows_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/windows_decompression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/linux_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/linux_decompression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/macos_compression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/macos_decompression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/windows_compression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/windows_decompression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/linux_compression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/linux_decompression_sample.png"></p>

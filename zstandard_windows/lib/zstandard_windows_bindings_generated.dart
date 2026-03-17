@@ -8,14 +8,14 @@
 // ignore_for_file: type=lint
 import 'dart:ffi' as ffi;
 
-/// Bindings for `src/zstandard_windows.h`.
+/// Bindings for zstd.h from repo root zstd/.
 ///
 /// Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
 ///
 class ZstandardWindowsBindings {
   /// Holds the symbol lookup function.
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
-  _lookup;
+      _lookup;
 
   /// The symbols are looked up in [dynamicLibrary].
   ZstandardWindowsBindings(ffi.DynamicLibrary dynamicLibrary)
@@ -24,7 +24,7 @@ class ZstandardWindowsBindings {
   /// The symbols are looked up with [lookup].
   ZstandardWindowsBindings.fromLookup(
       ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
-      lookup)
+          lookup)
       : _lookup = lookup;
 
   /// ! ZSTD_versionNumber() :
@@ -34,10 +34,10 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_versionNumberPtr =
-  _lookup<ffi.NativeFunction<ffi.UnsignedInt Function()>>(
-      'ZSTD_versionNumber');
+      _lookup<ffi.NativeFunction<ffi.UnsignedInt Function()>>(
+          'ZSTD_versionNumber');
   late final _ZSTD_versionNumber =
-  _ZSTD_versionNumberPtr.asFunction<int Function()>();
+      _ZSTD_versionNumberPtr.asFunction<int Function()>();
 
   /// ! ZSTD_versionString() :
   /// Return runtime library version, like "1.4.5". Requires v1.3.0+.
@@ -46,12 +46,12 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_versionStringPtr =
-  _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
-      'ZSTD_versionString');
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function()>>(
+          'ZSTD_versionString');
   late final _ZSTD_versionString =
-  _ZSTD_versionStringPtr.asFunction<ffi.Pointer<ffi.Char> Function()>();
+      _ZSTD_versionStringPtr.asFunction<ffi.Pointer<ffi.Char> Function()>();
 
-  /// Simple API
+  /// Simple Core API
   /// /
   /// /*! ZSTD_compress() :
   /// Compresses `src` content as a single zstd compressed frame into already allocated `dst`.
@@ -60,12 +60,12 @@ class ZstandardWindowsBindings {
   /// @return : compressed size written into `dst` (<= `dstCapacity),
   /// or an error code if it fails (which can be tested using ZSTD_isError()).
   int ZSTD_compress(
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      int compressionLevel,
-      ) {
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+    int compressionLevel,
+  ) {
     return _ZSTD_compress(
       dst,
       dstCapacity,
@@ -93,11 +93,11 @@ class ZstandardWindowsBindings {
   /// @return : the number of bytes decompressed into `dst` (<= `dstCapacity`),
   /// or an errorCode if it fails (which can be tested using ZSTD_isError()).
   int ZSTD_decompress(
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int compressedSize,
-      ) {
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int compressedSize,
+  ) {
     return _ZSTD_decompress(
       dst,
       dstCapacity,
@@ -114,9 +114,9 @@ class ZstandardWindowsBindings {
       int Function(ffi.Pointer<ffi.Void>, int, ffi.Pointer<ffi.Void>, int)>();
 
   int ZSTD_getFrameContentSize(
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ) {
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+  ) {
     return _ZSTD_getFrameContentSize(
       src,
       srcSize,
@@ -130,16 +130,16 @@ class ZstandardWindowsBindings {
   late final _ZSTD_getFrameContentSize = _ZSTD_getFrameContentSizePtr
       .asFunction<int Function(ffi.Pointer<ffi.Void>, int)>();
 
-  /// ! ZSTD_getDecompressedSize() :
-  /// NOTE: This function is now obsolete, in favor of ZSTD_getFrameContentSize().
+  /// ! ZSTD_getDecompressedSize() (obsolete):
+  /// This function is now obsolete, in favor of ZSTD_getFrameContentSize().
   /// Both functions work the same way, but ZSTD_getDecompressedSize() blends
   /// "empty", "unknown" and "error" results to the same return value (0),
   /// while ZSTD_getFrameContentSize() gives them separate return values.
   /// @return : decompressed size of `src` frame content _if known and not empty_, 0 otherwise.
   int ZSTD_getDecompressedSize(
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ) {
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+  ) {
     return _ZSTD_getDecompressedSize(
       src,
       srcSize,
@@ -159,10 +159,15 @@ class ZstandardWindowsBindings {
   /// @return : the compressed size of the first frame starting at `src`,
   /// suitable to pass as `srcSize` to `ZSTD_decompress` or similar,
   /// or an error code if input is invalid
+  /// Note 1: this method is called _find*() because it's not enough to read the header,
+  /// it may have to scan through the frame's content, to reach its end.
+  /// Note 2: this method also works with Skippable Frames. In which case,
+  /// it returns the size of the complete skippable frame,
+  /// which is always equal to its content size + 8 bytes for headers.
   int ZSTD_findFrameCompressedSize(
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ) {
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+  ) {
     return _ZSTD_findFrameCompressedSize(
       src,
       srcSize,
@@ -170,63 +175,78 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_findFrameCompressedSizePtr = _lookup<
-      ffi
+          ffi
           .NativeFunction<ffi.Size Function(ffi.Pointer<ffi.Void>, ffi.Size)>>(
       'ZSTD_findFrameCompressedSize');
   late final _ZSTD_findFrameCompressedSize = _ZSTD_findFrameCompressedSizePtr
       .asFunction<int Function(ffi.Pointer<ffi.Void>, int)>();
 
   int ZSTD_compressBound(
-      int srcSize,
-      ) {
+    int srcSize,
+  ) {
     return _ZSTD_compressBound(
       srcSize,
     );
   }
 
   late final _ZSTD_compressBoundPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Size)>>(
-      'ZSTD_compressBound');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Size)>>(
+          'ZSTD_compressBound');
   late final _ZSTD_compressBound =
-  _ZSTD_compressBoundPtr.asFunction<int Function(int)>();
+      _ZSTD_compressBoundPtr.asFunction<int Function(int)>();
 
-  /// ZSTD_isError() :
+  /// ======  Error helper functions  ======*/
+  /// /* ZSTD_isError() :
   /// Most ZSTD_* functions returning a size_t value can be tested for error,
   /// using ZSTD_isError().
   /// @return 1 if error, 0 otherwise
   int ZSTD_isError(
-      int code,
-      ) {
+    int result,
+  ) {
     return _ZSTD_isError(
-      code,
+      result,
     );
   }
 
   late final _ZSTD_isErrorPtr =
-  _lookup<ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Size)>>(
-      'ZSTD_isError');
+      _lookup<ffi.NativeFunction<ffi.UnsignedInt Function(ffi.Size)>>(
+          'ZSTD_isError');
   late final _ZSTD_isError = _ZSTD_isErrorPtr.asFunction<int Function(int)>();
 
+  int ZSTD_getErrorCode(
+    int functionResult,
+  ) {
+    return _ZSTD_getErrorCode(
+      functionResult,
+    );
+  }
+
+  late final _ZSTD_getErrorCodePtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Size)>>(
+          'ZSTD_getErrorCode');
+  late final _ZSTD_getErrorCode =
+      _ZSTD_getErrorCodePtr.asFunction<int Function(int)>();
+
   ffi.Pointer<ffi.Char> ZSTD_getErrorName(
-      int code,
-      ) {
+    int result,
+  ) {
     return _ZSTD_getErrorName(
-      code,
+      result,
     );
   }
 
   late final _ZSTD_getErrorNamePtr =
-  _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Size)>>(
-      'ZSTD_getErrorName');
+      _lookup<ffi.NativeFunction<ffi.Pointer<ffi.Char> Function(ffi.Size)>>(
+          'ZSTD_getErrorName');
   late final _ZSTD_getErrorName =
-  _ZSTD_getErrorNamePtr.asFunction<ffi.Pointer<ffi.Char> Function(int)>();
+      _ZSTD_getErrorNamePtr.asFunction<ffi.Pointer<ffi.Char> Function(int)>();
 
   int ZSTD_minCLevel() {
     return _ZSTD_minCLevel();
   }
 
   late final _ZSTD_minCLevelPtr =
-  _lookup<ffi.NativeFunction<ffi.Int Function()>>('ZSTD_minCLevel');
+      _lookup<ffi.NativeFunction<ffi.Int Function()>>('ZSTD_minCLevel');
   late final _ZSTD_minCLevel = _ZSTD_minCLevelPtr.asFunction<int Function()>();
 
   int ZSTD_maxCLevel() {
@@ -234,7 +254,7 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_maxCLevelPtr =
-  _lookup<ffi.NativeFunction<ffi.Int Function()>>('ZSTD_maxCLevel');
+      _lookup<ffi.NativeFunction<ffi.Int Function()>>('ZSTD_maxCLevel');
   late final _ZSTD_maxCLevel = _ZSTD_maxCLevelPtr.asFunction<int Function()>();
 
   int ZSTD_defaultCLevel() {
@@ -242,33 +262,33 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_defaultCLevelPtr =
-  _lookup<ffi.NativeFunction<ffi.Int Function()>>('ZSTD_defaultCLevel');
+      _lookup<ffi.NativeFunction<ffi.Int Function()>>('ZSTD_defaultCLevel');
   late final _ZSTD_defaultCLevel =
-  _ZSTD_defaultCLevelPtr.asFunction<int Function()>();
+      _ZSTD_defaultCLevelPtr.asFunction<int Function()>();
 
   ffi.Pointer<ZSTD_CCtx> ZSTD_createCCtx() {
     return _ZSTD_createCCtx();
   }
 
   late final _ZSTD_createCCtxPtr =
-  _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_CCtx> Function()>>(
-      'ZSTD_createCCtx');
+      _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_CCtx> Function()>>(
+          'ZSTD_createCCtx');
   late final _ZSTD_createCCtx =
-  _ZSTD_createCCtxPtr.asFunction<ffi.Pointer<ZSTD_CCtx> Function()>();
+      _ZSTD_createCCtxPtr.asFunction<ffi.Pointer<ZSTD_CCtx> Function()>();
 
   int ZSTD_freeCCtx(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+  ) {
     return _ZSTD_freeCCtx(
       cctx,
     );
   }
 
   late final _ZSTD_freeCCtxPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CCtx>)>>(
-      'ZSTD_freeCCtx');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CCtx>)>>(
+          'ZSTD_freeCCtx');
   late final _ZSTD_freeCCtx =
-  _ZSTD_freeCCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_CCtx>)>();
+      _ZSTD_freeCCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_CCtx>)>();
 
   /// ! ZSTD_compressCCtx() :
   /// Same as ZSTD_compress(), using an explicit ZSTD_CCtx.
@@ -276,15 +296,15 @@ class ZstandardWindowsBindings {
   /// this function compresses at the requested compression level,
   /// __ignoring any other advanced parameter__ .
   /// If any advanced parameter was set using the advanced API,
-  /// they will all be reset. Only `compressionLevel` remains.
+  /// they will all be reset. Only @compressionLevel remains.
   int ZSTD_compressCCtx(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      int compressionLevel,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+    int compressionLevel,
+  ) {
     return _ZSTD_compressCCtx(
       cctx,
       dst,
@@ -313,36 +333,36 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_createDCtxPtr =
-  _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_DCtx> Function()>>(
-      'ZSTD_createDCtx');
+      _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_DCtx> Function()>>(
+          'ZSTD_createDCtx');
   late final _ZSTD_createDCtx =
-  _ZSTD_createDCtxPtr.asFunction<ffi.Pointer<ZSTD_DCtx> Function()>();
+      _ZSTD_createDCtxPtr.asFunction<ffi.Pointer<ZSTD_DCtx> Function()>();
 
   int ZSTD_freeDCtx(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+  ) {
     return _ZSTD_freeDCtx(
       dctx,
     );
   }
 
   late final _ZSTD_freeDCtxPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DCtx>)>>(
-      'ZSTD_freeDCtx');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DCtx>)>>(
+          'ZSTD_freeDCtx');
   late final _ZSTD_freeDCtx =
-  _ZSTD_freeDCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_DCtx>)>();
+      _ZSTD_freeDCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_DCtx>)>();
 
   /// ! ZSTD_decompressDCtx() :
   /// Same as ZSTD_decompress(),
   /// requires an allocated ZSTD_DCtx.
   /// Compatible with sticky parameters (see below).
   int ZSTD_decompressDCtx(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+  ) {
     return _ZSTD_decompressDCtx(
       dctx,
       dst,
@@ -371,18 +391,18 @@ class ZstandardWindowsBindings {
   /// - an error status field, which must be tested using ZSTD_isError()
   /// - lower and upper bounds, both inclusive
   ZSTD_bounds ZSTD_cParam_getBounds(
-      int cParam,
-      ) {
+    int cParam,
+  ) {
     return _ZSTD_cParam_getBounds(
       cParam,
     );
   }
 
   late final _ZSTD_cParam_getBoundsPtr =
-  _lookup<ffi.NativeFunction<ZSTD_bounds Function(ffi.Int32)>>(
-      'ZSTD_cParam_getBounds');
+      _lookup<ffi.NativeFunction<ZSTD_bounds Function(ffi.Int32)>>(
+          'ZSTD_cParam_getBounds');
   late final _ZSTD_cParam_getBounds =
-  _ZSTD_cParam_getBoundsPtr.asFunction<ZSTD_bounds Function(int)>();
+      _ZSTD_cParam_getBoundsPtr.asFunction<ZSTD_bounds Function(int)>();
 
   /// ! ZSTD_CCtx_setParameter() :
   /// Set one compression parameter, selected by enum ZSTD_cParameter.
@@ -395,10 +415,10 @@ class ZstandardWindowsBindings {
   /// new parameters will be active for next job only (after a flush()).
   /// @return : an error code (which can be tested using ZSTD_isError()).
   int ZSTD_CCtx_setParameter(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      int param,
-      int value,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    int param,
+    int value,
+  ) {
     return _ZSTD_CCtx_setParameter(
       cctx,
       param,
@@ -428,9 +448,9 @@ class ZstandardWindowsBindings {
   /// or invoking immediately ZSTD_compressStream2(,,,ZSTD_e_end),
   /// this value is automatically overridden by srcSize instead.
   int ZSTD_CCtx_setPledgedSrcSize(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      int pledgedSrcSize,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    int pledgedSrcSize,
+  ) {
     return _ZSTD_CCtx_setPledgedSrcSize(
       cctx,
       pledgedSrcSize,
@@ -458,9 +478,9 @@ class ZstandardWindowsBindings {
   /// otherwise the reset fails, and function returns an error value (which can be tested using ZSTD_isError())
   /// - Both : similar to resetting the session, followed by resetting parameters.
   int ZSTD_CCtx_reset(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      int reset,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    int reset,
+  ) {
     return _ZSTD_CCtx_reset(
       cctx,
       reset,
@@ -486,12 +506,12 @@ class ZstandardWindowsBindings {
   /// @return : compressed size written into `dst` (<= `dstCapacity),
   /// or an error code if it fails (which can be tested using ZSTD_isError()).
   int ZSTD_compress2(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+  ) {
     return _ZSTD_compress2(
       cctx,
       dst,
@@ -516,18 +536,18 @@ class ZstandardWindowsBindings {
   /// - an error status field, which must be tested using ZSTD_isError()
   /// - both lower and upper bounds, inclusive
   ZSTD_bounds ZSTD_dParam_getBounds(
-      int dParam,
-      ) {
+    int dParam,
+  ) {
     return _ZSTD_dParam_getBounds(
       dParam,
     );
   }
 
   late final _ZSTD_dParam_getBoundsPtr =
-  _lookup<ffi.NativeFunction<ZSTD_bounds Function(ffi.Int32)>>(
-      'ZSTD_dParam_getBounds');
+      _lookup<ffi.NativeFunction<ZSTD_bounds Function(ffi.Int32)>>(
+          'ZSTD_dParam_getBounds');
   late final _ZSTD_dParam_getBounds =
-  _ZSTD_dParam_getBoundsPtr.asFunction<ZSTD_bounds Function(int)>();
+      _ZSTD_dParam_getBoundsPtr.asFunction<ZSTD_bounds Function(int)>();
 
   /// ! ZSTD_DCtx_setParameter() :
   /// Set one compression parameter, selected by enum ZSTD_dParameter.
@@ -536,10 +556,10 @@ class ZstandardWindowsBindings {
   /// Setting a parameter is only possible during frame initialization (before starting decompression).
   /// @return : 0, or an error code (which can be tested using ZSTD_isError()).
   int ZSTD_DCtx_setParameter(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      int param,
-      int value,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    int param,
+    int value,
+  ) {
     return _ZSTD_DCtx_setParameter(
       dctx,
       param,
@@ -560,9 +580,9 @@ class ZstandardWindowsBindings {
   /// Parameters can only be reset when no active frame is being decompressed.
   /// @return : 0, or an error code, which can be tested with ZSTD_isError()
   int ZSTD_DCtx_reset(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      int reset,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    int reset,
+  ) {
     return _ZSTD_DCtx_reset(
       dctx,
       reset,
@@ -582,22 +602,22 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_createCStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_CStream> Function()>>(
-      'ZSTD_createCStream');
+      _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_CStream> Function()>>(
+          'ZSTD_createCStream');
   late final _ZSTD_createCStream =
-  _ZSTD_createCStreamPtr.asFunction<ffi.Pointer<ZSTD_CStream> Function()>();
+      _ZSTD_createCStreamPtr.asFunction<ffi.Pointer<ZSTD_CStream> Function()>();
 
   int ZSTD_freeCStream(
-      ffi.Pointer<ZSTD_CStream> zcs,
-      ) {
+    ffi.Pointer<ZSTD_CStream> zcs,
+  ) {
     return _ZSTD_freeCStream(
       zcs,
     );
   }
 
   late final _ZSTD_freeCStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CStream>)>>(
-      'ZSTD_freeCStream');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CStream>)>>(
+          'ZSTD_freeCStream');
   late final _ZSTD_freeCStream = _ZSTD_freeCStreamPtr.asFunction<
       int Function(ffi.Pointer<ZSTD_CStream>)>();
 
@@ -628,11 +648,11 @@ class ZstandardWindowsBindings {
   /// which can be done explicitly (ZSTD_CCtx_reset()),
   /// or is sometimes implied by methods starting a new compression job (ZSTD_initCStream(), ZSTD_compressCCtx())
   int ZSTD_compressStream2(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ZSTD_outBuffer> output,
-      ffi.Pointer<ZSTD_inBuffer> input,
-      int endOp,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ZSTD_outBuffer> output,
+    ffi.Pointer<ZSTD_inBuffer> input,
+    int endOp,
+  ) {
     return _ZSTD_compressStream2(
       cctx,
       output,
@@ -666,18 +686,18 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_CStreamInSizePtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_CStreamInSize');
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_CStreamInSize');
   late final _ZSTD_CStreamInSize =
-  _ZSTD_CStreamInSizePtr.asFunction<int Function()>();
+      _ZSTD_CStreamInSizePtr.asFunction<int Function()>();
 
   int ZSTD_CStreamOutSize() {
     return _ZSTD_CStreamOutSize();
   }
 
   late final _ZSTD_CStreamOutSizePtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_CStreamOutSize');
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_CStreamOutSize');
   late final _ZSTD_CStreamOutSize =
-  _ZSTD_CStreamOutSizePtr.asFunction<int Function()>();
+      _ZSTD_CStreamOutSizePtr.asFunction<int Function()>();
 
   /// !
   /// Equivalent to:
@@ -689,9 +709,9 @@ class ZstandardWindowsBindings {
   /// Note that ZSTD_initCStream() clears any previously set dictionary. Use the new API
   /// to compress with a dictionary.
   int ZSTD_initCStream(
-      ffi.Pointer<ZSTD_CStream> zcs,
-      int compressionLevel,
-      ) {
+    ffi.Pointer<ZSTD_CStream> zcs,
+    int compressionLevel,
+  ) {
     return _ZSTD_initCStream(
       zcs,
       compressionLevel,
@@ -711,10 +731,10 @@ class ZstandardWindowsBindings {
   /// the next read size (if non-zero and not an error). ZSTD_compressStream2()
   /// returns the minimum nb of bytes left to flush (if non-zero and not an error).
   int ZSTD_compressStream(
-      ffi.Pointer<ZSTD_CStream> zcs,
-      ffi.Pointer<ZSTD_outBuffer> output,
-      ffi.Pointer<ZSTD_inBuffer> input,
-      ) {
+    ffi.Pointer<ZSTD_CStream> zcs,
+    ffi.Pointer<ZSTD_outBuffer> output,
+    ffi.Pointer<ZSTD_inBuffer> input,
+  ) {
     return _ZSTD_compressStream(
       zcs,
       output,
@@ -734,9 +754,9 @@ class ZstandardWindowsBindings {
 
   /// ! Equivalent to ZSTD_compressStream2(zcs, output, &emptyInput, ZSTD_e_flush).
   int ZSTD_flushStream(
-      ffi.Pointer<ZSTD_CStream> zcs,
-      ffi.Pointer<ZSTD_outBuffer> output,
-      ) {
+    ffi.Pointer<ZSTD_CStream> zcs,
+    ffi.Pointer<ZSTD_outBuffer> output,
+  ) {
     return _ZSTD_flushStream(
       zcs,
       output,
@@ -752,9 +772,9 @@ class ZstandardWindowsBindings {
 
   /// ! Equivalent to ZSTD_compressStream2(zcs, output, &emptyInput, ZSTD_e_end).
   int ZSTD_endStream(
-      ffi.Pointer<ZSTD_CStream> zcs,
-      ffi.Pointer<ZSTD_outBuffer> output,
-      ) {
+    ffi.Pointer<ZSTD_CStream> zcs,
+    ffi.Pointer<ZSTD_outBuffer> output,
+  ) {
     return _ZSTD_endStream(
       zcs,
       output,
@@ -774,22 +794,22 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_createDStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_DStream> Function()>>(
-      'ZSTD_createDStream');
+      _lookup<ffi.NativeFunction<ffi.Pointer<ZSTD_DStream> Function()>>(
+          'ZSTD_createDStream');
   late final _ZSTD_createDStream =
-  _ZSTD_createDStreamPtr.asFunction<ffi.Pointer<ZSTD_DStream> Function()>();
+      _ZSTD_createDStreamPtr.asFunction<ffi.Pointer<ZSTD_DStream> Function()>();
 
   int ZSTD_freeDStream(
-      ffi.Pointer<ZSTD_DStream> zds,
-      ) {
+    ffi.Pointer<ZSTD_DStream> zds,
+  ) {
     return _ZSTD_freeDStream(
       zds,
     );
   }
 
   late final _ZSTD_freeDStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DStream>)>>(
-      'ZSTD_freeDStream');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DStream>)>>(
+          'ZSTD_freeDStream');
   late final _ZSTD_freeDStream = _ZSTD_freeDStreamPtr.asFunction<
       int Function(ffi.Pointer<ZSTD_DStream>)>();
 
@@ -801,16 +821,16 @@ class ZstandardWindowsBindings {
   /// ZSTD_DCtx_reset(zds, ZSTD_reset_session_only);
   /// ZSTD_DCtx_refDDict(zds, NULL);
   int ZSTD_initDStream(
-      ffi.Pointer<ZSTD_DStream> zds,
-      ) {
+    ffi.Pointer<ZSTD_DStream> zds,
+  ) {
     return _ZSTD_initDStream(
       zds,
     );
   }
 
   late final _ZSTD_initDStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DStream>)>>(
-      'ZSTD_initDStream');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DStream>)>>(
+          'ZSTD_initDStream');
   late final _ZSTD_initDStream = _ZSTD_initDStreamPtr.asFunction<
       int Function(ffi.Pointer<ZSTD_DStream>)>();
 
@@ -836,10 +856,10 @@ class ZstandardWindowsBindings {
   /// which can be done explicitly (`ZSTD_DCtx_reset()`),
   /// or is implied for operations starting some new decompression job (`ZSTD_initDStream`, `ZSTD_decompressDCtx()`, `ZSTD_decompress_usingDict()`)
   int ZSTD_decompressStream(
-      ffi.Pointer<ZSTD_DStream> zds,
-      ffi.Pointer<ZSTD_outBuffer> output,
-      ffi.Pointer<ZSTD_inBuffer> input,
-      ) {
+    ffi.Pointer<ZSTD_DStream> zds,
+    ffi.Pointer<ZSTD_outBuffer> output,
+    ffi.Pointer<ZSTD_inBuffer> input,
+  ) {
     return _ZSTD_decompressStream(
       zds,
       output,
@@ -862,18 +882,18 @@ class ZstandardWindowsBindings {
   }
 
   late final _ZSTD_DStreamInSizePtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_DStreamInSize');
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_DStreamInSize');
   late final _ZSTD_DStreamInSize =
-  _ZSTD_DStreamInSizePtr.asFunction<int Function()>();
+      _ZSTD_DStreamInSizePtr.asFunction<int Function()>();
 
   int ZSTD_DStreamOutSize() {
     return _ZSTD_DStreamOutSize();
   }
 
   late final _ZSTD_DStreamOutSizePtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_DStreamOutSize');
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('ZSTD_DStreamOutSize');
   late final _ZSTD_DStreamOutSize =
-  _ZSTD_DStreamOutSizePtr.asFunction<int Function()>();
+      _ZSTD_DStreamOutSizePtr.asFunction<int Function()>();
 
   /// Simple dictionary API
   /// /
@@ -885,15 +905,15 @@ class ZstandardWindowsBindings {
   /// It's intended for a dictionary used only once.
   /// Note 2 : When `dict == NULL || dictSize < 8` no dictionary is used.
   int ZSTD_compress_usingDict(
-      ffi.Pointer<ZSTD_CCtx> ctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ffi.Pointer<ffi.Void> dict,
-      int dictSize,
-      int compressionLevel,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> ctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+    ffi.Pointer<ffi.Void> dict,
+    int dictSize,
+    int compressionLevel,
+  ) {
     return _ZSTD_compress_usingDict(
       ctx,
       dst,
@@ -928,14 +948,14 @@ class ZstandardWindowsBindings {
   /// It's intended for a dictionary used only once.
   /// Note : When `dict == NULL || dictSize < 8` no dictionary is used.
   int ZSTD_decompress_usingDict(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ffi.Pointer<ffi.Void> dict,
-      int dictSize,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+    ffi.Pointer<ffi.Void> dict,
+    int dictSize,
+  ) {
     return _ZSTD_decompress_usingDict(
       dctx,
       dst,
@@ -958,9 +978,9 @@ class ZstandardWindowsBindings {
               ffi.Pointer<ffi.Void>,
               ffi.Size)>>('ZSTD_decompress_usingDict');
   late final _ZSTD_decompress_usingDict =
-  _ZSTD_decompress_usingDictPtr.asFunction<
-      int Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>, int,
-          ffi.Pointer<ffi.Void>, int, ffi.Pointer<ffi.Void>, int)>();
+      _ZSTD_decompress_usingDictPtr.asFunction<
+          int Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>, int,
+              ffi.Pointer<ffi.Void>, int, ffi.Pointer<ffi.Void>, int)>();
 
   /// ! ZSTD_createCDict() :
   /// When compressing multiple messages or blocks using the same dictionary,
@@ -975,10 +995,10 @@ class ZstandardWindowsBindings {
   /// This can be useful in a pipeline featuring ZSTD_compress_usingCDict() exclusively,
   /// expecting a ZSTD_CDict parameter with any data, including those without a known dictionary.
   ffi.Pointer<ZSTD_CDict> ZSTD_createCDict(
-      ffi.Pointer<ffi.Void> dictBuffer,
-      int dictSize,
-      int compressionLevel,
-      ) {
+    ffi.Pointer<ffi.Void> dictBuffer,
+    int dictSize,
+    int compressionLevel,
+  ) {
     return _ZSTD_createCDict(
       dictBuffer,
       dictSize,
@@ -997,18 +1017,18 @@ class ZstandardWindowsBindings {
   /// Function frees memory allocated by ZSTD_createCDict().
   /// If a NULL pointer is passed, no operation is performed.
   int ZSTD_freeCDict(
-      ffi.Pointer<ZSTD_CDict> CDict,
-      ) {
+    ffi.Pointer<ZSTD_CDict> CDict,
+  ) {
     return _ZSTD_freeCDict(
       CDict,
     );
   }
 
   late final _ZSTD_freeCDictPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CDict>)>>(
-      'ZSTD_freeCDict');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CDict>)>>(
+          'ZSTD_freeCDict');
   late final _ZSTD_freeCDict =
-  _ZSTD_freeCDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_CDict>)>();
+      _ZSTD_freeCDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_CDict>)>();
 
   /// ! ZSTD_compress_usingCDict() :
   /// Compression using a digested Dictionary.
@@ -1016,13 +1036,13 @@ class ZstandardWindowsBindings {
   /// Note : compression level is _decided at dictionary creation time_,
   /// and frame parameters are hardcoded (dictID=yes, contentSize=yes, checksum=no)
   int ZSTD_compress_usingCDict(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ffi.Pointer<ZSTD_CDict> cdict,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+    ffi.Pointer<ZSTD_CDict> cdict,
+  ) {
     return _ZSTD_compress_usingCDict(
       cctx,
       dst,
@@ -1043,17 +1063,17 @@ class ZstandardWindowsBindings {
               ffi.Size,
               ffi.Pointer<ZSTD_CDict>)>>('ZSTD_compress_usingCDict');
   late final _ZSTD_compress_usingCDict =
-  _ZSTD_compress_usingCDictPtr.asFunction<
-      int Function(ffi.Pointer<ZSTD_CCtx>, ffi.Pointer<ffi.Void>, int,
-          ffi.Pointer<ffi.Void>, int, ffi.Pointer<ZSTD_CDict>)>();
+      _ZSTD_compress_usingCDictPtr.asFunction<
+          int Function(ffi.Pointer<ZSTD_CCtx>, ffi.Pointer<ffi.Void>, int,
+              ffi.Pointer<ffi.Void>, int, ffi.Pointer<ZSTD_CDict>)>();
 
   /// ! ZSTD_createDDict() :
   /// Create a digested dictionary, ready to start decompression operation without startup delay.
   /// dictBuffer can be released after DDict creation, as its content is copied inside DDict.
   ffi.Pointer<ZSTD_DDict> ZSTD_createDDict(
-      ffi.Pointer<ffi.Void> dictBuffer,
-      int dictSize,
-      ) {
+    ffi.Pointer<ffi.Void> dictBuffer,
+    int dictSize,
+  ) {
     return _ZSTD_createDDict(
       dictBuffer,
       dictSize,
@@ -1071,30 +1091,30 @@ class ZstandardWindowsBindings {
   /// Function frees memory allocated with ZSTD_createDDict()
   /// If a NULL pointer is passed, no operation is performed.
   int ZSTD_freeDDict(
-      ffi.Pointer<ZSTD_DDict> ddict,
-      ) {
+    ffi.Pointer<ZSTD_DDict> ddict,
+  ) {
     return _ZSTD_freeDDict(
       ddict,
     );
   }
 
   late final _ZSTD_freeDDictPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DDict>)>>(
-      'ZSTD_freeDDict');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DDict>)>>(
+          'ZSTD_freeDDict');
   late final _ZSTD_freeDDict =
-  _ZSTD_freeDDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_DDict>)>();
+      _ZSTD_freeDDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_DDict>)>();
 
   /// ! ZSTD_decompress_usingDDict() :
   /// Decompression using a digested Dictionary.
   /// Recommended when same dictionary is used multiple times.
   int ZSTD_decompress_usingDDict(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ffi.Pointer<ffi.Void> dst,
-      int dstCapacity,
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ffi.Pointer<ZSTD_DDict> ddict,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    ffi.Pointer<ffi.Void> dst,
+    int dstCapacity,
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+    ffi.Pointer<ZSTD_DDict> ddict,
+  ) {
     return _ZSTD_decompress_usingDDict(
       dctx,
       dst,
@@ -1115,18 +1135,18 @@ class ZstandardWindowsBindings {
               ffi.Size,
               ffi.Pointer<ZSTD_DDict>)>>('ZSTD_decompress_usingDDict');
   late final _ZSTD_decompress_usingDDict =
-  _ZSTD_decompress_usingDDictPtr.asFunction<
-      int Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>, int,
-          ffi.Pointer<ffi.Void>, int, ffi.Pointer<ZSTD_DDict>)>();
+      _ZSTD_decompress_usingDDictPtr.asFunction<
+          int Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>, int,
+              ffi.Pointer<ffi.Void>, int, ffi.Pointer<ZSTD_DDict>)>();
 
   /// ! ZSTD_getDictID_fromDict() : Requires v1.4.0+
   /// Provides the dictID stored within dictionary.
   /// if @return == 0, the dictionary is not conformant with Zstandard specification.
   /// It can still be loaded, but as a content-only dictionary.
   int ZSTD_getDictID_fromDict(
-      ffi.Pointer<ffi.Void> dict,
-      int dictSize,
-      ) {
+    ffi.Pointer<ffi.Void> dict,
+    int dictSize,
+  ) {
     return _ZSTD_getDictID_fromDict(
       dict,
       dictSize,
@@ -1145,15 +1165,15 @@ class ZstandardWindowsBindings {
   /// If @return == 0, the dictionary is not conformant to Zstandard specification, or empty.
   /// Non-conformant dictionaries can still be loaded, but as content-only dictionaries.
   int ZSTD_getDictID_fromCDict(
-      ffi.Pointer<ZSTD_CDict> cdict,
-      ) {
+    ffi.Pointer<ZSTD_CDict> cdict,
+  ) {
     return _ZSTD_getDictID_fromCDict(
       cdict,
     );
   }
 
   late final _ZSTD_getDictID_fromCDictPtr = _lookup<
-      ffi
+          ffi
           .NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ZSTD_CDict>)>>(
       'ZSTD_getDictID_fromCDict');
   late final _ZSTD_getDictID_fromCDict = _ZSTD_getDictID_fromCDictPtr
@@ -1164,15 +1184,15 @@ class ZstandardWindowsBindings {
   /// If @return == 0, the dictionary is not conformant to Zstandard specification, or empty.
   /// Non-conformant dictionaries can still be loaded, but as content-only dictionaries.
   int ZSTD_getDictID_fromDDict(
-      ffi.Pointer<ZSTD_DDict> ddict,
-      ) {
+    ffi.Pointer<ZSTD_DDict> ddict,
+  ) {
     return _ZSTD_getDictID_fromDDict(
       ddict,
     );
   }
 
   late final _ZSTD_getDictID_fromDDictPtr = _lookup<
-      ffi
+          ffi
           .NativeFunction<ffi.UnsignedInt Function(ffi.Pointer<ZSTD_DDict>)>>(
       'ZSTD_getDictID_fromDDict');
   late final _ZSTD_getDictID_fromDDict = _ZSTD_getDictID_fromDDictPtr
@@ -1189,9 +1209,9 @@ class ZstandardWindowsBindings {
   /// - This is not a Zstandard frame.
   /// When identifying the exact failure cause, it's possible to use ZSTD_getFrameHeader(), which will provide a more precise error code.
   int ZSTD_getDictID_fromFrame(
-      ffi.Pointer<ffi.Void> src,
-      int srcSize,
-      ) {
+    ffi.Pointer<ffi.Void> src,
+    int srcSize,
+  ) {
     return _ZSTD_getDictID_fromFrame(
       src,
       srcSize,
@@ -1227,10 +1247,10 @@ class ZstandardWindowsBindings {
   /// If you want to employ LDM on some large dictionary content,
   /// prefer employing ZSTD_CCtx_refPrefix() described below.
   int ZSTD_CCtx_loadDictionary(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ffi.Void> dict,
-      int dictSize,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ffi.Void> dict,
+    int dictSize,
+  ) {
     return _ZSTD_CCtx_loadDictionary(
       cctx,
       dict,
@@ -1243,8 +1263,8 @@ class ZstandardWindowsBindings {
           ffi.Size Function(ffi.Pointer<ZSTD_CCtx>, ffi.Pointer<ffi.Void>,
               ffi.Size)>>('ZSTD_CCtx_loadDictionary');
   late final _ZSTD_CCtx_loadDictionary =
-  _ZSTD_CCtx_loadDictionaryPtr.asFunction<
-      int Function(ffi.Pointer<ZSTD_CCtx>, ffi.Pointer<ffi.Void>, int)>();
+      _ZSTD_CCtx_loadDictionaryPtr.asFunction<
+          int Function(ffi.Pointer<ZSTD_CCtx>, ffi.Pointer<ffi.Void>, int)>();
 
   /// ! ZSTD_CCtx_refCDict() : Requires v1.4.0+
   /// Reference a prepared dictionary, to be used for all future compressed frames.
@@ -1259,9 +1279,9 @@ class ZstandardWindowsBindings {
   /// Referencing a new dictionary effectively "discards" any previous one.
   /// Note 2 : CDict is just referenced, its lifetime must outlive its usage within CCtx.
   int ZSTD_CCtx_refCDict(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ZSTD_CDict> cdict,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ZSTD_CDict> cdict,
+  ) {
     return _ZSTD_CCtx_refCDict(
       cctx,
       cdict,
@@ -1295,10 +1315,10 @@ class ZstandardWindowsBindings {
   /// Note 4 : By default, the prefix is interpreted as raw content (ZSTD_dct_rawContent).
   /// Use experimental ZSTD_CCtx_refPrefix_advanced() to alter dictionary interpretation.
   int ZSTD_CCtx_refPrefix(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ffi.Pointer<ffi.Void> prefix,
-      int prefixSize,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+    ffi.Pointer<ffi.Void> prefix,
+    int prefixSize,
+  ) {
     return _ZSTD_CCtx_refPrefix(
       cctx,
       prefix,
@@ -1328,10 +1348,10 @@ class ZstandardWindowsBindings {
   /// Note 3 : Use ZSTD_DCtx_loadDictionary_advanced() to take control of
   /// how dictionary content is loaded and interpreted.
   int ZSTD_DCtx_loadDictionary(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ffi.Pointer<ffi.Void> dict,
-      int dictSize,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    ffi.Pointer<ffi.Void> dict,
+    int dictSize,
+  ) {
     return _ZSTD_DCtx_loadDictionary(
       dctx,
       dict,
@@ -1344,8 +1364,8 @@ class ZstandardWindowsBindings {
           ffi.Size Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>,
               ffi.Size)>>('ZSTD_DCtx_loadDictionary');
   late final _ZSTD_DCtx_loadDictionary =
-  _ZSTD_DCtx_loadDictionaryPtr.asFunction<
-      int Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>, int)>();
+      _ZSTD_DCtx_loadDictionaryPtr.asFunction<
+          int Function(ffi.Pointer<ZSTD_DCtx>, ffi.Pointer<ffi.Void>, int)>();
 
   /// ! ZSTD_DCtx_refDDict() : Requires v1.4.0+
   /// Reference a prepared dictionary, to be used to decompress next frames.
@@ -1364,9 +1384,9 @@ class ZstandardWindowsBindings {
   /// Special: referencing a NULL DDict means "return to no-dictionary mode".
   /// Note 2 : DDict is just referenced, its lifetime must outlive its usage from DCtx.
   int ZSTD_DCtx_refDDict(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ffi.Pointer<ZSTD_DDict> ddict,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    ffi.Pointer<ZSTD_DDict> ddict,
+  ) {
     return _ZSTD_DCtx_refDDict(
       dctx,
       ddict,
@@ -1396,10 +1416,10 @@ class ZstandardWindowsBindings {
   /// Note 4 : Referencing a raw content prefix has almost no cpu nor memory cost.
   /// A full dictionary is more costly, as it requires building tables.
   int ZSTD_DCtx_refPrefix(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ffi.Pointer<ffi.Void> prefix,
-      int prefixSize,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+    ffi.Pointer<ffi.Void> prefix,
+    int prefixSize,
+  ) {
     return _ZSTD_DCtx_refPrefix(
       dctx,
       prefix,
@@ -1418,88 +1438,144 @@ class ZstandardWindowsBindings {
   /// These functions give the _current_ memory usage of selected object.
   /// Note that object memory usage can evolve (increase or decrease) over time.
   int ZSTD_sizeof_CCtx(
-      ffi.Pointer<ZSTD_CCtx> cctx,
-      ) {
+    ffi.Pointer<ZSTD_CCtx> cctx,
+  ) {
     return _ZSTD_sizeof_CCtx(
       cctx,
     );
   }
 
   late final _ZSTD_sizeof_CCtxPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CCtx>)>>(
-      'ZSTD_sizeof_CCtx');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CCtx>)>>(
+          'ZSTD_sizeof_CCtx');
   late final _ZSTD_sizeof_CCtx =
-  _ZSTD_sizeof_CCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_CCtx>)>();
+      _ZSTD_sizeof_CCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_CCtx>)>();
 
   int ZSTD_sizeof_DCtx(
-      ffi.Pointer<ZSTD_DCtx> dctx,
-      ) {
+    ffi.Pointer<ZSTD_DCtx> dctx,
+  ) {
     return _ZSTD_sizeof_DCtx(
       dctx,
     );
   }
 
   late final _ZSTD_sizeof_DCtxPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DCtx>)>>(
-      'ZSTD_sizeof_DCtx');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DCtx>)>>(
+          'ZSTD_sizeof_DCtx');
   late final _ZSTD_sizeof_DCtx =
-  _ZSTD_sizeof_DCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_DCtx>)>();
+      _ZSTD_sizeof_DCtxPtr.asFunction<int Function(ffi.Pointer<ZSTD_DCtx>)>();
 
   int ZSTD_sizeof_CStream(
-      ffi.Pointer<ZSTD_CStream> zcs,
-      ) {
+    ffi.Pointer<ZSTD_CStream> zcs,
+  ) {
     return _ZSTD_sizeof_CStream(
       zcs,
     );
   }
 
   late final _ZSTD_sizeof_CStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CStream>)>>(
-      'ZSTD_sizeof_CStream');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CStream>)>>(
+          'ZSTD_sizeof_CStream');
   late final _ZSTD_sizeof_CStream = _ZSTD_sizeof_CStreamPtr.asFunction<
       int Function(ffi.Pointer<ZSTD_CStream>)>();
 
   int ZSTD_sizeof_DStream(
-      ffi.Pointer<ZSTD_DStream> zds,
-      ) {
+    ffi.Pointer<ZSTD_DStream> zds,
+  ) {
     return _ZSTD_sizeof_DStream(
       zds,
     );
   }
 
   late final _ZSTD_sizeof_DStreamPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DStream>)>>(
-      'ZSTD_sizeof_DStream');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DStream>)>>(
+          'ZSTD_sizeof_DStream');
   late final _ZSTD_sizeof_DStream = _ZSTD_sizeof_DStreamPtr.asFunction<
       int Function(ffi.Pointer<ZSTD_DStream>)>();
 
   int ZSTD_sizeof_CDict(
-      ffi.Pointer<ZSTD_CDict> cdict,
-      ) {
+    ffi.Pointer<ZSTD_CDict> cdict,
+  ) {
     return _ZSTD_sizeof_CDict(
       cdict,
     );
   }
 
   late final _ZSTD_sizeof_CDictPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CDict>)>>(
-      'ZSTD_sizeof_CDict');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_CDict>)>>(
+          'ZSTD_sizeof_CDict');
   late final _ZSTD_sizeof_CDict =
-  _ZSTD_sizeof_CDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_CDict>)>();
+      _ZSTD_sizeof_CDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_CDict>)>();
 
   int ZSTD_sizeof_DDict(
-      ffi.Pointer<ZSTD_DDict> ddict,
-      ) {
+    ffi.Pointer<ZSTD_DDict> ddict,
+  ) {
     return _ZSTD_sizeof_DDict(
       ddict,
     );
   }
 
   late final _ZSTD_sizeof_DDictPtr =
-  _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DDict>)>>(
-      'ZSTD_sizeof_DDict');
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ZSTD_DDict>)>>(
+          'ZSTD_sizeof_DDict');
   late final _ZSTD_sizeof_DDict =
-  _ZSTD_sizeof_DDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_DDict>)>();
+      _ZSTD_sizeof_DDictPtr.asFunction<int Function(ffi.Pointer<ZSTD_DDict>)>();
+}
+
+/// -*********************************************
+/// Error codes list
+/// -*********************************************
+/// Error codes _values_ are pinned down since v1.3.1 only.
+/// Therefore, don't rely on values if you may link to any version < v1.3.1.
+///
+/// Only values < 100 are considered stable.
+///
+/// note 1 : this API shall be used with static linking only.
+/// dynamic linking is not yet officially supported.
+/// note 2 : Prefer relying on the enum than on its value whenever possible
+/// This is the only supported way to use the error list < v1.3.1
+/// note 3 : ZSTD_isError() is always correct, whatever the library version.
+abstract class ZSTD_ErrorCode {
+  static const int ZSTD_error_no_error = 0;
+  static const int ZSTD_error_GENERIC = 1;
+  static const int ZSTD_error_prefix_unknown = 10;
+  static const int ZSTD_error_version_unsupported = 12;
+  static const int ZSTD_error_frameParameter_unsupported = 14;
+  static const int ZSTD_error_frameParameter_windowTooLarge = 16;
+  static const int ZSTD_error_corruption_detected = 20;
+  static const int ZSTD_error_checksum_wrong = 22;
+  static const int ZSTD_error_literals_headerWrong = 24;
+  static const int ZSTD_error_dictionary_corrupted = 30;
+  static const int ZSTD_error_dictionary_wrong = 32;
+  static const int ZSTD_error_dictionaryCreation_failed = 34;
+  static const int ZSTD_error_parameter_unsupported = 40;
+  static const int ZSTD_error_parameter_combination_unsupported = 41;
+  static const int ZSTD_error_parameter_outOfBound = 42;
+  static const int ZSTD_error_tableLog_tooLarge = 44;
+  static const int ZSTD_error_maxSymbolValue_tooLarge = 46;
+  static const int ZSTD_error_maxSymbolValue_tooSmall = 48;
+  static const int ZSTD_error_cannotProduce_uncompressedBlock = 49;
+  static const int ZSTD_error_stabilityCondition_notRespected = 50;
+  static const int ZSTD_error_stage_wrong = 60;
+  static const int ZSTD_error_init_missing = 62;
+  static const int ZSTD_error_memory_allocation = 64;
+  static const int ZSTD_error_workSpace_tooSmall = 66;
+  static const int ZSTD_error_dstSize_tooSmall = 70;
+  static const int ZSTD_error_srcSize_wrong = 72;
+  static const int ZSTD_error_dstBuffer_null = 74;
+  static const int ZSTD_error_noForwardProgress_destFull = 80;
+  static const int ZSTD_error_noForwardProgress_inputEmpty = 82;
+
+  /// following error codes are __NOT STABLE__, they can be removed or changed in future versions
+  static const int ZSTD_error_frameIndex_tooLarge = 100;
+  static const int ZSTD_error_seekableIO = 102;
+  static const int ZSTD_error_dstBuffer_wrong = 104;
+  static const int ZSTD_error_srcBuffer_wrong = 105;
+  static const int ZSTD_error_sequenceProducer_failed = 106;
+  static const int ZSTD_error_externalSequences_invalid = 107;
+
+  /// never EVER use this value directly, it can change in future versions! Use ZSTD_isError() instead
+  static const int ZSTD_error_maxCode = 120;
 }
 
 final class ZSTD_CCtx_s extends ffi.Opaque {}
@@ -1508,13 +1584,13 @@ final class ZSTD_CCtx_s extends ffi.Opaque {}
 /// /
 /// /*= Compression context
 /// When compressing many times,
-/// it is recommended to allocate a context just once,
+/// it is recommended to allocate a compression context just once,
 /// and reuse it for each successive compression operation.
-/// This will make workload friendlier for system's memory.
+/// This will make the workload easier for system's memory.
 /// Note : re-using context is just a speed / resource optimization.
 /// It doesn't change the compression ratio, which remains identical.
-/// Note 2 : In multi-threaded environments,
-/// use one different context per thread for parallel execution.
+/// Note 2: For parallel execution in multi-threaded environments,
+/// use one different context per thread .
 typedef ZSTD_CCtx = ZSTD_CCtx_s;
 
 final class ZSTD_DCtx_s extends ffi.Opaque {}
@@ -1722,7 +1798,8 @@ abstract class ZSTD_cParameter {
   /// ZSTD_c_stableOutBuffer
   /// ZSTD_c_blockDelimiters
   /// ZSTD_c_validateSequences
-  /// ZSTD_c_useBlockSplitter
+  /// ZSTD_c_blockSplitterLevel
+  /// ZSTD_c_splitAfterSequences
   /// ZSTD_c_useRowMatchFinder
   /// ZSTD_c_prefetchCDictTables
   /// ZSTD_c_enableSeqProducerFallback
@@ -1750,6 +1827,7 @@ abstract class ZSTD_cParameter {
   static const int ZSTD_c_experimentalParam17 = 1014;
   static const int ZSTD_c_experimentalParam18 = 1015;
   static const int ZSTD_c_experimentalParam19 = 1016;
+  static const int ZSTD_c_experimentalParam20 = 1017;
 }
 
 final class ZSTD_bounds extends ffi.Struct {
@@ -1957,13 +2035,13 @@ typedef ZSTD_DDict = ZSTD_DDict_s;
 
 const int ZSTD_VERSION_MAJOR = 1;
 
-const int ZSTD_VERSION_MINOR = 5;
+const int ZSTD_VERSION_MINOR = 6;
 
-const int ZSTD_VERSION_RELEASE = 6;
+const int ZSTD_VERSION_RELEASE = 0;
 
-const int ZSTD_VERSION_NUMBER = 10506;
+const int ZSTD_VERSION_NUMBER = 10600;
 
-const String ZSTD_VERSION_STRING = '1.5.6';
+const String ZSTD_VERSION_STRING = '1.6.0';
 
 const int ZSTD_CLEVEL_DEFAULT = 3;
 

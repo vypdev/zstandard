@@ -12,9 +12,11 @@ on:
     #  - "zstandard_macos/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_macos_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_macos
@@ -45,11 +47,16 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Test check
-        working-directory: zstandard_macos
-        run: flutter test
+      - name: Ensure macOS framework and get dependencies
+        run: |
+          chmod +x scripts/ensure_macos_framework.sh
+          ./scripts/ensure_macos_framework.sh
+
+      - name: Run integration tests
+        working-directory: zstandard_macos/example
+        run: flutter test integration_test/ -d macos
 
   check_macos_publish_dry_run:
     name: Dry Run Publish macOS
@@ -60,7 +67,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_macos

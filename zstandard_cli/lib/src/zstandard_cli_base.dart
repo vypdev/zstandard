@@ -8,11 +8,22 @@ import 'utils/lib_loader.dart';
 import 'zstandard_cli_bindings_generated.dart';
 import 'zstandard_interface.dart';
 
+/// Command-line and in-code Zstandard compression for macOS, Windows, and Linux.
+///
+/// Uses FFI with precompiled native zstd libraries. Supports [compress] and
+/// [decompress] with the same semantics as the Flutter plugin. Use this
+/// package in pure Dart (non-Flutter) desktop apps or CLI tools.
+///
+/// Example:
+/// ```dart
+/// final cli = ZstandardCLI();
+/// final compressed = await cli.compress(data, compressionLevel: 3);
+/// final decompressed = await cli.decompress(compressed!);
+/// ```
 class ZstandardCLI implements ZstandardInterface {
   final ZstandardCLIBindings _bindings =
       ZstandardCLIBindings(openZstdLibrary());
 
-  @override
   @override
   Future<Uint8List?> compress(
     Uint8List data, {
@@ -49,15 +60,21 @@ class ZstandardCLI implements ZstandardInterface {
   @override
   Future<Uint8List?> decompress(Uint8List data) async {
     if (data.isEmpty) return data;
+    const int contentSizeUnknown = -1;
+    const int contentSizeError = -2;
+
     final int compressedSize = data.lengthInBytes;
     final Pointer<Uint8> src = malloc.allocate<Uint8>(compressedSize);
     src.asTypedList(compressedSize).setAll(0, data);
 
     final int decompressedSizeExpected =
-        _bindings.ZSTD_getDecompressedSize(src.cast(), compressedSize);
-    final int dstCapacity = decompressedSizeExpected > 0
-        ? decompressedSizeExpected
-        : compressedSize * 20;
+        _bindings.ZSTD_getFrameContentSize(src.cast(), compressedSize);
+    final int dstCapacity =
+        (decompressedSizeExpected != contentSizeUnknown &&
+                decompressedSizeExpected != contentSizeError &&
+                decompressedSizeExpected > 0)
+            ? decompressedSizeExpected
+            : compressedSize * 20;
     final Pointer<Uint8> dst = malloc.allocate<Uint8>(dstCapacity);
 
     try {
@@ -68,11 +85,10 @@ class ZstandardCLI implements ZstandardInterface {
         compressedSize,
       );
 
-      if (decompressedSize > 0) {
-        return Uint8List.fromList(dst.asTypedList(decompressedSize));
-      } else {
+      if (decompressedSize < 0) {
         return null;
       }
+      return Uint8List.fromList(dst.asTypedList(decompressedSize));
     } finally {
       malloc.free(src);
       malloc.free(dst);

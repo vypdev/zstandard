@@ -12,9 +12,11 @@ on:
     #  - "zstandard_linux/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_linux_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_linux
@@ -45,11 +47,19 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_linux
         run: flutter pub get
+
+      - name: Get example dependencies
+        working-directory: zstandard_linux/example
+        run: flutter pub get
+
+      - name: Run integration tests
+        working-directory: zstandard_linux/example
+        run: flutter test integration_test/ -d linux
 
   check_linux_publish_dry_run:
     name: Dry Run Publish Linux
@@ -60,7 +70,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_linux

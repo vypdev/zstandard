@@ -23,11 +23,14 @@ body:
       label: What area does this task affect?
       multiple: false
       options:
-        - CI/CD
-        - Dependencies
-        - Code Refactoring
-        - Repository Configuration
-        - Other
+        - Zstandard
+        - Zstandard Android
+        - Zstandard iOS
+        - Zstandard Web
+        - Zstandard macOS
+        - Zstandard Windows
+        - Zstandard Linux
+        - Zstandard CLI
 
   - type: markdown
     attributes:

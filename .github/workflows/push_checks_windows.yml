@@ -12,7 +12,7 @@ on:
     #  - "zstandard_windows/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 
@@ -43,6 +43,16 @@ jobs:
         working-directory: zstandard_windows
         shell: cmd
         run: flutter pub get
+
+      - name: Get example dependencies
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter pub get
+
+      - name: Run integration tests
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter test integration_test/ -d windows
 
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows

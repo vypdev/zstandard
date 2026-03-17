@@ -12,8 +12,11 @@ on:
     #  - "zstandard_cli/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_cli_analyze:
@@ -25,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -38,13 +41,14 @@ jobs:
   check_cli_test:
     name: Test CLI
     runs-on: [self-hosted, macOS]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -52,7 +56,47 @@ jobs:
 
       - name: Test check
         working-directory: zstandard_cli
-        run: dart test
+        run: dart test --coverage=coverage
+
+      - name: Format coverage to lcov
+        working-directory: zstandard_cli
+        run: dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json
+
+      - name: Install lcov
+        run: brew install lcov
+
+      # Coverage threshold: lib/ only, excluding generated bindings
+      - name: Check coverage threshold (79% of lib/)
+        working-directory: zstandard_cli
+        run: |
+          lcov --extract coverage/lcov.info '*zstandard_cli/lib/*' -o coverage/lcov_lib.info
+          lcov --remove coverage/lcov_lib.info '*bindings_generated*' -o coverage/lcov_lib.info
+          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
+          echo "Coverage (lib/ excluding generated): ${COVERAGE}%"
+          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
+          if (( $(echo "$COVERAGE < 79" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 79%"; exit 1; fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: zstandard_cli/coverage/lcov.info
+          flags: cli
+          fail_ci_if_error: true
+
+      - name: Run benchmarks
+        working-directory: zstandard_cli
+        run: dart run benchmark/benchmark_suite.dart --output=benchmark_results.json || true
+
+      - name: Check performance regression (if baseline exists)
+        working-directory: zstandard_cli
+        run: |
+          if [ -f benchmark/baselines/baseline_macos_arm64.json ]; then
+            dart run ../../scripts/check_performance_regression.dart \
+              --baseline=benchmark/baselines/baseline_macos_arm64.json \
+              --current=benchmark_results.json \
+              --threshold=0.10 || true
+          fi
 
   check_cli_publish_dry_run:
     name: Dry Run Publish CLI
@@ -63,7 +107,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_cli

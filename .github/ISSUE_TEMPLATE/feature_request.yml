@@ -23,11 +23,14 @@ body:
       label: What area does this improvement affect?
       multiple: false
       options:
-        - User Interface
-        - Performance
-        - New Feature
-        - Documentation
-        - Other
+        - Zstandard
+        - Zstandard Android
+        - Zstandard iOS
+        - Zstandard Web
+        - Zstandard macOS
+        - Zstandard Windows
+        - Zstandard Linux
+        - Zstandard CLI
 
   - type: dropdown
     id: feature_actions
@@ -35,9 +38,11 @@ body:
       label: What actions does this improvement affect?
       multiple: true
       options:
-        - Issue
-        - Pull Request
-        - Commit
+        - Compression
+        - Decompression
+        - CLI
+        - Other
+        - All of the above
 
   - type: markdown
     attributes:

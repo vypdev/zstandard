@@ -12,9 +12,11 @@ on:
     #  - "zstandard_ios/**"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_ios_analyze:
@@ -26,7 +28,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_ios
@@ -45,15 +47,21 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_ios
+        working-directory: zstandard_ios/example
         run: flutter pub get
 
-      - name: Test check
-        working-directory: zstandard_ios
-        run: flutter test
+      - name: Boot iOS simulator
+        run: |
+          chmod +x scripts/manage_ios_simulator.sh
+          ./scripts/manage_ios_simulator.sh start
+
+      - name: Run integration tests
+        run: |
+          DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
+          cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
 
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
@@ -64,7 +72,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_ios

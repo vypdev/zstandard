@@ -10,6 +10,10 @@
 
 #include "zstandard_windows_plugin.h"
 
+// Unit tests for the Windows plugin's C++ portion (method channel, platform version).
+// Compression and decompression are implemented in Dart via FFI; see the main
+// plugin's integration_test/ and platform unit tests for compression behaviour.
+
 namespace zstandard_windows {
 namespace test {
 
@@ -37,6 +41,19 @@ TEST(ZstandardWindowsPlugin, GetPlatformVersion) {
   // Since the exact string varies by host, just ensure that it's a string
   // with the expected format.
   EXPECT_TRUE(result_string.rfind("Windows ", 0) == 0);
+}
+
+TEST(ZstandardWindowsPlugin, GetPlatformVersionNonEmpty) {
+  ZstandardWindowsPlugin plugin;
+  std::string result_string;
+  plugin.HandleMethodCall(
+      MethodCall("getPlatformVersion", std::make_unique<EncodableValue>()),
+      std::make_unique<MethodResultFunctions<>>(
+          [&result_string](const EncodableValue* result) {
+            result_string = std::get<std::string>(*result);
+          },
+          nullptr, nullptr));
+  EXPECT_FALSE(result_string.empty());
 }
 
 }  // namespace test

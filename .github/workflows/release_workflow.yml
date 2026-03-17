@@ -24,15 +24,34 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Minimum privilege: only grant write where needed
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+# Tool versions: FLUTTER_VERSION from org variable vars.FLUTTER_VERSION (fallback for forks/local).
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+
 jobs:
   update_files:
+    permissions:
+      contents: write
     name: Update files job
     runs-on: [self-hosted, macOS, X64]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Switch to SSH
-        run: git remote set-url origin git@github.com:landamessenger/zstandard.git
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Configure Git for push (HTTPS + token)
+        run: git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
       - name: Pre check tag
         id: pre_check_tag
@@ -49,6 +68,21 @@ jobs:
             exit 1
           fi  
 
+      - name: Update root CHANGELOG.md with release info
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          TITLE: ${{ github.event.inputs.title }}
+          CHANGELOG_BODY: ${{ github.event.inputs.changelog }}
+        run: |
+          {
+            echo "## $VERSION - $TITLE"
+            echo ""
+            printf '%s\n' "$CHANGELOG_BODY"
+            echo ""
+            cat CHANGELOG.md
+          } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
       - name: Copy CHANGELOG.md
         run: |
           cp CHANGELOG.md "zstandard_platform_interface/CHANGELOG.md"
@@ -61,63 +95,8 @@ jobs:
           cp CHANGELOG.md "zstandard_cli/CHANGELOG.md"
           cp CHANGELOG.md "zstandard/CHANGELOG.md"
 
-      - name: Update version in zstandard_platform_interface pubspec.yaml
-        working-directory: zstandard_platform_interface
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard_android pubspec.yaml
-        working-directory: zstandard_android
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-  
-      - name: Update version in zstandard_ios pubspec.yaml
-        working-directory: zstandard_ios
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard_macos pubspec.yaml
-        working-directory: zstandard_macos
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard_linux pubspec.yaml
-        working-directory: zstandard_linux
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard_windows pubspec.yaml
-        working-directory: zstandard_windows
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard_web pubspec.yaml
-        working-directory: zstandard_web
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard pubspec.yaml
-        working-directory: zstandard
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_platform_interface: .*/  zstandard_platform_interface: ^${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_android: .*/  zstandard_android: ^${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_ios: .*/  zstandard_ios: ^${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_web: .*/  zstandard_web: ^${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_macos: .*/  zstandard_macos: ^${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_windows: .*/  zstandard_windows: ^${{ github.event.inputs.version }}/" pubspec.yaml
-          sed -i '' "s/^  zstandard_linux: .*/  zstandard_linux: ^${{ github.event.inputs.version }}/" pubspec.yaml
-
-      - name: Update version in zstandard_cli pubspec.yaml
-        working-directory: zstandard_cli
-        run: |
-          sed -i '' "s/^version:.*/version: ${{ github.event.inputs.version }}/" pubspec.yaml
+      - name: Update versions in all pubspec.yaml
+        run: dart run .github/scripts/update_versions.dart "${{ github.event.inputs.version }}"
 
       - name: Commit and Push version updates
         uses: EndBug/add-and-commit@v9
@@ -131,26 +110,25 @@ jobs:
     name: macOS precompiled libraries
     runs-on: [self-hosted, macOS, X64]
     needs: [update_files]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Switch to SSH
-        run: git remote set-url origin git@github.com:landamessenger/zstandard.git
+      - name: Configure Git for push (HTTPS + token)
+        run: git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
       - name: Update branch
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Download source files from facebook/zstd
+      - name: Copy zstd from repo root into zstandard_cli
         run: |
-          cd zstandard_cli
-          git clone https://github.com/facebook/zstd.git
-          mkdir src
-          mv zstd/lib/* src/
-          rm -rf zstd/
+          cp -r zstd zstandard_cli/
+          ( cd zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
 
-      - name: List files in zstd/lib to verify
-        run: cd zstandard_cli && ls -R src
+      - name: List files in zstandard_cli/zstd to verify
+        run: cd zstandard_cli && ls -R zstd
 
       - name: Compile x86-x64 macos lib
         run: |
@@ -197,26 +175,25 @@ jobs:
     name: Linux precompiled libraries
     runs-on: [ self-hosted, Linux ]
     needs: [ update_files, cli_build_macos_precompiled_libs ]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Switch to SSH
-        run: git remote set-url origin git@github.com:landamessenger/zstandard.git
+      - name: Configure Git for push (HTTPS + token)
+        run: git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
       - name: Update branch
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Download source files from facebook/zstd
+      - name: Copy zstd from repo root into zstandard_cli
         run: |
-          cd zstandard_cli
-          git clone https://github.com/facebook/zstd.git
-          mkdir src
-          mv zstd/lib/* src/
-          rm -rf zstd/
+          cp -r zstd zstandard_cli/
+          ( cd zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
 
-      - name: List files in zstd/lib to verify
-        run: cd zstandard_cli && ls -R src
+      - name: List files in zstandard_cli/zstd to verify
+        run: cd zstandard_cli && ls -R zstd
 
       - name: Compile x86_64 Linux lib
         run: |
@@ -257,30 +234,27 @@ jobs:
     name: Windows precompiled libraries
     runs-on: [ self-hosted, Windows ]
     needs: [ update_files, cli_build_linux_precompiled_libs ]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Switch to SSH
+      - name: Configure Git for push (HTTPS + token)
         shell: cmd
-        run: git remote set-url origin git@github.com:landamessenger/zstandard.git
+        run: git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
 
       - name: Update branch
         shell: cmd
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Download source files from facebook/zstd
+      - name: Copy zstd from repo root into zstandard_cli
         shell: cmd
-        run: |
-          cd zstandard_cli
-          git clone https://github.com/facebook/zstd.git
-          mkdir src
-          xcopy zstd\lib src\ /E /I
-          rmdir /S /Q zstd
+        run: xcopy zstd zstandard_cli\zstd /E /I
 
-      - name: List files in zstd/lib to verify
+      - name: List files in zstandard_cli/zstd to verify
         shell: cmd
-        run: dir zstandard_cli\src /S
+        run: dir zstandard_cli\zstd /S
 
       - name: Compile x86_64 Windows lib
         shell: cmd
@@ -328,6 +302,8 @@ jobs:
     name: Tag version and create release
     runs-on: ubuntu-latest
     needs: [update_files, cli_build_windows_precompiled_libs, cli_build_linux_precompiled_libs, cli_build_macos_precompiled_libs]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       
@@ -336,7 +312,7 @@ jobs:
           git pull origin ${{ github.ref }} --rebase
 
       - name: Git Board Flow - Create Tag
-        uses: landamessenger/git-board-flow@master
+        uses: vypdev/copilot@v2
         if: ${{ success() }}
         with:
           debug: ${{ vars.DEBUG }}
@@ -346,7 +322,7 @@ jobs:
           token: ${{ secrets.PAT }}
   
       - name: Git Board Flow - Create Release
-        uses: landamessenger/git-board-flow@master
+        uses: vypdev/copilot@v2
         if: ${{ success() }}
         with:
           debug: ${{ vars.DEBUG }}
@@ -357,53 +333,23 @@ jobs:
           single-action-changelog: '${{ github.event.inputs.changelog }}'
           token: ${{ secrets.PAT }}
 
-  platform_interface_analyze:
-    name: Analyze Platform Interface
-    runs-on: [self-hosted, macOS, X64]
-    needs: [tag_version]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
+      - name: Generate checksums for native libs (integrity / provenance)
+        if: success()
         run: |
-          git pull origin ${{ github.ref }} --rebase
+          echo "Checksums for native libraries (zstandard_cli) at release v${{ github.event.inputs.version }}" > checksums-native-libs.txt
+          if [ -d zstandard_cli/lib/src/bin ] && [ -n "$(ls -A zstandard_cli/lib/src/bin 2>/dev/null)" ]; then
+            (cd zstandard_cli/lib/src/bin && sha256sum *) >> checksums-native-libs.txt
+            cat checksums-native-libs.txt
+          fi
 
-      - uses: subosito/flutter-action@v1
+      - name: Upload checksums to release
+        if: success()
+        uses: softprops/action-gh-release@v2
         with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_platform_interface
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_platform_interface
-        run: flutter analyze
-
-  platform_interface_test:
-    name: Test Platform Interface
-    runs-on: [self-hosted, macOS, X64]
-    needs: [tag_version]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_platform_interface
-        run: flutter pub get
-
-      - name: Test check
-        working-directory: zstandard_platform_interface
-        run: flutter test
+          tag_name: "v${{ github.event.inputs.version }}"
+          files: checksums-native-libs.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   platform_interface_publish_dry_run:
     name: Dry Run Publish Platform Interface
@@ -419,7 +365,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_platform_interface
@@ -432,7 +378,9 @@ jobs:
   platform_interface_publish:
     name: Publish Platform Interface
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_analyze, platform_interface_test, platform_interface_publish_dry_run]
+    needs: [platform_interface_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -443,7 +391,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_platform_interface
@@ -471,57 +419,6 @@ jobs:
           max_attempts: 200
           command: cd zstandard_android && flutter pub get
 
-      - name: Wait a minute
-        run: sleep 120
-
-  android_analyze:
-    name: Analyze Android
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_android
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_android
-        run: flutter analyze
-
-  android_test:
-    name: Test Android
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_android
-        run: flutter pub get
-
-      - name: Test check
-        working-directory: zstandard_android
-        run: flutter test
-
   android_publish_dry_run:
     name: Dry Run Publish Android
     runs-on: [self-hosted, macOS, X64]
@@ -536,11 +433,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_android
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_android && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_android
@@ -549,7 +449,9 @@ jobs:
   android_publish:
     name: Publish Android
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, android_analyze, android_test, android_publish_dry_run]
+    needs: [platform_interface_publish, android_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -560,11 +462,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_android
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_android && flutter pub get
 
       - name: Publish
         working-directory: zstandard_android
@@ -581,54 +486,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  ios_analyze:
-    name: Analyze iOS
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_ios
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_ios
-        run: flutter analyze
-
-  ios_test:
-    name: Test iOS
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_ios
-        run: flutter pub get
-
-      - name: Test check
-        working-directory: zstandard_ios
-        run: flutter test
-
   ios_publish_dry_run:
     name: Dry Run Publish iOS
     runs-on: [self-hosted, macOS, X64]
@@ -643,11 +500,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_ios
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_ios && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_ios
@@ -656,7 +516,9 @@ jobs:
   ios_publish:
     name: Publish iOS
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, ios_analyze, ios_test, ios_publish_dry_run]
+    needs: [platform_interface_publish, ios_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -667,11 +529,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_ios
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_ios && flutter pub get
 
       - name: Publish
         working-directory: zstandard_ios
@@ -688,50 +553,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  macos_analyze:
-    name: Analyze macOS
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_macos
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_macos
-        run: flutter analyze
-
-  macos_test:
-    name: Test macOS
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Test check
-        working-directory: zstandard_macos
-        run: flutter test
-
   macos_publish_dry_run:
     name: Dry Run Publish macOS
     runs-on: [self-hosted, macOS, X64]
@@ -746,11 +567,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_macos
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_macos && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_macos
@@ -759,7 +583,9 @@ jobs:
   macos_publish:
     name: Publish macOS
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, macos_analyze, macos_test, macos_publish_dry_run]
+    needs: [platform_interface_publish, macos_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -770,11 +596,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_macos
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_macos && flutter pub get
 
       - name: Publish
         working-directory: zstandard_macos
@@ -791,45 +620,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  windows_analyze:
-    name: Analyze Windows
-    runs-on: [self-hosted, Windows]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        shell: cmd
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - name: Get dependencies
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter analyze
-
-  windows_test:
-    name: Test Windows
-    runs-on: [self-hosted, Windows]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        shell: cmd
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - name: Get dependencies
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter pub get
-
   windows_publish_dry_run:
     name: Dry Run Publish Windows
     runs-on: [self-hosted, Windows]
@@ -842,10 +632,12 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Get dependencies
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cmd /c "cd zstandard_windows && flutter pub get"
 
       - name: Publish Dry Run
         working-directory: zstandard_windows
@@ -855,7 +647,9 @@ jobs:
   windows_publish:
     name: Publish Windows
     runs-on: [self-hosted, Windows]
-    needs: [platform_interface_publish, windows_analyze, windows_test, windows_publish_dry_run]
+    needs: [platform_interface_publish, windows_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -864,10 +658,12 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Get dependencies
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cmd /c "cd zstandard_windows && flutter pub get"
 
       - name: Publish
         working-directory: zstandard_windows
@@ -886,50 +682,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  linux_analyze:
-    name: Analyze Linux
-    runs-on: [self-hosted, Linux]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_linux
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_linux
-        run: flutter analyze
-
-  linux_test:
-    name: Test Linux
-    runs-on: [self-hosted, Linux]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_linux
-        run: flutter pub get
-
   linux_publish_dry_run:
     name: Dry Run Publish Linux
     runs-on: [self-hosted, Linux]
@@ -944,11 +696,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_linux
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_linux && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_linux
@@ -957,7 +712,9 @@ jobs:
   linux_publish:
     name: Publish Linux
     runs-on: [self-hosted, Linux]
-    needs: [platform_interface_publish, linux_analyze, linux_test, linux_publish_dry_run]
+    needs: [platform_interface_publish, linux_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -968,11 +725,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_linux
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_linux && flutter pub get
 
       - name: Publish
         working-directory: zstandard_linux
@@ -989,54 +749,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  web_analyze:
-    name: Analyze Web
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_web
-        run: flutter pub get
-
-      - name: Analyze check
-        working-directory: zstandard_web
-        run: flutter analyze
-
-  web_test:
-    name: Test Web
-    runs-on: [self-hosted, macOS, X64]
-    needs: platform_interface_publish
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_web
-        run: flutter pub get
-
-      - name: Test check
-        working-directory: zstandard_web
-        run: flutter test
-
   web_publish_dry_run:
     name: Dry Run Publish Web
     runs-on: [self-hosted, macOS, X64]
@@ -1051,11 +763,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_web
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_web && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_web
@@ -1064,7 +779,9 @@ jobs:
   web_publish:
     name: Publish Web
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, web_analyze, web_test, web_publish_dry_run]
+    needs: [platform_interface_publish, web_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -1075,11 +792,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_web
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_web && flutter pub get
 
       - name: Publish
         working-directory: zstandard_web
@@ -1096,54 +816,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  cli_analyze:
-    name: Analyze CLI
-    runs-on: [self-hosted, macOS, X64]
-    needs: [android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_cli
-        run: dart pub get
-
-      - name: Analyze check
-        working-directory: zstandard_cli
-        run: dart analyze
-
-  cli_test:
-    name: Test CLI
-    runs-on: [self-hosted, macOS, X64]
-    needs: [android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Get dependencies
-        working-directory: zstandard_cli
-        run: dart pub get
-
-      - name: Test check
-        working-directory: zstandard_cli
-        run: dart test
-
   cli_publish_dry_run:
     name: Dry Run Publish CLI
     runs-on: [self-hosted, macOS, X64]
@@ -1158,11 +830,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_cli
-        run: dart pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_cli && dart pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_cli
@@ -1171,7 +846,9 @@ jobs:
   cli_publish:
     name: Publish CLI
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, cli_analyze, cli_test, cli_publish_dry_run]
+    needs: [platform_interface_publish, cli_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -1182,11 +859,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_cli
-        run: dart pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_cli && dart pub get
 
       - name: Publish
         working-directory: zstandard_cli
@@ -1203,66 +883,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  zstandard_analyze:
-    name: Analyze Zstandard
-    runs-on: [self-hosted, macOS, X64]
-    needs: [android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Wait for dependency to be available
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 120
-          max_attempts: 200
-          command: cd zstandard && flutter pub get
-
-      - name: Wait a minute
-        run: sleep 120
-
-      - name: Analyze check
-        working-directory: zstandard
-        run: flutter analyze
-
-  zstandard_test:
-    name: Test Zstandard
-    runs-on: [self-hosted, macOS, X64]
-    needs: [android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update branch
-        run: |
-          git pull origin ${{ github.ref }} --rebase
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: '3.35.6'
-
-      - name: Wait for dependency to be available
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 120
-          max_attempts: 200
-          command: cd zstandard && flutter pub get
-
-      - name: Wait a minute
-        run: sleep 120
-
-      - name: Test check
-        working-directory: zstandard
-        run: flutter test
-
   zstandard_publish_dry_run:
     name: Dry Run Publish Zstandard
     runs-on: [self-hosted, macOS, X64]
@@ -1277,7 +897,7 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Wait for dependency to be available
         uses: nick-fields/retry@v3
@@ -1286,9 +906,6 @@ jobs:
           max_attempts: 200
           command: cd zstandard && flutter pub get
 
-      - name: Wait a minute
-        run: sleep 120
-
       - name: Publish Dry Run
         working-directory: zstandard
         run: dart pub publish --dry-run
@@ -1296,7 +913,9 @@ jobs:
   zstandard_publish:
     name: Publish Zstandard
     runs-on: [self-hosted, macOS, X64]
-    needs: [platform_interface_publish, zstandard_analyze, zstandard_test, zstandard_publish_dry_run]
+    needs: [platform_interface_publish, zstandard_publish_dry_run]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -1307,11 +926,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
-          flutter-version: '3.35.6'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard && flutter pub get
 
       - name: Publish
         working-directory: zstandard
@@ -1328,17 +950,52 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  rollback_guide:
+    name: Rollback / recovery guide
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [ platform_interface_publish, android_publish, ios_publish, web_publish, macos_publish, linux_publish, windows_publish, cli_publish, zstandard_publish ]
+    permissions:
+      contents: read
+    steps:
+      - name: Output rollback guide
+        if: >-
+          needs.platform_interface_publish.result == 'failure' ||
+          needs.android_publish.result == 'failure' ||
+          needs.ios_publish.result == 'failure' ||
+          needs.web_publish.result == 'failure' ||
+          needs.macos_publish.result == 'failure' ||
+          needs.linux_publish.result == 'failure' ||
+          needs.windows_publish.result == 'failure' ||
+          needs.cli_publish.result == 'failure' ||
+          needs.zstandard_publish.result == 'failure'
+        run: |
+          echo "## Release failed – recovery guide" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version: **${{ github.event.inputs.version }}**" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### pub.dev cannot delete published versions. If some packages were published:" >> "$GITHUB_STEP_SUMMARY"
+          echo "1. Decide whether to publish the remaining packages manually or bump to a new patch version." >> "$GITHUB_STEP_SUMMARY"
+          echo "2. To finish manually: run \`dart pub publish -f\` in each package directory (in dependency order: platform_interface → platforms → cli → zstandard)." >> "$GITHUB_STEP_SUMMARY"
+          echo "3. Ensure \`dart pub login\` has been run on the runners (pub credentials available)." >> "$GITHUB_STEP_SUMMARY"
+          echo "4. Re-run this workflow with the same version only to retry failed jobs; fix the cause first." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Dependency order for manual publish:" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "zstandard_platform_interface → zstandard_android, zstandard_ios, zstandard_web, zstandard_macos, zstandard_windows, zstandard_linux → zstandard_cli → zstandard" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "See \`docs/deployment/RUNBOOK.md\` for full runbook." >> "$GITHUB_STEP_SUMMARY"
+
   notify_deploy_completed:
     name: Notify deploy completed
     runs-on: ubuntu-latest
     needs: [ zstandard_publish ]
     steps:
       - name: Git Board Flow - Deploy success notification
-        uses: landamessenger/git-board-flow@master
+        uses: vypdev/copilot@v2
         with:
           debug: ${{ vars.DEBUG }}
           single-action: 'deployed_action'
           single-action-issue: '${{ github.event.inputs.issue }}'
-          openrouter-api-key: ${{ secrets.OPEN_ROUTER_API_KEY }}
-          openrouter-model: ${{ vars.OPEN_ROUTER_MODEL }}
           token: ${{ secrets.PAT }}

@@ -5,26 +5,23 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_linux_library VERSION 0.0.1 LANGUAGES C)
 
+set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../zstd")
 file(GLOB ZSTD_SRC
-        "../../src/common/*.c"
-        "../../src/compress/*.c"
-        "../../src/decompress/*.c"
+        "${ZSTD_ROOT}/common/*.c"
+        "${ZSTD_ROOT}/compress/*.c"
+        "${ZSTD_ROOT}/decompress/*.c"
 )
 
-add_library(zstandard_linux SHARED
-        # "Classes/plugin_code.cpp"
-        ${ZSTD_SRC}
-)
+add_library(zstandard_linux SHARED ${ZSTD_SRC})
 
 target_include_directories(zstandard_linux PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/common"
-    "${CMAKE_CURRENT_SOURCE_DIR}/compress"
-    "${CMAKE_CURRENT_SOURCE_DIR}/decompress"
+    "${ZSTD_ROOT}"
+    "${ZSTD_ROOT}/common"
+    "${ZSTD_ROOT}/compress"
+    "${ZSTD_ROOT}/decompress"
 )
 
 set_target_properties(zstandard_linux PROPERTIES
-  PUBLIC_HEADER zstandard_linux.h
   OUTPUT_NAME "zstandard_linux"
 )
 
