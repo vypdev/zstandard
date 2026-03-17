@@ -42,6 +42,11 @@ jobs:
         shell: cmd
         run: flutter pub get
 
+      - name: Clean example
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter clean
+
       - name: Get example dependencies
         working-directory: zstandard_windows/example
         shell: cmd
