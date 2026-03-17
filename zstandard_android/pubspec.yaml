@@ -1,6 +1,6 @@
 name: zstandard_android
 description: Android platform implementation of zstandard
-version: 1.3.31
+version: 1.3.32
 
 homepage: https://landamessenger.com
 repository: https://github.com/landamessenger/zstandard/tree/master/zstandard_android
@@ -12,7 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  zstandard_platform_interface: ^1.3.31
+  zstandard_platform_interface: ^1.3.32
   ffi: ^2.1.3
 
 dev_dependencies:
