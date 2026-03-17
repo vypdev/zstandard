@@ -637,7 +637,7 @@ jobs:
         with:
           timeout_minutes: 120
           max_attempts: 200
-          command: cd zstandard_windows && flutter pub get
+          command: cmd /c "cd zstandard_windows && flutter pub get"
 
       - name: Publish Dry Run
         working-directory: zstandard_windows
@@ -663,7 +663,7 @@ jobs:
         with:
           timeout_minutes: 120
           max_attempts: 200
-          command: cd zstandard_windows && flutter pub get
+          command: cmd /c "cd zstandard_windows && flutter pub get"
 
       - name: Publish
         working-directory: zstandard_windows
