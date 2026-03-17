@@ -401,11 +401,6 @@ jobs:
         working-directory: zstandard_platform_interface
         run: dart pub publish -f
 
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_platform_interface "${{ github.event.inputs.version }}"
-
       - name: Compress folder
         run: zip -r zstandard_platform_interface.zip ./zstandard_platform_interface
 
@@ -417,13 +412,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Verify platform_interface available on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_platform_interface "${{ github.event.inputs.version }}"
-
-      - name: Get dependencies (platform packages depend on platform_interface)
-        run: cd zstandard_android && flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_android && flutter pub get
 
   android_publish_dry_run:
     name: Dry Run Publish Android
@@ -441,9 +435,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_android
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_android && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_android
@@ -467,18 +464,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_android
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_android && flutter pub get
 
       - name: Publish
         working-directory: zstandard_android
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_android "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard_android.zip ./zstandard_android
@@ -507,9 +502,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_ios
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_ios && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_ios
@@ -533,18 +531,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_ios
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_ios && flutter pub get
 
       - name: Publish
         working-directory: zstandard_ios
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_ios "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard_ios.zip ./zstandard_ios
@@ -573,9 +569,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_macos
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_macos && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_macos
@@ -599,18 +598,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_macos
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_macos && flutter pub get
 
       - name: Publish
         working-directory: zstandard_macos
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_macos "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard_macos.zip ./zstandard_macos
@@ -635,10 +632,12 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Get dependencies
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_windows && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_windows
@@ -659,18 +658,17 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Get dependencies
-        working-directory: zstandard_windows
-        shell: cmd
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_windows && flutter pub get
 
       - name: Publish
         working-directory: zstandard_windows
         shell: cmd
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: bash .github/scripts/verify-pubdev-package.sh zstandard_windows "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         shell: cmd
@@ -700,9 +698,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_linux
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_linux && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_linux
@@ -726,18 +727,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_linux
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_linux && flutter pub get
 
       - name: Publish
         working-directory: zstandard_linux
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_linux "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard_linux.zip ./zstandard_linux
@@ -766,9 +765,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_web
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_web && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_web
@@ -792,18 +794,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_web
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_web && flutter pub get
 
       - name: Publish
         working-directory: zstandard_web
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_web "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard_web.zip ./zstandard_web
@@ -832,9 +832,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_cli
-        run: dart pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_cli && dart pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_cli
@@ -858,18 +861,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard_cli
-        run: dart pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard_cli && dart pub get
 
       - name: Publish
         working-directory: zstandard_cli
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard_cli "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard_cli.zip ./zstandard_cli
@@ -898,20 +899,12 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Verify all platform packages available on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          V="${{ github.event.inputs.version }}"
-          .github/scripts/verify-pubdev-package.sh zstandard_android "$V"
-          .github/scripts/verify-pubdev-package.sh zstandard_ios "$V"
-          .github/scripts/verify-pubdev-package.sh zstandard_web "$V"
-          .github/scripts/verify-pubdev-package.sh zstandard_macos "$V"
-          .github/scripts/verify-pubdev-package.sh zstandard_windows "$V"
-          .github/scripts/verify-pubdev-package.sh zstandard_linux "$V"
-
-      - name: Get dependencies
-        working-directory: zstandard
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard && flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard
@@ -935,18 +928,16 @@ jobs:
           channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
-        working-directory: zstandard
-        run: flutter pub get
+      - name: Wait for dependency to be available
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 120
+          max_attempts: 200
+          command: cd zstandard && flutter pub get
 
       - name: Publish
         working-directory: zstandard
         run: dart pub publish -f
-
-      - name: Verify published on pub.dev
-        run: |
-          chmod +x .github/scripts/verify-pubdev-package.sh
-          .github/scripts/verify-pubdev-package.sh zstandard "${{ github.event.inputs.version }}"
 
       - name: Compress folder
         run: zip -r zstandard.zip ./zstandard
