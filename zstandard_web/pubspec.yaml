@@ -1,6 +1,7 @@
 name: zstandard_web
 description: Web platform implementation of zstandard
-version: 1.3.29
+version: 1.3.30
+
 homepage: https://landamessenger.com
 repository: https://github.com/landamessenger/zstandard/tree/master/zstandard_web
 
@@ -21,7 +22,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  zstandard_platform_interface: ^1.3.29
+  zstandard_platform_interface: ^1.3.30
   web: ">=1.0.0 <2.0.0"
 
 dev_dependencies:
