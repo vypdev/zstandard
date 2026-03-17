@@ -2,8 +2,8 @@ name: zstandard_android
 description: Android platform implementation of zstandard
 version: 1.3.32
 
-homepage: https://landamessenger.com
-repository: https://github.com/landamessenger/zstandard/tree/master/zstandard_android
+homepage: https://vyp.dev
+repository: https://github.com/vypdev/zstandard/tree/master/zstandard_android
 
 environment:
   sdk: ^3.6.0
@@ -29,6 +29,6 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.landamessenger.zstandard_android
+        package: dev.vyp.zstandard_android
         pluginClass: ZstandardAndroidPlugin
         ffiPlugin: true

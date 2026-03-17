@@ -19,14 +19,14 @@ Optional, for native work:
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/landamessenger/zstandard.git
+git clone https://github.com/vypdev/zstandard.git
 cd zstandard
 ```
 
 If you use a fork:
 
 ```bash
-git remote add upstream https://github.com/landamessenger/zstandard.git
+git remote add upstream https://github.com/vypdev/zstandard.git
 ```
 
 ## Get Dependencies

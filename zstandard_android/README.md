@@ -64,6 +64,6 @@ Unit tests run only on Android (they are skipped on other platforms). For full i
 - **Library not found**: Ensure you build and run the app for Android (e.g. `flutter run` or `flutter build apk`) so the native library is compiled and packaged.
 - **Crashes**: Verify inputs are non-null and valid; for decompress, ensure the data is a valid zstd frame.
 
-See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
 
-<p align="center"><img width="50%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_android/images/sample.png"></p>
+<p align="center"><img width="50%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_android/images/sample.png"></p>

@@ -64,6 +64,6 @@ Unit tests that use the native library require the framework to be built (e.g. b
 - **Library not loaded**: Build your app with `flutter build macos` or run from the macOS runner so the framework is built and linked.
 - **Wrong architecture**: Ensure you are building for the correct target (x64 vs arm64).
 
-See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_macos/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_macos/images/sample.png"></p>

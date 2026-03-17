@@ -64,6 +64,6 @@ Unit tests run only on Windows (skipped on other platforms). For integration tes
 - **DLL not found**: Build your app with `flutter build windows` or run from the Flutter Windows runner so the native library is built and placed next to the executable.
 - **Wrong architecture**: Build for the correct target (x64 or arm64).
 
-See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_windows/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_windows/images/sample.png"></p>

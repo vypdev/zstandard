@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/facebook/zstd
     about: Check the official zstd documentation before opening new issues.
   - name: Plugin Documentation
-    url: https://github.com/landamessenger/zstandard/wiki
+    url: https://github.com/vypdev/zstandard/wiki
     about: Check the plugin/cli documentation before opening new issues.

@@ -76,7 +76,7 @@ If you need to rebuild the WebAssembly artifacts:
    - Exported functions: `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, `ZSTD_getFrameContentSize`, `malloc`, `free`
 4. Add the wrapper functions `compressData` and `decompressData` in `zstd.js` (or a separate script) that allocate buffers, call the C functions, and return the result or null.
 
-Detailed commands and wrapper code are in the [zstandard_web README](https://github.com/landamessenger/zstandard/tree/master/zstandard_web).
+Detailed commands and wrapper code are in the [zstandard_web README](https://github.com/vypdev/zstandard/tree/master/zstandard_web).
 
 ## Small Data Behavior
 

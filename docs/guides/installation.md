@@ -23,7 +23,7 @@ No extra steps are required for **Android, iOS, macOS, Windows, or Linux**; the 
 
 For **Flutter web**, you must add two assets and include a script:
 
-1. Copy **zstd.js** and **zstd.wasm** from the [zstandard_web](https://github.com/landamessenger/zstandard/tree/master/zstandard_web) package (e.g. from its `blob/` or as documented there) into your app’s **web/** directory (e.g. `web/zstd.js`, `web/zstd.wasm`).
+1. Copy **zstd.js** and **zstd.wasm** from the [zstandard_web](https://github.com/vypdev/zstandard/tree/master/zstandard_web) package (e.g. from its `blob/` or as documented there) into your app’s **web/** directory (e.g. `web/zstd.js`, `web/zstd.wasm`).
 
 2. In **web/index.html**, include the script before your app loads:
 

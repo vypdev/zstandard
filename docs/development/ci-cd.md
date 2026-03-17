@@ -10,7 +10,7 @@ The repository uses **GitHub Actions** for:
 - **Release workflow**: Version bumping, building precompiled CLI libraries, tagging, and publishing to pub.dev.
 - **Hotfix workflow**: Expedited fixes and releases when needed.
 
-Workflows are in [`.github/workflows/`](https://github.com/landamessenger/zstandard/tree/master/.github/workflows).
+Workflows are in [`.github/workflows/`](https://github.com/vypdev/zstandard/tree/master/.github/workflows).
 
 ## Push check workflows
 
@@ -40,7 +40,7 @@ Each package has a dedicated workflow that runs on push to non-protected branche
 
 ## Release workflow
 
-**File**: [`.github/workflows/release_workflow.yml`](https://github.com/landamessenger/zstandard/blob/master/.github/workflows/release_workflow.yml)
+**File**: [`.github/workflows/release_workflow.yml`](https://github.com/vypdev/zstandard/blob/master/.github/workflows/release_workflow.yml)
 
 Triggered manually (**workflow_dispatch**) with inputs such as version, title, changelog, and optional issue reference.
 
@@ -58,7 +58,7 @@ The workflow uses **self-hosted** runners for macOS, Linux, and Windows to build
 
 ## Hotfix workflow
 
-**File**: [`.github/workflows/hotfix_workflow.yml`](https://github.com/landamessenger/zstandard/blob/master/.github/workflows/hotfix_workflow.yml)
+**File**: [`.github/workflows/hotfix_workflow.yml`](https://github.com/vypdev/zstandard/blob/master/.github/workflows/hotfix_workflow.yml)
 
 Used for expedited fixes (e.g. security or critical bugs). Typically triggered manually and may skip some steps or use a shorter path to release. See the workflow file and team docs for details.
 
@@ -73,7 +73,7 @@ To mimic CI locally:
 
 ## Build automation scripts
 
-Scripts under [**scripts/**](https://github.com/landamessenger/zstandard/tree/master/scripts) help build native libraries and run tests locally:
+Scripts under [**scripts/**](https://github.com/vypdev/zstandard/tree/master/scripts) help build native libraries and run tests locally:
 
 - `build_macos.sh`, `build_linux.sh`, `build_windows.bat`: Build precompiled zstd libraries for the CLI.
 - `build_android.sh`, `build_ios.sh`: Build or prepare the Android/iOS plugin.

@@ -64,6 +64,6 @@ Unit tests run only on Linux (skipped on other platforms). For integration tests
 - **libzstandard_linux_plugin.so not found**: Build your app with `flutter build linux` or run from the Flutter Linux runner so the native library is built and available.
 - **Crashes**: Verify inputs and that you are on a supported architecture (x64 or arm64).
 
-See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_linux/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_linux/images/sample.png"></p>
