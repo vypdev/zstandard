@@ -38,10 +38,11 @@ class ZstandardWeb extends ZstandardPlatform {
   @override
   Future<Uint8List?> compress(Uint8List data, int compressionLevel) async {
     if (data.length < 9) return data;
-    var compressedData = html.window.callMethodVarArgs('compressData'.toJS, [
+    var promise = html.window.callMethodVarArgs('compressData'.toJS, [
       data.toJS,
       compressionLevel.toJS,
-    ]) as JSUint8Array?;
+    ]) as JSPromise;
+    var compressedData = (await promise.toDart) as JSUint8Array?;
     if (compressedData != null) {
       return compressedData.toDart;
     } else {
@@ -52,10 +53,10 @@ class ZstandardWeb extends ZstandardPlatform {
   @override
   Future<Uint8List?> decompress(Uint8List data) async {
     if (data.length < 9) return data;
-    var decompressedData =
-        html.window.callMethodVarArgs('decompressData'.toJS, [
+    var promise = html.window.callMethodVarArgs('decompressData'.toJS, [
       data.toJS,
-    ]) as JSUint8Array?;
+    ]) as JSPromise;
+    var decompressedData = (await promise.toDart) as JSUint8Array?;
     if (decompressedData != null) {
       return decompressedData.toDart;
     } else {

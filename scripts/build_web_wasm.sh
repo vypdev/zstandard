@@ -61,20 +61,37 @@ fi
 # Append the compressData/decompressData wrappers required by the web plugin (see zstandard_web/README.md).
 cat >> zstd_generated.js << 'WRAPPER_JS'
 
-function compressData(inputData, compressionLevel) {
+// Promise that resolves when the module is ready
+let moduleReady = new Promise((resolve) => {
+    if (typeof Module !== 'undefined' && Module.calledRun) {
+        // Module already initialized
+        resolve();
+    } else {
+        // Wait for module initialization
+        const originalOnRuntimeInitialized = Module.onRuntimeInitialized || function() {};
+        Module.onRuntimeInitialized = function() {
+            originalOnRuntimeInitialized();
+            resolve();
+        };
+    }
+});
+
+async function compressData(inputData, compressionLevel) {
+    await moduleReady;
+    
     let inputPtr = Module._malloc(inputData.length);
     Module.HEAPU8.set(inputData, inputPtr);
 
-    let outputBufferSize = Module._ZSTD_compressBound(inputData.length);
+    let outputBufferSize = Number(Module._ZSTD_compressBound(inputData.length));
     let outputPtr = Module._malloc(outputBufferSize);
 
-    let compressedSize = Module._ZSTD_compress(
+    let compressedSize = Number(Module._ZSTD_compress(
         outputPtr,
         outputBufferSize,
         inputPtr,
         inputData.length,
         compressionLevel
-    );
+    ));
 
     if (compressedSize < 0) {
         console.error('Compression error, error code: ', compressedSize);
@@ -90,11 +107,13 @@ function compressData(inputData, compressionLevel) {
     }
 }
 
-function decompressData(compressedData) {
+async function decompressData(compressedData) {
+    await moduleReady;
+    
     let compressedPtr = Module._malloc(compressedData.length);
     Module.HEAPU8.set(compressedData, compressedPtr);
 
-    let decompressedSize = Module._ZSTD_getFrameContentSize(compressedPtr, compressedData.length);
+    let decompressedSize = Number(Module._ZSTD_getFrameContentSize(compressedPtr, compressedData.length));
     if (decompressedSize === -1 || decompressedSize === -2) {
         console.error('Error in obtaining the original size of the data');
         Module._free(compressedPtr);
@@ -103,12 +122,12 @@ function decompressData(compressedData) {
 
     let decompressedPtr = Module._malloc(decompressedSize);
 
-    let resultSize = Module._ZSTD_decompress(
+    let resultSize = Number(Module._ZSTD_decompress(
         decompressedPtr,
         decompressedSize,
         compressedPtr,
         compressedData.length
-    );
+    ));
 
     if (resultSize < 0) {
         console.error('Decompression error, error code: ', resultSize);
@@ -126,6 +145,11 @@ function decompressData(compressedData) {
 WRAPPER_JS
 
 mkdir -p "$OUT_BLOB" "$OUT_EXAMPLE_WEB"
+
+# Replace the wasm filename in the generated JS to match what we'll copy
+sed -i.bak 's/zstd_generated\.wasm/zstd.wasm/g' zstd_generated.js
+rm -f zstd_generated.js.bak
+
 cp zstd_generated.wasm "$OUT_BLOB/zstd.wasm"
 cp zstd_generated.wasm "$OUT_EXAMPLE_WEB/zstd.wasm"
 cp zstd_generated.js "$OUT_BLOB/zstd.js"
