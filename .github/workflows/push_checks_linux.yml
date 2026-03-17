@@ -51,6 +51,10 @@ jobs:
         working-directory: zstandard_linux
         run: flutter pub get
 
+      - name: Clean example
+        working-directory: zstandard_linux/example
+        run: flutter clean
+
       - name: Get example dependencies
         working-directory: zstandard_linux/example
         run: flutter pub get
