@@ -124,12 +124,11 @@ jobs:
 
       - name: Copy zstd from repo root into zstandard_cli
         run: |
-          mkdir -p zstandard_cli/src
-          cp -r zstd/lib/* zstandard_cli/src/
+          cp -r zstd zstandard_cli/
           ( cd zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
 
-      - name: List files in zstandard_cli/src to verify
-        run: cd zstandard_cli && ls -R src
+      - name: List files in zstandard_cli/zstd to verify
+        run: cd zstandard_cli && ls -R zstd
 
       - name: Compile x86-x64 macos lib
         run: |
@@ -190,12 +189,11 @@ jobs:
 
       - name: Copy zstd from repo root into zstandard_cli
         run: |
-          mkdir -p zstandard_cli/src
-          cp -r zstd/lib/* zstandard_cli/src/
+          cp -r zstd zstandard_cli/
           ( cd zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
 
-      - name: List files in zstandard_cli/src to verify
-        run: cd zstandard_cli && ls -R src
+      - name: List files in zstandard_cli/zstd to verify
+        run: cd zstandard_cli && ls -R zstd
 
       - name: Compile x86_64 Linux lib
         run: |
@@ -252,13 +250,11 @@ jobs:
 
       - name: Copy zstd from repo root into zstandard_cli
         shell: cmd
-        run: |
-          if not exist zstandard_cli\src mkdir zstandard_cli\src
-          xcopy zstd\lib zstandard_cli\src\ /E /I
+        run: xcopy zstd zstandard_cli\zstd /E /I
 
-      - name: List files in zstandard_cli/src to verify
+      - name: List files in zstandard_cli/zstd to verify
         shell: cmd
-        run: dir zstandard_cli\src /S
+        run: dir zstandard_cli\zstd /S
 
       - name: Compile x86_64 Windows lib
         shell: cmd
