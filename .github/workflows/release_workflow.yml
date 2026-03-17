@@ -68,6 +68,21 @@ jobs:
             exit 1
           fi  
 
+      - name: Update root CHANGELOG.md with release info
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          TITLE: ${{ github.event.inputs.title }}
+          CHANGELOG_BODY: ${{ github.event.inputs.changelog }}
+        run: |
+          {
+            echo "## $VERSION - $TITLE"
+            echo ""
+            printf '%s\n' "$CHANGELOG_BODY"
+            echo ""
+            cat CHANGELOG.md
+          } > CHANGELOG.md.new
+          mv CHANGELOG.md.new CHANGELOG.md
+
       - name: Copy CHANGELOG.md
         run: |
           cp CHANGELOG.md "zstandard_platform_interface/CHANGELOG.md"
