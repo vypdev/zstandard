@@ -23,24 +23,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
-# Use local packages when developing from the repo (remove when consuming from pub.dev).
-dependency_overrides:
-  zstandard_native:
-    path: ../../zstandard_native
-  zstandard_android:
-    path: ../../zstandard_android
-  zstandard_ios:
-    path: ../../zstandard_ios
-  zstandard_linux:
-    path: ../../zstandard_linux
-  zstandard_macos:
-    path: ../../zstandard_macos
-  zstandard_platform_interface:
-    path: ../../zstandard_platform_interface
-  zstandard_web:
-    path: ../../zstandard_web
-  zstandard_windows:
-    path: ../../zstandard_windows
 
 dev_dependencies:
   integration_test:

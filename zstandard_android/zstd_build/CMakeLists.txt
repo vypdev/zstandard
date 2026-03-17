@@ -5,13 +5,16 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_android_library VERSION 0.0.1 LANGUAGES C)
 
+# Resolve parent of plugin (repo root or pub-cache hosted dir) for consistent paths
+get_filename_component(_PLUGIN_PARENT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 # 1. Prefer repo local zstandard_native/src/zstd
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../zstandard_native/src/zstd/common")
-  set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../zstandard_native/src/zstd")
+set(_LOCAL_ZSTD "${_PLUGIN_PARENT}/zstandard_native/src/zstd")
+if(EXISTS "${_LOCAL_ZSTD}/common")
+  set(ZSTD_ROOT "${_LOCAL_ZSTD}")
   message(STATUS "Using local zstandard_native: ${ZSTD_ROOT}")
 else()
-  # 2. Look for zstandard_native in pub-cache (sibling package with version suffix)
-  file(GLOB NATIVE_PARENT_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/../../zstandard_native*")
+  # 2. Look for zstandard_native in pub-cache (sibling package with version suffix, e.g. zstandard_native-1.4.0)
+  file(GLOB NATIVE_PARENT_DIRS "${_PLUGIN_PARENT}/zstandard_native*")
   if(NATIVE_PARENT_DIRS)
     list(GET NATIVE_PARENT_DIRS 0 NATIVE_PKG_DIR)
     set(ZSTD_CANDIDATE "${NATIVE_PKG_DIR}/src/zstd")
