@@ -35,11 +35,14 @@ void main() {
       expect(version, isNotNull);
     });
 
-    test('compress returns the same data if length is less than 9 bytes',
+    test('compress and decompress roundtrip for data shorter than 9 bytes',
         () async {
       final data = Uint8List.fromList([1, 2, 3, 4, 5]);
-      final result = await zstandardWeb.compress(data, 3);
-      expect(result, data);
+      final compressed = await zstandardWeb.compress(data, 3);
+      expect(compressed, isNotNull);
+      final decompressed =
+          await zstandardWeb.decompress(compressed ?? Uint8List(0));
+      expect(decompressed, equals(data));
     });
 
     test('compress and decompress small data', () async {

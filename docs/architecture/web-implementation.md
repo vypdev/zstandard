@@ -61,7 +61,7 @@ zstd is built with Emscripten. High-level steps:
 3. Run `emcc` on the zstd sources with flags for WASM, exported functions (`ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, `ZSTD_getFrameContentSize`, `malloc`, `free`), and output name.
 4. Add the wrapper functions `compressData` and `decompressData` in `zstd.js` (or a separate script) that allocate buffers, call the exported C functions, and return the result or null.
 
-Detailed commands and wrapper code are in the [zstandard_web README](https://github.com/landamessenger/zstandard/tree/master/zstandard_web) and in [Platforms — Web](../platforms/web.md).
+Detailed commands and wrapper code are in the [zstandard_web README](https://github.com/vypdev/zstandard/tree/master/zstandard_web) and in [Platforms — Web](../platforms/web.md).
 
 ## Small Data Handling
 

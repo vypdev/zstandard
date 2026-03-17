@@ -1,3 +1,10 @@
+## 1.4.0 - Zstd Update
+
+- Zstd lib updated
+- Multiple symbol resolution bugs fixed
+- Unified source of zstd (not one per platform)
+- Web de/compression improved
+
 ## 1.3.32 - Test Release
 
 - Test release

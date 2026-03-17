@@ -1,9 +1,9 @@
 name: zstandard_cli
 description: CLI implementation of zstandard. For desktops.
-version: 1.3.32
+version: 1.4.0
 
-homepage: https://landamessenger.com
-repository: https://github.com/landamessenger/zstandard/tree/master/zstandard_cli
+homepage: https://vyp.dev
+repository: https://github.com/vypdev/zstandard/tree/master/zstandard_cli
 
 environment:
   sdk: ^3.6.0

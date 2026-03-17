@@ -1,6 +1,6 @@
 [![pub package](https://img.shields.io/pub/v/zstandard.svg)](https://pub.dev/packages/zstandard)  
 [![pub package](https://img.shields.io/pub/v/zstandard_cli.svg)](https://pub.dev/packages/zstandard_cli)  
-[![codecov](https://codecov.io/gh/landamessenger/zstandard/graph/badge.svg)](https://codecov.io/gh/landamessenger/zstandard)
+[![codecov](https://codecov.io/gh/vypdev/zstandard/graph/badge.svg)](https://codecov.io/gh/vypdev/zstandard)
 
 # Zstandard
 
@@ -123,27 +123,27 @@ void main() async {
 
 #### macOS
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/macos_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/macos_decompression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/macos_compression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/macos_decompression_sample.png"></p>
 
 #### Windows
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/windows_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/windows_decompression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/windows_compression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/windows_decompression_sample.png"></p>
 
 #### Linux
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/linux_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_cli/images/linux_decompression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/linux_compression_sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/linux_decompression_sample.png"></p>
 
 #### Flutter Plugin (Android, iOS, macOS, Web, Windows, Linux)
 
-<p align="center"><img width="50%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_android/images/sample.png"></p>
-<p align="center"><img width="50%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_ios/images/sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_macos/images/sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_web/images/sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_windows/images/sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_linux/images/sample.png"></p>
+<p align="center"><img width="50%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_android/images/sample.png"></p>
+<p align="center"><img width="50%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_ios/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_macos/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_web/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_windows/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_linux/images/sample.png"></p>
 
 ---
 

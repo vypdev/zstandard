@@ -48,7 +48,7 @@ When changing the platform interface, ensure all platform implementations are up
 
 ## Questions
 
-- Open a [GitHub Issue](https://github.com/landamessenger/zstandard/issues) for bugs or feature requests.
-- Use [GitHub Discussions](https://github.com/landamessenger/zstandard/discussions) for questions and ideas.
+- Open a [GitHub Issue](https://github.com/vypdev/zstandard/issues) for bugs or feature requests.
+- Use [GitHub Discussions](https://github.com/vypdev/zstandard/discussions) for questions and ideas.
 
 Thank you for contributing.

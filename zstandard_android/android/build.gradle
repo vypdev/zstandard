@@ -1,6 +1,6 @@
 // The Android Gradle Plugin builds the native code with the Android NDK.
 
-group = "com.landamessenger.zstandard_android"
+group = "dev.vyp.zstandard_android"
 version = "1.0"
 
 buildscript {
@@ -29,7 +29,7 @@ apply plugin: "kotlin-android"
 
 android {
     if (project.android.hasProperty("namespace")) {
-        namespace = "com.landamessenger.zstandard_android"
+        namespace = "dev.vyp.zstandard_android"
     }
 
     // Bumping the plugin compileSdk version requires all clients of this plugin

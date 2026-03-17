@@ -1,4 +1,4 @@
-package com.landamessenger.zstandard_android
+package dev.vyp.zstandard_android
 
 import androidx.annotation.NonNull
 

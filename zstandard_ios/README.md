@@ -64,6 +64,6 @@ Unit tests run only on iOS (skipped on other platforms). For integration tests, 
 - **Symbol or framework not found**: Ensure the iOS target is built (e.g. `flutter run -d ios`) and that you are targeting a supported architecture (arm64 device, x86_64/arm64 simulator).
 - **CocoaPods**: Run `pod install` in your app’s `ios/` directory if needed.
 
-See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
 
-<p align="center"><img width="50%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_ios/images/sample.png"></p>
+<p align="center"><img width="50%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_ios/images/sample.png"></p>

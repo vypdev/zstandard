@@ -33,7 +33,7 @@ void act() async {
 }
 ```
 
-<p align="center"><img width="90%" vspace="10" src="https://github.com/landamessenger/zstandard/raw/master/zstandard_web/images/sample.png"></p>
+<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_web/images/sample.png"></p>
 
 ## Generation
 
@@ -170,4 +170,4 @@ Unit tests run only on web (skipped on other platforms). Full integration tests 
 - **compressData / decompressData is not defined**: Ensure `zstd.js` is included in your `web/index.html` and loads before the Flutter app.
 - **WASM load failed**: Ensure `zstd.wasm` is served from the same origin and the path is correct. Check the browser console and network tab.
 
-See the [documentation](https://github.com/landamessenger/zstandard/tree/master/docs) for more.
+See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.

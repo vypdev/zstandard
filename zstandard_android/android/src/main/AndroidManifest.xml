@@ -1,3 +1,3 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.landamessenger.zstandard_android">
+  package="dev.vyp.zstandard_android">
 </manifest>
