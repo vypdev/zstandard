@@ -1,13 +1,11 @@
-name: Push Checks macOS
+name: PR Check macOS
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
       - '!master'
-    #paths:
-    #  - "zstandard_macos/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

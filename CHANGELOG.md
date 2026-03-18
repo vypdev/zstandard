@@ -1,3 +1,8 @@
+## 1.4.1 - C Provider
+
+- Added `zstandard_native` to provide C code to the rest of the plugins
+- Increased test to consume C files (local and pub-cache resolution).
+
 ## 1.4.0 - Zstd Update
 
 - Zstd lib updated

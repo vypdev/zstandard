@@ -1,14 +1,11 @@
-name: Push Checks Platform Interface
+name: PR Check Zstandard
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
       - '!master'
-    #paths:
-    #  - "zstandard_platform_interface/**"
-
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,8 +15,8 @@ env:
   FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
-  check_platform_interface_analyze:
-    name: Analyze Platform Interface
+  check_zstandard_analyze:
+    name: Analyze Zstandard
     runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
@@ -30,16 +27,17 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_platform_interface
+        working-directory: zstandard
         run: flutter pub get
 
       - name: Analyze check
-        working-directory: zstandard_platform_interface
+        working-directory: zstandard
         run: flutter analyze
 
-  check_platform_interface_test:
-    name: Test Platform Interface
+  check_zstandard_test:
+    name: Test Zstandard
     runs-on: [self-hosted, macOS]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -49,36 +47,42 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_platform_interface
+        working-directory: zstandard
         run: flutter pub get
 
       - name: Test check
-        working-directory: zstandard_platform_interface
+        working-directory: zstandard
         run: flutter test --coverage
 
       - name: Install lcov
         run: brew install lcov
 
-      # Coverage threshold: lib/ only (same pattern as CLI)
-      - name: Check coverage threshold (85% of lib/)
-        working-directory: zstandard_platform_interface
+      # Coverage threshold: lib/ only (same pattern as CLI and platform_interface)
+      - name: Check coverage threshold (76% of lib/)
+        working-directory: zstandard
         run: |
           lcov --extract coverage/lcov.info 'lib/*' -o coverage/lcov_lib.info
           COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
           echo "Coverage (lib/ only): ${COVERAGE}%"
-          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
-          if (( $(echo "$COVERAGE < 85" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 85%"; exit 1; fi
+          if [ -z "$COVERAGE" ]; then
+            echo "Could not parse coverage"
+            exit 1
+          fi
+          if (( $(echo "$COVERAGE < 76" | bc -l) )); then
+            echo "ERROR: Coverage ${COVERAGE}% is below 76% threshold"
+            exit 1
+          fi
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: zstandard_platform_interface/coverage/lcov.info
-          flags: platform_interface
+          files: zstandard/coverage/lcov.info
+          flags: zstandard
           fail_ci_if_error: true
 
-  check_platform_interface_publish_dry_run:
-    name: Dry Run Publish Platform Interface
+  check_zstandard_publish_dry_run:
+    name: Dry Run Publish Zstandard
     runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
@@ -89,9 +93,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_platform_interface
+        working-directory: zstandard
         run: flutter pub get
 
       - name: Publish Dry Run
-        working-directory: zstandard_platform_interface
+        working-directory: zstandard
         run: dart pub publish --dry-run

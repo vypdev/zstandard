@@ -1,13 +1,11 @@
-name: Push Checks Linux
+name: PR Check iOS
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
       - '!master'
-    #paths:
-    #  - "zstandard_linux/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,9 +15,9 @@ env:
   FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
-  check_linux_analyze:
-    name: Analyze Linux
-    runs-on: [self-hosted, Linux]
+  check_ios_analyze:
+    name: Analyze iOS
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
 
@@ -29,16 +27,16 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_linux
+        working-directory: zstandard_ios
         run: flutter pub get
 
       - name: Analyze check
-        working-directory: zstandard_linux
+        working-directory: zstandard_ios
         run: flutter analyze
 
-  check_linux_test:
-    name: Test Linux
-    runs-on: [self-hosted, Linux]
+  check_ios_test:
+    name: Test iOS
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
 
@@ -48,24 +46,22 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_linux
+        working-directory: zstandard_ios/example
         run: flutter pub get
 
-      - name: Clean example
-        working-directory: zstandard_linux/example
-        run: flutter clean
-
-      - name: Get example dependencies
-        working-directory: zstandard_linux/example
-        run: flutter pub get
+      - name: Boot iOS simulator
+        run: |
+          chmod +x scripts/manage_ios_simulator.sh
+          ./scripts/manage_ios_simulator.sh start
 
       - name: Run integration tests
-        working-directory: zstandard_linux/example
-        run: flutter test integration_test/ -d linux
+        run: |
+          DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
+          cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
 
-  check_linux_test_from_pub_cache:
-    name: Test Linux (from pub cache)
-    runs-on: [self-hosted, Linux]
+  check_ios_test_from_pub_cache:
+    name: Test iOS (from pub cache)
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
 
@@ -78,24 +74,30 @@ jobs:
         run: rm -rf zstandard_native
 
       - name: Clean and get dependencies (force pub cache)
-        working-directory: zstandard_linux
+        working-directory: zstandard_ios
         run: |
           flutter clean
           flutter pub get
 
       - name: Get dependencies in example (force pub cache)
-        working-directory: zstandard_linux/example
+        working-directory: zstandard_ios/example
         run: |
           flutter clean
           flutter pub get
 
-      - name: Run integration tests (C sources from pub cache)
-        working-directory: zstandard_linux/example
-        run: flutter test integration_test/ -d linux
+      - name: Boot iOS simulator
+        run: |
+          chmod +x scripts/manage_ios_simulator.sh
+          ./scripts/manage_ios_simulator.sh start
 
-  check_linux_publish_dry_run:
-    name: Dry Run Publish Linux
-    runs-on: [self-hosted, Linux]
+      - name: Run integration tests (C sources from pub cache)
+        run: |
+          DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
+          cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
+
+  check_ios_publish_dry_run:
+    name: Dry Run Publish iOS
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
 
@@ -105,9 +107,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
-        working-directory: zstandard_linux
+        working-directory: zstandard_ios
         run: flutter pub get
 
       - name: Publish Dry Run
-        working-directory: zstandard_linux
+        working-directory: zstandard_ios
         run: dart pub publish --dry-run
