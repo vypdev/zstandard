@@ -83,13 +83,14 @@ class PackageSpec {
 Map<String, PackageSpec> _packageConfig(String root) {
   return {
     'zstandard_platform_interface': const PackageSpec(deps: []),
-    'zstandard_android': const PackageSpec(deps: ['zstandard_platform_interface']),
-    'zstandard_ios': const PackageSpec(deps: ['zstandard_platform_interface']),
-    'zstandard_macos': const PackageSpec(deps: ['zstandard_platform_interface']),
-    'zstandard_linux': const PackageSpec(deps: ['zstandard_platform_interface']),
-    'zstandard_windows': const PackageSpec(deps: ['zstandard_platform_interface']),
+    'zstandard_native': const PackageSpec(deps: []),
+    'zstandard_android': const PackageSpec(deps: ['zstandard_platform_interface', 'zstandard_native']),
+    'zstandard_ios': const PackageSpec(deps: ['zstandard_platform_interface', 'zstandard_native']),
+    'zstandard_macos': const PackageSpec(deps: ['zstandard_platform_interface', 'zstandard_native']),
+    'zstandard_linux': const PackageSpec(deps: ['zstandard_platform_interface', 'zstandard_native']),
+    'zstandard_windows': const PackageSpec(deps: ['zstandard_platform_interface', 'zstandard_native']),
     'zstandard_web': const PackageSpec(deps: ['zstandard_platform_interface']),
-    'zstandard_cli': const PackageSpec(deps: []),
+    'zstandard_cli': const PackageSpec(deps: ['zstandard_native']),
     'zstandard': const PackageSpec(deps: [
       'zstandard_platform_interface',
       'zstandard_android',

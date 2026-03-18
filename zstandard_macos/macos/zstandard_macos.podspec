@@ -14,8 +14,8 @@ A new Flutter FFI plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
 
-  # Zstd C sources: synced from repo root zstd/ into Classes/zstd/ by
-  # scripts/sync_zstd_ios_macos.sh. Must exist at pod install time so source_files glob finds them.
+  # Zstd C sources: synced from zstandard_native/src/zstd/ into Classes/zstd/ by
+  # scripts/sync_zstd_ios_macos.sh (repo) or script_phase (pub-cache). Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/zstandard_macos.c', 'Classes/**/*.swift',
                        'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
@@ -27,7 +27,7 @@ A new Flutter FFI plugin project.
                        'Classes/zstd/*.h'
   s.private_header_files = 'Classes/zstd/**/*.h'
 
-  # Run at pod install so Classes/zstd exists when CocoaPods globs source_files (path pods only).
+  # Run at pod install so Classes/zstd exists when CocoaPods globs source_files (repo only; from pub-cache script_phase syncs at build time).
   s.prepare_command = <<~CMD
     bash -c '[ -x "../../scripts/sync_zstd_ios_macos.sh" ] && "../../scripts/sync_zstd_ios_macos.sh" macos'
   CMD
@@ -45,20 +45,12 @@ A new Flutter FFI plugin project.
     'STRIP_INSTALLED_PRODUCT' => 'NO',
   }
 
-  # script_phases run at BUILD time; source_files glob runs at POD INSTALL time. So if Classes/zstd
-  # doesn't exist at pod install (e.g. path pod, prepare_command not run), the target gets no zstd
-  # files. before_headers sync ensures latest zstd at build.
-  # Sync must run BEFORE Headers (Copy Headers reads Classes/zstd). CocoaPods runs Headers before
-  # Compile, so we use :before_headers so the sync runs first. Find repo root by walking up from
-  # the resolved pod path; use SRCROOT when PODS_TARGET_SRCROOT is relative (e.g. Flutter .symlinks).
-  # Remove synced zstd uses :any so it runs in the default (last) position and is not reordered
-  # before other targets/phases that might still need the source (e.g. another target reading from
-  # this pod's SRCROOT). CocoaPods only supports :before_headers, :after_headers, :before_compile,
-  # :after_compile; :any leaves the phase at the end of the target's build phases.
+  # script_phases run at BUILD time. 1) Repo: run sync script from ROOT. 2) Pub-cache: find zstandard_native via package_config and rsync.
   s.script_phases = [
     {
       :name => 'Sync zstd',
       :script => <<~SCRIPT,
+        DEST="${PODS_TARGET_SRCROOT}/Classes/zstd"
         POD_ROOT="$(cd "${PODS_TARGET_SRCROOT}" 2>/dev/null && pwd -P)"
         [ -z "$POD_ROOT" ] && POD_ROOT="$(cd "${SRCROOT}/${PODS_TARGET_SRCROOT}" 2>/dev/null && pwd -P)"
         ROOT="${POD_ROOT:-$PODS_TARGET_SRCROOT}"
@@ -66,13 +58,31 @@ A new Flutter FFI plugin project.
         if [ -n "$ROOT" ] && [ -f "$ROOT/scripts/sync_zstd_ios_macos.sh" ]; then
           bash "$ROOT/scripts/sync_zstd_ios_macos.sh" macos
           CANONICAL="$ROOT/zstandard_macos/macos/Classes/zstd"
-          DEST="${PODS_TARGET_SRCROOT}/Classes/zstd"
           if [ -d "$CANONICAL" ]; then
             REAL_DEST="$(cd "${PODS_TARGET_SRCROOT}" 2>/dev/null && pwd -P)/Classes/zstd" || REAL_DEST="$DEST"
             if [ "$(cd "$CANONICAL" 2>/dev/null && pwd -P)" != "$(cd "$REAL_DEST" 2>/dev/null && pwd -P)" ]; then
               mkdir -p "$REAL_DEST"
               rsync -a "$CANONICAL/" "$REAL_DEST/"
             fi
+          fi
+        else
+          SRC=""
+          SEARCH="$POD_ROOT"
+          while [ -n "$SEARCH" ]; do
+            if [ -f "$SEARCH/.dart_tool/package_config.json" ]; then
+              NATIVE_ROOT=$(grep -A 2 '"name": "zstandard_native"' "$SEARCH/.dart_tool/package_config.json" 2>/dev/null | grep '"rootUri"' | sed -n 's/.*"rootUri": "file:\\/\\/\\([^"]*\\)".*/\1/p' | head -1)
+              if [ -n "$NATIVE_ROOT" ] && [ -d "$NATIVE_ROOT/src/zstd" ] && [ -f "$NATIVE_ROOT/src/zstd/zstd.h" ]; then
+                SRC="$NATIVE_ROOT/src/zstd"
+                break
+              fi
+            fi
+            SEARCH="${SEARCH%/*}"
+            [ "$SEARCH" = "${SEARCH%/*}" ] && break
+          done
+          if [ -n "$SRC" ]; then
+            mkdir -p "$DEST"
+            rsync -a "$SRC/" "$DEST/"
+            if [ -f "$DEST/module.modulemap" ]; then rm -f "$DEST/module.modulemap"; fi
           fi
         fi
       SCRIPT

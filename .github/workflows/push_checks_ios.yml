@@ -5,8 +5,6 @@ on:
     branches:
       - '**'
       - '!develop'
-      - '!release/**'
-      - '!hotfix/**'
       - '!master'
     #paths:
     #  - "zstandard_ios/**"
@@ -59,6 +57,42 @@ jobs:
           ./scripts/manage_ios_simulator.sh start
 
       - name: Run integration tests
+        run: |
+          DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
+          cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
+
+  check_ios_test_from_pub_cache:
+    name: Test iOS (from pub cache)
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        run: rm -rf zstandard_native
+
+      - name: Clean and get dependencies (force pub cache)
+        working-directory: zstandard_ios
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Get dependencies in example (force pub cache)
+        working-directory: zstandard_ios/example
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Boot iOS simulator
+        run: |
+          chmod +x scripts/manage_ios_simulator.sh
+          ./scripts/manage_ios_simulator.sh start
+
+      - name: Run integration tests (C sources from pub cache)
         run: |
           DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
           cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"

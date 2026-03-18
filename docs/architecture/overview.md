@@ -46,16 +46,20 @@ Defines the contract all platform implementations must satisfy:
 - **MethodChannelZstandardPlatform**: Default implementation used when no native implementation is registered (e.g. in unit tests); only `getPlatformVersion()` is implemented via method channel
 - Platform packages extend `ZstandardPlatform`, implement the three methods, and register themselves via `ZstandardPlatform.instance = ...`
 
+### Native source (zstandard_native)
+
+The C source code of [facebook/zstd](https://github.com/facebook/zstd) and the shared FFI bindings live in the **zstandard_native** package (`zstandard_native/src/zstd/` and `lib/zstandard_native_bindings.dart`). All native platform packages (Android, iOS, macOS, Linux, Windows) and the CLI depend on `zstandard_native` and use it as the single source of truth for zstd. When building from the repository, scripts and CMake resolve `zstandard_native` from the repo; when consuming from pub.dev, they resolve it from the pub cache.
+
 ### Platform Implementations
 
 | Package | Technology | Notes |
 |---------|------------|--------|
-| zstandard_android | FFI + JNI | Native zstd library in `android/`, Dart bindings via FFI |
-| zstandard_ios | FFI | Native zstd in `Classes/zstd/` (synced from repo root `zstd/`), CocoaPods |
-| zstandard_macos | FFI | Native zstd in `Classes/zstd/` (synced from repo root `zstd/`), CocoaPods |
-| zstandard_linux | FFI | Native zstd in `src/`, CMake in `linux/` |
-| zstandard_windows | FFI | Native zstd in `src/`, CMake in `windows/` |
-| zstandard_web | JS interop + WASM | zstd.js / zstd.wasm loaded from `web/` |
+| zstandard_android | FFI + JNI | Native zstd from zstandard_native, CMake in `zstd_build/` |
+| zstandard_ios | FFI | zstd synced from zstandard_native into `Classes/zstd/`, CocoaPods |
+| zstandard_macos | FFI | zstd synced from zstandard_native into `Classes/zstd/`, CocoaPods |
+| zstandard_linux | FFI | Native zstd from zstandard_native, CMake in `zstd_build/` |
+| zstandard_windows | FFI | Native zstd from zstandard_native, CMake in `windows/` |
+| zstandard_web | JS interop + WASM | zstd.js / zstd.wasm loaded from `web/` (built from zstandard_native in dev) |
 
 ### CLI Package (zstandard_cli)
 

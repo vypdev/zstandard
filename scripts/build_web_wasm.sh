@@ -1,26 +1,27 @@
 #!/usr/bin/env bash
-# Build zstd.js and zstd.wasm from the repo's zstd/ using Emscripten (emsdk),
+# Build zstd.js and zstd.wasm from zstandard_native/src/zstd/ using Emscripten (emsdk),
 # then copy them to zstandard_web/blob/ and zstandard_web/example/web/, and add the compressData/decompressData
 # wrappers expected by the web plugin.
 #
 # Usage: from repo root, run: ./scripts/build_web_wasm.sh
 #
 # Requires: git. Downloads emsdk into a temporary directory and removes it
-# after the build. The single source for zstd C code is zstd/ at repo root
-# (same as Android, iOS, macOS, Windows, Linux, and CLI).
+# after the build. The single source for zstd C code is zstandard_native/src/zstd/
+# (development only; this script runs from the repository).
 #
 # See zstandard_web/README.md for usage of the generated files.
 
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ZSTD_ROOT="$ROOT/zstd"
+ZSTD_ROOT="$ROOT/zstandard_native/src/zstd"
 OUT_BLOB="$ROOT/zstandard_web/blob"
 OUT_EXAMPLE_WEB="$ROOT/zstandard_web/example/web"
 OUT_ZSTANDARD_EXAMPLE_WEB="$ROOT/zstandard/example/web"
 
 if [[ ! -d "$ZSTD_ROOT" || ! -f "$ZSTD_ROOT/zstd.h" ]]; then
   echo "Error: Canonical zstd source not found at $ZSTD_ROOT (expected zstd.h)."
-  echo "Run: ./scripts/update_zstd.sh"
+  echo "This script only runs from the repository root during development."
+  echo "Run: ./scripts/update_zstd.sh   # fetches into zstandard_native/src/zstd/"
   exit 1
 fi
 
@@ -166,4 +167,4 @@ echo "Done. zstd.js and zstd.wasm have been written to:"
 echo "  - $OUT_BLOB/"
 echo "  - $OUT_EXAMPLE_WEB/"
 echo "  - $OUT_ZSTANDARD_EXAMPLE_WEB/"
-echo "Built from the same zstd/ source used by Android, iOS, macOS, Windows, Linux, and CLI."
+echo "Built from zstandard_native/src/zstd/ (same source used by Android, iOS, macOS, Windows, Linux, and CLI)."

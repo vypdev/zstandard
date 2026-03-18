@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_linux_library VERSION 0.0.1 LANGUAGES C)
 
-set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../zstd")
+set(ZSTD_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../zstandard_native/src/zstd")
 file(GLOB ZSTD_SRC
         "${ZSTD_ROOT}/common/*.c"
         "${ZSTD_ROOT}/compress/*.c"
