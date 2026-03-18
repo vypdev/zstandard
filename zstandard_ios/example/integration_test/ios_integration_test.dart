@@ -2,11 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:kiri_check/kiri_check.dart';
 import 'package:leak_tracker/leak_tracker.dart';
 import 'package:leak_tracker_testing/leak_tracker_testing.dart';
 import 'package:zstandard_ios/zstandard_ios.dart';
 
-/// iOS integration tests: run on device/simulator. No platform skips.
+/// iOS integration tests: single file to avoid Flutter bug with multiple
+/// integration test files (second file fails with VmServiceDisappearedException).
+/// Run: flutter test integration_test/ -d <device_id>
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -74,5 +77,26 @@ void main() {
         expect(leaks, isLeakFree);
       }
     });
+  });
+
+  group('Property-based tests', () {
+    property(
+      'roundtrip: decompress(compress(x)) == x',
+      () {
+        forAll(
+          binary(minLength: 0, maxLength: 1000),
+          (List<int> data) async {
+            final input = Uint8List.fromList(data);
+            final z = ZstandardIOS();
+            final compressed = await z.compress(input, 3);
+            if (compressed == null) return;
+            final decompressed = await z.decompress(compressed);
+            expect(decompressed, isNotNull);
+            expect(List<int>.from(decompressed!), data);
+          },
+          maxExamples: 100,
+        );
+      },
+    );
   });
 }
