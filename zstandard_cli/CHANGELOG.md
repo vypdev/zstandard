@@ -1,3 +1,7 @@
+## 1.4.3 - Apple C Script
+
+- Fixed Apple compilation script resolution
+
 ## 1.4.2 - C Provider
 
 - Added `zstandard_native` to provide C code to the rest of the plugins
