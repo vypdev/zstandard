@@ -1,6 +1,6 @@
 name: zstandard_cli
 description: CLI implementation of zstandard. For desktops.
-version: 1.4.2
+version: 1.4.3
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_cli
@@ -12,7 +12,7 @@ dependencies:
   ffi: ^2.1.3
   path: ^1.9.1
   platform: ^3.1.6
-  zstandard_native: ^1.4.2
+  zstandard_native: ^1.4.3
 
 dev_dependencies:
   coverage: ^1.9.0
