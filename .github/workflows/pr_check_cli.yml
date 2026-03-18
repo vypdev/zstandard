@@ -1,13 +1,11 @@
-name: Push Checks CLI
+name: PR Check CLI
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
       - '!master'
-    #paths:
-    #  - "zstandard_cli/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

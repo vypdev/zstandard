@@ -1,13 +1,11 @@
-name: Push Checks Android
+name: PR Check Android
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
       - '!master'
-    # paths:
-      # - "zstandard_android/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

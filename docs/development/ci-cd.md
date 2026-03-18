@@ -6,33 +6,33 @@ This document describes the continuous integration and deployment setup for the 
 
 The repository uses **GitHub Actions** for:
 
-- **Push checks**: Analyze and test each package on every push (except to protected branches).
+- **PR checks**: Analyze and test each package on pull requests (open or new commits; except to protected branches).
 - **Release workflow**: Version bumping, building precompiled CLI libraries, tagging, and publishing to pub.dev.
 - **Hotfix workflow**: Expedited fixes and releases when needed.
 
 Workflows are in [`.github/workflows/`](https://github.com/vypdev/zstandard/tree/master/.github/workflows).
 
-## Push check workflows
+## PR check workflows
 
-Each package has a dedicated workflow that runs on push to non-protected branches:
+Each package has a dedicated workflow that runs on pull requests (open or new commits to the PR branch) to non-protected branches:
 
 | Workflow file | Package | Runner | Steps |
 |---------------|---------|--------|--------|
-| `push_checks_zstandard.yml` | zstandard | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_android.yml` | zstandard_android | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_ios.yml` | zstandard_ios | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_macos.yml` | zstandard_macos | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_linux.yml` | zstandard_linux | self-hosted Linux | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_windows.yml` | zstandard_windows | self-hosted Windows | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_web.yml` | zstandard_web | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_cli.yml` | zstandard_cli | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `push_checks_platform_interface.yml` | zstandard_platform_interface | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_zstandard.yml` | zstandard | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_android.yml` | zstandard_android | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_ios.yml` | zstandard_ios | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_macos.yml` | zstandard_macos | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_linux.yml` | zstandard_linux | self-hosted Linux | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_windows.yml` | zstandard_windows | self-hosted Windows | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_web.yml` | zstandard_web | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_cli.yml` | zstandard_cli | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_platform_interface.yml` | zstandard_platform_interface | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
 
-There is no dedicated push-check workflow for **zstandard_native** (it has no Dart tests; it mainly ships C source and bindings). It is published in the release workflow after `platform_interface` and before the platform packages that depend on it.
+There is no dedicated PR check workflow for **zstandard_native** (it has no Dart tests; it mainly ships C source and bindings). It is published in the release workflow after `platform_interface` and before the platform packages that depend on it.
 
 **Branches excluded** from running these checks: `develop`, `release/**`, `hotfix/**`, `master`.
 
-**Concurrency**: Only the latest run per branch/PR is kept; in-progress runs are cancelled when a new push occurs.
+**Concurrency**: Only the latest run per branch/PR is kept; in-progress runs are cancelled when new commits are pushed to the PR.
 
 ### Coverage
 
