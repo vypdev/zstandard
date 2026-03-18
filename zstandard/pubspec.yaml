@@ -1,6 +1,6 @@
 name: zstandard
 description: "Flutter plugin to implement Zstandard compression"
-version: 1.4.1
+version: 1.4.0
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard
@@ -28,13 +28,13 @@ flutter:
 dependencies:
   flutter:
     sdk: flutter
-  zstandard_android: ^1.4.1
-  zstandard_ios: ^1.4.1
-  zstandard_linux: ^1.4.1
-  zstandard_macos: ^1.4.1
-  zstandard_platform_interface: ^1.4.1
-  zstandard_web: ^1.4.1
-  zstandard_windows: ^1.4.1
+  zstandard_android: ^1.4.0
+  zstandard_ios: ^1.4.0
+  zstandard_linux: ^1.4.0
+  zstandard_macos: ^1.4.0
+  zstandard_platform_interface: ^1.4.0
+  zstandard_web: ^1.4.0
+  zstandard_windows: ^1.4.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0

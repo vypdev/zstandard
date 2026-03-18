@@ -1,6 +1,6 @@
 name: zstandard_platform_interface
 description: A common platform interface for the zstandard plugin.
-version: 1.4.1
+version: 1.4.0
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_platform_interface
