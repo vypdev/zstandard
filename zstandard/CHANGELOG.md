@@ -1,3 +1,8 @@
+## 1.5.0 - Dependencies Updated
+
+- Updated direct dependencies
+- Updated native bindings
+
 ## 1.4.4 - Apple C Script
 
 - Fixed Apple compilation script resolution

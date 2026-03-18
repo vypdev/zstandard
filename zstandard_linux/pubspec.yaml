@@ -1,6 +1,6 @@
 name: zstandard_linux
 description: Linux platform implementation of zstandard
-version: 1.4.4
+version: 1.5.0
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_linux
@@ -12,8 +12,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  zstandard_platform_interface: ^1.4.4
-  zstandard_native: ^1.4.4
+  zstandard_platform_interface: ^1.5.0
+  zstandard_native: ^1.5.0
   ffi: ^2.2.0
 
 dev_dependencies:
