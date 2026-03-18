@@ -413,13 +413,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Wait for dependency to be available
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 120
-          max_attempts: 200
-          command: cd zstandard_android && flutter pub get
-
   zstandard_native_publish_dry_run:
     name: Dry Run Publish zstandard_native
     runs-on: [self-hosted, macOS, X64]
