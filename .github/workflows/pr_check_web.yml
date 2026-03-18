@@ -1,15 +1,11 @@
-name: Push Checks Web
+name: PR Check Web
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
-      - '!release/**'
-      - '!hotfix/**'
       - '!master'
-    #paths:
-    #  - "zstandard_web/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -4,65 +4,47 @@ This document describes how to set up Android emulators and iOS simulators for r
 
 ## Android Emulator
 
-### Architecture (Apple Silicon vs Intel)
+### CI (GitHub Actions)
 
-On **Apple Silicon (M1/M2/M3)** the script uses an **arm64-v8a** system image so the emulator runs natively. Using x86_64 on ARM often causes the emulator process to exit immediately. On **Intel Macs** it uses **x86_64**. The AVD name includes the ABI (e.g. `zstandard_test_arm64` or `zstandard_test_x86_64`).
+The push and release workflows use [ReactiveCircus/android-emulator-runner](https://github.com/ReactiveCircus/android-emulator-runner) to start an emulator (API 30, `google_apis`, `pixel_4`) and run the Android integration tests. No local script is used in CI.
 
-### Prerequisites
+### Local: Prerequisites
 
 - **Android SDK**: Install via [Android Studio](https://developer.android.com/studio) or the [command-line tools](https://developer.android.com/studio#command-tools). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT` to the SDK root (e.g. `~/Library/Android/sdk` on macOS).
 - **Platform tools**: Include `adb` (usually in `$ANDROID_HOME/platform-tools`).
-- **Emulator**: Install the "Android Emulator" package from SDK Manager.
-- **System image**: The script installs the correct image for your CPU. On Apple Silicon you may need to install once: `sdkmanager --install "system-images;android-30;google_apis;arm64-v8a"`.
+- **Emulator**: Install the "Android Emulator" package and a system image from SDK Manager (e.g. API 30, `google_apis`, `x86_64` or `arm64-v8a` for Apple Silicon).
 
-### Script: `scripts/manage_android_emulator.sh`
+### Local: Running integration tests
 
-The repository provides a script to create, start, stop, and query the emulator:
+1. **Start an emulator** from Android Studio (AVD Manager → Play) or from the command line:
+   ```bash
+   emulator -avd <your_avd_name> -no-window &
+   ```
+   Wait until the device appears in `adb devices` and is fully booted.
 
-| Command     | Description |
-|------------|-------------|
-| `create`   | Create an AVD (default `zstandard_test_arm64` or `zstandard_test_x86_64` by arch, or `$ZSTANDARD_AVD_NAME`) if it does not exist. Uses the correct system image for your CPU (arm64-v8a on Apple Silicon, x86_64 on Intel). |
-| `start`    | Start the emulator in headless mode and wait for boot. Creates the AVD if missing. |
-| `stop`     | Stop the running emulator and clean up. |
-| `status`   | Print whether the emulator is running. |
-| `device-id`| Print the device ID for use with `flutter test -d <device-id>`. |
-
-**Environment variables:**
-
-- `ZSTANDARD_AVD_NAME`: AVD name (default: `zstandard_test_arm64` on arm64 Macs, `zstandard_test_x86_64` on Intel).
-- `ZSTANDARD_AVD_API_LEVEL`: API level for the system image (default: `30`).
-- `ZSTANDARD_AVD_BOOT_TIMEOUT`: Boot completion timeout in seconds (default: `240`). Increase on slow machines (e.g. `300`).
-- `ZSTANDARD_AVD_DEVICE_READY_TIMEOUT`: Time to wait for the emulator to appear in `adb devices` (default: `60`).
-
-**Example:**
-
-```bash
-# From repo root
-export ANDROID_HOME=~/Library/Android/sdk
-./scripts/manage_android_emulator.sh create   # once
-./scripts/manage_android_emulator.sh start
-./scripts/test_android_integration.sh
-./scripts/manage_android_emulator.sh stop
-```
+2. **Run the tests** from the repo root:
+   ```bash
+   ./scripts/test_android_integration.sh
+   ```
+   The script picks the first connected device/emulator. To use a specific device: `FLUTTER_DEVICE_ID=<id> ./scripts/test_android_integration.sh` (get `<id>` from `flutter devices`).
 
 ### Installing a system image
 
-If `create` fails because no system image is installed:
+If you need to create an AVD, install a system image first, then create the AVD in Android Studio or with `avdmanager`:
 
 ```bash
+# Intel / AMD (x86_64)
 $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-30;google_apis;x86_64"
-```
 
-Then run `./scripts/manage_android_emulator.sh create` again.
+# Apple Silicon (arm64-v8a)
+$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-30;google_apis;arm64-v8a"
+```
 
 ### Troubleshooting
 
 - **"adb not found"**: Ensure `platform-tools` is installed and that `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) is set.
-- **"emulator not found"**: Install the Android Emulator package via SDK Manager.
-- **Emulator does not boot**: Increase `ZSTANDARD_AVD_BOOT_TIMEOUT` or check that the system image matches the host (e.g. `x86_64` on Intel Macs; ARM images for Apple Silicon may be used where available).
-- **"No device/emulator found"**: Run `./scripts/manage_android_emulator.sh start` and wait until `device-id` returns a value before running tests.
-- **"Emulator did not boot within Xs"**: First boot can take several minutes. Set a higher timeout: `ZSTANDARD_AVD_BOOT_TIMEOUT=300 ./scripts/test_android_integration.sh`, or skip Android in the full suite: `ZSTANDARD_SKIP_ANDROID=1 ./scripts/test_all_integration.sh`.
-- **"Emulator process died before device appeared"**: Usually means the wrong ABI for your Mac. On Apple Silicon you must use an **arm64-v8a** system image; the script now selects it automatically. If you had an old AVD (e.g. `zstandard_test` with x86_64), the script now uses a different AVD name per arch (`zstandard_test_arm64` / `zstandard_test_x86_64`). Install the image: `sdkmanager --install "system-images;android-30;google_apis;arm64-v8a"` (for M1/M2). Check the emulator log: `cat .android_emulator.log` in the repo root.
+- **"No Android device or emulator found"**: Start an emulator from Android Studio or run `emulator -avd <avd> -no-window &`, then run the script again. Use `flutter devices` to confirm the device is visible.
+- **To skip Android** in the full integration suite: `ZSTANDARD_SKIP_ANDROID=1 ./scripts/test_all_integration.sh`.
 
 ---
 
@@ -166,6 +148,6 @@ flutter test -d chrome
 
 ## Performance tips
 
-- **Android**: Reuse a single emulator and avoid stopping it between test runs to save boot time. The test script can leave the emulator running; use `manage_android_emulator.sh stop` when done.
+- **Android**: Reuse a single emulator and avoid closing it between test runs to save boot time. Leave the emulator running and run `./scripts/test_android_integration.sh` as needed.
 - **iOS**: Similarly, leaving the simulator booted between runs avoids repeated boot time.
 - **CI**: Self-hosted runners with pre-created AVDs and simulators can reduce job time. Ensure `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) and Xcode are configured on the runner.

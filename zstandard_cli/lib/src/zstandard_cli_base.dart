@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 import 'package:platform/platform.dart';
+import 'package:zstandard_native/zstandard_native_bindings.dart';
 
 import 'utils/lib_loader.dart';
-import 'zstandard_cli_bindings_generated.dart';
 import 'zstandard_interface.dart';
 
 /// Command-line and in-code Zstandard compression for macOS, Windows, and Linux.
@@ -21,8 +21,8 @@ import 'zstandard_interface.dart';
 /// final decompressed = await cli.decompress(compressed!);
 /// ```
 class ZstandardCLI implements ZstandardInterface {
-  final ZstandardCLIBindings _bindings =
-      ZstandardCLIBindings(openZstdLibrary());
+  final ZstandardNativeBindings _bindings =
+      ZstandardNativeBindings(openZstdLibrary());
 
   @override
   Future<Uint8List?> compress(

@@ -1,0 +1,131 @@
+name: PR Check Android
+
+on:
+  pull_request:
+    branches:
+      - '**'
+      - '!develop'
+      - '!master'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+
+jobs:
+  check_android_analyze:
+    name: Analyze Android
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Get dependencies
+        working-directory: zstandard_android
+        run: flutter pub get
+
+      - name: Analyze check
+        working-directory: zstandard_android
+        run: flutter analyze
+
+  check_android_test:
+    name: Test Android
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Get dependencies
+        working-directory: zstandard_android/example
+        run: flutter pub get
+
+      - name: Set up JDK 17 (required by android-emulator-runner / sdkmanager)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run integration tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          profile: pixel_4
+          arch: x86_64
+          avd-name: zstandard_ci_test
+          emulator-port: 5554
+          script: |
+            cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
+
+  check_android_test_from_pub_cache:
+    name: Test Android (from pub cache)
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        run: rm -rf zstandard_native
+
+      - name: Clean and get dependencies (force pub cache)
+        working-directory: zstandard_android
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Get dependencies in example (force pub cache)
+        working-directory: zstandard_android/example
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Set up JDK 17 (required by android-emulator-runner / sdkmanager)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run integration tests on emulator (from pub cache)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: google_apis
+          profile: pixel_4
+          arch: x86_64
+          avd-name: zstandard_ci_test_pubcache
+          emulator-port: 5556
+          script: |
+            cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
+
+  check_android_publish_dry_run:
+    name: Dry Run Publish Android
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Get dependencies
+        working-directory: zstandard_android
+        run: flutter pub get
+
+      - name: Publish Dry Run
+        working-directory: zstandard_android
+        run: dart pub publish --dry-run

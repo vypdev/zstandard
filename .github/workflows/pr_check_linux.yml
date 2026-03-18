@@ -1,15 +1,11 @@
-name: Push Checks Linux
+name: PR Check Linux
 
 on:
-  push:
+  pull_request:
     branches:
       - '**'
       - '!develop'
-      - '!release/**'
-      - '!hotfix/**'
       - '!master'
-    #paths:
-    #  - "zstandard_linux/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,11 +49,45 @@ jobs:
         working-directory: zstandard_linux
         run: flutter pub get
 
+      - name: Clean example
+        working-directory: zstandard_linux/example
+        run: flutter clean
+
       - name: Get example dependencies
         working-directory: zstandard_linux/example
         run: flutter pub get
 
       - name: Run integration tests
+        working-directory: zstandard_linux/example
+        run: flutter test integration_test/ -d linux
+
+  check_linux_test_from_pub_cache:
+    name: Test Linux (from pub cache)
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        run: rm -rf zstandard_native
+
+      - name: Clean and get dependencies (force pub cache)
+        working-directory: zstandard_linux
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Get dependencies in example (force pub cache)
+        working-directory: zstandard_linux/example
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Run integration tests (C sources from pub cache)
         working-directory: zstandard_linux/example
         run: flutter test integration_test/ -d linux
 

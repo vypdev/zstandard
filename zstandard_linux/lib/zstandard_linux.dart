@@ -7,7 +7,7 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/services.dart';
 import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 
-import 'zstandard_linux_bindings_generated.dart'; // Binding generated
+import 'package:zstandard_native/zstandard_native_bindings.dart';
 
 export 'zstandard_ext.dart';
 
@@ -20,7 +20,7 @@ final DynamicLibrary _dylib = () {
   throw UnsupportedError('Platform not supported: ${Platform.operatingSystem}');
 }();
 
-final ZstandardLinuxBindings _bindings = ZstandardLinuxBindings(_dylib);
+final ZstandardNativeBindings _bindings = ZstandardNativeBindings(_dylib);
 
 /// Linux implementation of [ZstandardPlatform] using FFI and the native zstd library.
 ///

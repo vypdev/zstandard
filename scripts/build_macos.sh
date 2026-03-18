@@ -7,13 +7,13 @@
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLI="$ROOT/zstandard_cli"
-ZSTD_SRC="$ROOT/zstd"
+ZSTD_SRC="$ROOT/zstandard_native/src/zstd"
 BIN="$CLI/lib/src/bin"
 mkdir -p "$BIN"
 
 if [[ ! -d "$ZSTD_SRC" || ! -f "$ZSTD_SRC/zstd.h" ]]; then
   echo "Error: Canonical zstd source not found at $ZSTD_SRC"
-  echo "Run: ./scripts/update_zstd.sh   # fetches from github.com/facebook/zstd"
+  echo "Run: ./scripts/update_zstd.sh   # fetches into zstandard_native/src/zstd"
   exit 1
 fi
 echo "Using zstd from $ZSTD_SRC"

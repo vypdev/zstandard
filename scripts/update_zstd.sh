@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update the canonical zstd source at repo root (zstd/) from the official repo.
+# Update the canonical zstd source in zstandard_native/src/zstd/ from the official repo.
 # Usage: from repo root, run: ./scripts/update_zstd.sh
 # Optional: ./scripts/update_zstd.sh v1.5.6   (tag or branch; default: dev)
 #
@@ -8,7 +8,7 @@
 
 set -e
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-ZSTD_DIR="$ROOT/zstd"
+ZSTD_DIR="$ROOT/zstandard_native/src/zstd"
 REF="${1:-dev}"
 
 echo "Fetching zstd from https://github.com/facebook/zstd.git (ref: $REF)..."
@@ -25,5 +25,5 @@ if [[ ! -f "$ZSTD_DIR/zstd.h" ]]; then
   echo "Error: zstd.h not found after copy."
   exit 1
 fi
-echo "Done. zstd/ is now in sync with facebook/zstd @ $REF."
-echo "Next: run ./scripts/sync_zstd_ios_macos.sh"
+echo "Done. zstandard_native/src/zstd/ is now in sync with facebook/zstd @ $REF."
+echo "Next: run ./scripts/sync_zstd_ios_macos.sh and optionally ./scripts/regenerate_bindings.sh"
