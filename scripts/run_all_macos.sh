@@ -35,9 +35,10 @@ step() {
   echo "========== $1 =========="
 }
 
-# 1. Preparar/actualizar librería zstd
+# 1. Preparar/actualizar librería zstd (iOS y macOS)
 step "1/12 — Sync zstd (iOS + macOS)"
-./scripts/sync_zstd_ios_macos.sh
+bash "$ROOT/zstandard_ios/scripts/sync_zstd.sh"
+bash "$ROOT/zstandard_macos/scripts/sync_zstd.sh"
 
 # 2. Actualizar bindings
 step "2/12 — Regenerate bindings"

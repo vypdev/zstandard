@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build macOS precompiled zstd libraries for zstandard_cli (Intel + ARM, universal).
-# Uses the canonical zstd source at repo root zstd/ (run ./scripts/sync_zstd_ios_macos.sh first or copy upstream lib/ into zstd/).
+# Uses the canonical zstd source in zstandard_native/src/zstd/ (see ./scripts/update_zstd.sh). iOS/macOS plugins sync via their own scripts when building.
 # Usage: from repo root, run: ./scripts/build_macos.sh
 # Requires: CMake, Xcode command line tools.
 

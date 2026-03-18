@@ -1,2 +1,2 @@
-// Pull in zstd; Classes/zstd is synced from repo root by scripts/sync_zstd_ios_macos.sh.
+// Pull in zstd; Classes/zstd is synced by this plugin's scripts/sync_zstd.sh.
 #include "zstd/zstd.h"

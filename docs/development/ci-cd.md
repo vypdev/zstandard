@@ -79,7 +79,7 @@ Scripts under [**scripts/**](https://github.com/vypdev/zstandard/tree/master/scr
 
 - `build_macos.sh`, `build_linux.sh`, `build_windows.bat`: Build precompiled zstd libraries for the CLI.
 - `build_android.sh`, `build_ios.sh`: Build or prepare the Android/iOS plugin.
-- `sync_zstd_ios_macos.sh`: Sync the canonical zstd C source (`zstandard_native/src/zstd/`) into the iOS and macOS plugin `Classes/zstd/` trees.
+- Each of `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` syncs the canonical zstd C source (`zstandard_native/src/zstd/`) into that plugin’s `Classes/zstd/` tree.
 - `regenerate_bindings.sh`: Regenerate FFI bindings (ffigen) for all platform packages after zstd source updates.
 - `test_all.sh` / `test_all.bat`: Run tests in all packages.
 - `coverage_report.sh` / `coverage_report.bat`: Generate coverage reports.
