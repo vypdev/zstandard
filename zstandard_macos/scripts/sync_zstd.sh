@@ -3,7 +3,7 @@
 # so CocoaPods can see the sources. Works in repo and when published (pub cache).
 #
 # Usage: ./scripts/sync_zstd.sh
-# Resolves zstd from: 1) sibling zstandard_native (repo), 2) package_config.json (pub or repo).
+# Resolves zstd from: 1) sibling zstandard_native (repo), 2) pub-cache sibling zstandard_native-*, 3) package_config.json (pub or repo).
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,19 +14,32 @@ DEST="$PLUGIN_ROOT/macos/Classes/zstd"
 SRC="$PLUGIN_ROOT/../zstandard_native/src/zstd"
 if [[ ! -d "$SRC" || ! -f "$SRC/zstd.h" ]]; then
   SRC=""
-  # 2. package_config.json (walk up from plugin: plugin itself or app that depends on it)
-  SEARCH="$PLUGIN_ROOT"
-  while [[ -n "$SEARCH" ]]; do
-    if [[ -f "$SEARCH/.dart_tool/package_config.json" ]]; then
-      NATIVE_ROOT=$(grep -A 2 '"name": "zstandard_native"' "$SEARCH/.dart_tool/package_config.json" 2>/dev/null | grep '"rootUri"' | sed -n 's/.*"rootUri": "file:\/\/\([^"]*\)".*/\1/p' | head -1)
-      if [[ -n "$NATIVE_ROOT" && -d "$NATIVE_ROOT/src/zstd" && -f "$NATIVE_ROOT/src/zstd/zstd.h" ]]; then
-        SRC="$NATIVE_ROOT/src/zstd"
+  # 2. Pub cache: sibling zstandard_native-* next to this plugin (e.g. .../pub.dev/zstandard_native-1.4.x)
+  CACHE_DIR="$PLUGIN_ROOT/.."
+  for NATIVE_PKG in "$CACHE_DIR"/zstandard_native-*; do
+    if [[ -d "$NATIVE_PKG" ]]; then
+      CANDIDATE="$NATIVE_PKG/src/zstd"
+      if [[ -d "$CANDIDATE" && -f "$CANDIDATE/zstd.h" ]]; then
+        SRC="$CANDIDATE"
         break
       fi
     fi
-    SEARCH="${SEARCH%/*}"
-    [[ "$SEARCH" = "${SEARCH%/*}" ]] && break
   done
+  # 3. package_config.json (walk up from plugin: plugin itself or app that depends on it)
+  if [[ -z "$SRC" ]]; then
+    SEARCH="$PLUGIN_ROOT"
+    while [[ -n "$SEARCH" ]]; do
+      if [[ -f "$SEARCH/.dart_tool/package_config.json" ]]; then
+        NATIVE_ROOT=$(grep -A 2 '"name": "zstandard_native"' "$SEARCH/.dart_tool/package_config.json" 2>/dev/null | grep '"rootUri"' | sed -n 's/.*"rootUri": "file:\/\/\([^"]*\)".*/\1/p' | head -1)
+        if [[ -n "$NATIVE_ROOT" && -d "$NATIVE_ROOT/src/zstd" && -f "$NATIVE_ROOT/src/zstd/zstd.h" ]]; then
+          SRC="$NATIVE_ROOT/src/zstd"
+          break
+        fi
+      fi
+      SEARCH="${SEARCH%/*}"
+      [[ "$SEARCH" = "${SEARCH%/*}" ]] && break
+    done
+  fi
 fi
 
 if [[ -z "$SRC" || ! -d "$SRC" || ! -f "$SRC/zstd.h" ]]; then
