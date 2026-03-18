@@ -1,6 +1,6 @@
 name: zstandard_native
 description: Native zstd C sources and FFI bindings for the zstandard Flutter plugin.
-version: 1.4.0
+version: 1.4.1
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_native

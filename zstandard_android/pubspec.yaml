@@ -1,6 +1,6 @@
 name: zstandard_android
 description: Android platform implementation of zstandard
-version: 1.4.0
+version: 1.4.1
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_android
@@ -12,8 +12,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  zstandard_platform_interface: ^1.4.0
-  zstandard_native: ^1.4.0
+  zstandard_platform_interface: ^1.4.1
+  zstandard_native: ^1.4.1
   ffi: ^2.1.3
 
 dev_dependencies:
