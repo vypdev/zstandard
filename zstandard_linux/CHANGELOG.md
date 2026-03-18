@@ -1,3 +1,7 @@
+## 1.4.4 - Apple C Script
+
+- Fixed Apple compilation script resolution
+
 ## 1.4.3 - Apple C Script
 
 - Fixed Apple compilation script resolution
