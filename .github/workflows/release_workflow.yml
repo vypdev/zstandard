@@ -123,10 +123,10 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Copy zstd from repo root into zstandard_cli
+      - name: Copy zstd from zstandard_native into zstandard_cli
         run: |
-          cp -r zstd zstandard_cli/
-          ( cd zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
+          cp -r zstandard_native/src/zstd zstandard_cli/
+          ( cd zstandard_native/src/zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
 
       - name: List files in zstandard_cli/zstd to verify
         run: cd zstandard_cli && ls -R zstd
@@ -188,10 +188,10 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Copy zstd from repo root into zstandard_cli
+      - name: Copy zstd from zstandard_native into zstandard_cli
         run: |
-          cp -r zstd zstandard_cli/
-          ( cd zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
+          cp -r zstandard_native/src/zstd zstandard_cli/
+          ( cd zstandard_native/src/zstd && git rev-parse HEAD 2>/dev/null && git describe --tags 2>/dev/null ) || true
 
       - name: List files in zstandard_cli/zstd to verify
         run: cd zstandard_cli && ls -R zstd
@@ -249,9 +249,9 @@ jobs:
         run: |
           git pull origin ${{ github.ref }} --rebase
 
-      - name: Copy zstd from repo root into zstandard_cli
+      - name: Copy zstd from zstandard_native into zstandard_cli
         shell: cmd
-        run: xcopy zstd zstandard_cli\zstd /E /I
+        run: xcopy zstandard_native\src\zstd zstandard_cli\zstd /E /I
 
       - name: List files in zstandard_cli/zstd to verify
         shell: cmd
