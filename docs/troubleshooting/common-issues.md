@@ -58,8 +58,8 @@ Frequently encountered issues and how to resolve them.
 **Cause**: Different packages in the repo (or your app) depend on different versions of zstandard or platform packages.
 
 **What to do**:
-- Use a consistent version in your `pubspec.yaml` (e.g. `zstandard: ^1.3.29`). Run `flutter pub get` and check for resolution errors.
-- If you depend on multiple packages from this repo, align their versions (e.g. all ^1.3.29). See [Migration guide](../guides/migration-guide.md).
+- Use a consistent version in your `pubspec.yaml` (e.g. `zstandard: ^1.4.0`). Run `flutter pub get` and check for resolution errors.
+- If you depend on multiple packages from this repo, align their versions (e.g. all ^1.4.0). See [Migration guide](../guides/migration-guide.md).
 
 ## See also
 

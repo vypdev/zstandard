@@ -68,6 +68,7 @@ Welcome to the Zstandard Flutter plugin documentation. This directory contains c
 | [zstandard](https://pub.dev/packages/zstandard) | Main Flutter plugin for cross-platform compression |
 | [zstandard_cli](https://pub.dev/packages/zstandard_cli) | Pure Dart CLI for macOS, Windows, and Linux |
 | [zstandard_platform_interface](https://pub.dev/packages/zstandard_platform_interface) | Platform interface contract |
+| [zstandard_native](https://pub.dev/packages/zstandard_native) | Shared C source (facebook/zstd) and FFI bindings; used by all native platforms and CLI |
 | zstandard_android, zstandard_ios, zstandard_macos | Mobile and macOS implementations |
 | zstandard_linux, zstandard_windows | Desktop implementations |
 | zstandard_web | Web (WebAssembly) implementation |

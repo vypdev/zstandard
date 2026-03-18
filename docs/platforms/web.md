@@ -15,7 +15,7 @@ The **zstandard_web** package provides the web implementation of the Zstandard F
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.4.0
 ```
 
 2. **Copy web assets** into your Flutter web project:

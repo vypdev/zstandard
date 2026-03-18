@@ -12,7 +12,7 @@ This repository contains a federated Flutter plugin and a CLI package for `zstan
 
 - **[zstandard_cli](https://pub.dev/packages/zstandard_cli):** A pure Dart package providing CLI capabilities for macOS, Windows, and Linux. It enables command-line compression and decompression for data files and streams.
 
-Native platform packages and the CLI share the zstd C source and FFI bindings via the **[zstandard_native](https://github.com/vypdev/zstandard/tree/master/zstandard_native)** package (`zstandard_native/src/zstd/`), so a single copy is used whether you depend on the plugin from the repo or from pub.dev.
+Native platform packages and the CLI share the zstd C source and FFI bindings via the **[zstandard_native](https://pub.dev/packages/zstandard_native)** package (`zstandard_native/src/zstd/`). **zstandard_native** is published to pub.dev as part of this repo’s release set, so a single copy is used whether you depend on the plugin from the repo or from pub.dev.
 
 ---
 
@@ -57,7 +57,7 @@ void main() async {
 
   Uint8List originalData = Uint8List.fromList([...]);
 
-  Uint8List? compressed = await zstandard.compress(originalData);
+  Uint8List? compressed = await zstandard.compress(originalData, 3);
   
   Uint8List? decompressed = await zstandard.decompress(compressed ?? Uint8List(0));
 }

@@ -5,15 +5,15 @@ This page helps you upgrade between versions of the Zstandard plugin and CLI wit
 ## General approach
 
 1. **Check the CHANGELOG** for the version you are upgrading to. Look for "Breaking changes" or "Deprecation".
-2. **Update dependencies** in `pubspec.yaml` to the new version (e.g. `zstandard: ^1.3.30`).
+2. **Update dependencies** in `pubspec.yaml` to the new version (e.g. `zstandard: ^1.4.0`).
 3. **Run** `flutter pub get` (or `dart pub get` for CLI).
 4. **Fix analyzer and tests**: run `flutter analyze` and `flutter test` (or `dart test`) and address any new errors or deprecations.
 5. **Manually test** compress/decompress and platform-specific paths (e.g. web, Android) that you use.
 
 ## Dependency version constraints
 
-- Prefer **caret** constraints for compatibility with patch updates: `zstandard: ^1.3.29`.
-- If you must pin exact versions, use `zstandard: 1.3.29`. Prefer caret for easier upgrades.
+- Prefer **caret** constraints for compatibility with patch updates: `zstandard: ^1.4.0`.
+- If you must pin exact versions, use `zstandard: 1.4.0`. Prefer caret for easier upgrades.
 
 ## API stability
 

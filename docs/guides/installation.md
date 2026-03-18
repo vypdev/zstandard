@@ -8,7 +8,7 @@ Add the main plugin to your app:
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.4.0
 ```
 
 Run:
@@ -47,7 +47,7 @@ For a **pure Dart** project (no Flutter) on macOS, Windows, or Linux:
 
 ```yaml
 dependencies:
-  zstandard_cli: ^1.3.29
+  zstandard_cli: ^1.4.0
 ```
 
 ```bash

@@ -57,7 +57,7 @@ The C source code of [facebook/zstd](https://github.com/facebook/zstd) and the s
 | zstandard_android | FFI + JNI | Native zstd from zstandard_native, CMake in `zstd_build/` |
 | zstandard_ios | FFI | zstd synced from zstandard_native into `Classes/zstd/`, CocoaPods |
 | zstandard_macos | FFI | zstd synced from zstandard_native into `Classes/zstd/`, CocoaPods |
-| zstandard_linux | FFI | Native zstd from zstandard_native, CMake in `linux/` |
+| zstandard_linux | FFI | Native zstd from zstandard_native, CMake in `zstd_build/` |
 | zstandard_windows | FFI | Native zstd from zstandard_native, CMake in `windows/` |
 | zstandard_web | JS interop + WASM | zstd.js / zstd.wasm loaded from `web/` (built from zstandard_native in dev) |
 
