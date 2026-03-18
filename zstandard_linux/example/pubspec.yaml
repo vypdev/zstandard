@@ -12,6 +12,10 @@ dependencies:
     path: ../
   cupertino_icons: ^1.0.8
 
+dependency_overrides:
+  zstandard_native:
+    path: ../../zstandard_native
+
 dev_dependencies:
   integration_test:
     sdk: flutter
