@@ -3,7 +3,8 @@
 # Usage: from repo root, run: ./scripts/update_zstd.sh
 # Optional: ./scripts/update_zstd.sh v1.5.6   (tag or branch; default: dev)
 #
-# Requires: git. After this, run ./scripts/sync_zstd_ios_macos.sh and optionally
+# Requires: git. After this, run zstandard_ios/scripts/sync_zstd.sh and
+# zstandard_macos/scripts/sync_zstd.sh (from repo root), and optionally
 # ./scripts/regenerate_bindings.sh.
 
 set -e
@@ -26,4 +27,4 @@ if [[ ! -f "$ZSTD_DIR/zstd.h" ]]; then
   exit 1
 fi
 echo "Done. zstandard_native/src/zstd/ is now in sync with facebook/zstd @ $REF."
-echo "Next: run ./scripts/sync_zstd_ios_macos.sh and optionally ./scripts/regenerate_bindings.sh"
+echo "Next: run zstandard_ios/scripts/sync_zstd.sh and zstandard_macos/scripts/sync_zstd.sh (from repo root), and optionally ./scripts/regenerate_bindings.sh"

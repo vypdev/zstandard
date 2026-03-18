@@ -55,7 +55,7 @@ If you are developing or modifying a platform package’s native code:
 ### iOS / macOS
 
 - The canonical source is **`zstandard_native/src/zstd/`**. CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
-- Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed, then `./scripts/sync_zstd_ios_macos.sh`). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
+- Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed, then `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` from repo root). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
 - The product is a framework that the Dart code loads via FFI.
 
 ### Linux
@@ -115,9 +115,10 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
 
 2. **Sync zstd into iOS and macOS** (so CocoaPods can see the C sources):
    ```bash
-   ./scripts/sync_zstd_ios_macos.sh
+   bash zstandard_ios/scripts/sync_zstd.sh
+   bash zstandard_macos/scripts/sync_zstd.sh
    ```
-   This copies `zstandard_native/src/zstd/` to `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`. The **podspecs** handle the sync automatically: `prepare_command` runs at pod install when applicable, and a script phase runs before headers at build time. You only need to run the script by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
+   These copy `zstandard_native/src/zstd/` into each plugin’s `Classes/zstd/`. The **podspecs** also run the same scripts: `prepare_command` at pod install and a script phase before headers at build time. You only need to run the scripts by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
 
    After each build, the iOS and macOS podspecs run a script phase that **removes** the copied `Classes/zstd` directory. The next build recreates it via the podspec’s sync phase.
 
