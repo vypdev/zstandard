@@ -48,10 +48,9 @@ To skip Android when running the full suite (e.g. if no emulator or slow machine
 ./scripts/test_ios_integration.sh
 ```
 
-**macOS** (builds framework if needed):
+**macOS** (Flutter builds the app when running tests):
 
 ```bash
-./scripts/ensure_macos_framework.sh
 cd zstandard_macos/example
 flutter test integration_test/ -d macos
 ```
