@@ -53,7 +53,7 @@ Triggered manually (**workflow_dispatch**) with inputs such as version, title, c
    - **macOS**: Clone facebook/zstd, build Intel and ARM64 libs, merge with `lipo` into a universal `libzstandard_macos.dylib`; commit.
    - **Linux**: Clone zstd, build x64 and ARM64 `.so`; commit.
    - **Windows**: Clone zstd, build x64 and ARM64 DLLs; commit.
-3. **Tag and release**: Create git tag (e.g. `v1.4.0`) and GitHub release with changelog.
+3. **Tag and release**: Create git tag (e.g. `v1.5.0`) and GitHub release with changelog.
 4. **Publish**: Publish packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard_cli and zstandard**.
 
 The workflow uses **self-hosted** runners for macOS, Linux, and Windows to build native binaries and run platform-specific steps.

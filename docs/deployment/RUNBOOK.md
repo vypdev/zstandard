@@ -13,7 +13,7 @@ This runbook describes how to run a release, what the pipeline does, and how to 
 1. **Update CHANGELOG.md** at the repo root with the new version and user-facing changes.
 2. In GitHub: **Actions → Task - Release → Run workflow**.
 3. Fill inputs:
-   - **version**: Semver, e.g. `1.4.0` (do not include `v`).
+   - **version**: Semver, e.g. `1.5.0` (do not include `v`).
    - **title**: Short release title.
    - **changelog**: Summary (or paste from CHANGELOG).
    - **issue**: Launcher/issue reference (e.g. `-1` if not used).
@@ -66,7 +66,7 @@ cd zstandard && dart pub publish -f && cd ../..
 
 - **pub.dev does not allow deleting or overwriting published versions.** If some packages were published and others failed, you have two options:
   1. **Fix the failure** (e.g. fix a test, fix credentials, fix network) and **re-run the workflow** with the **same version**. Only the steps that did not yet succeed will effectively run again (e.g. later packages can now resolve the already-published ones).
-  2. **Bump to a new patch version** (e.g. 1.4.0 → 1.4.1), fix the issue, and run a new release so all packages are published under the new version.
+  2. **Bump to a new patch version** (e.g. 1.5.0 → 1.5.1), fix the issue, and run a new release so all packages are published under the new version.
 
 - The workflow includes a **Rollback / recovery guide** job that runs when any publish job fails. It writes a short recovery summary to the GitHub Actions job summary. Use that and this runbook to decide next steps.
 

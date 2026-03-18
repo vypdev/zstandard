@@ -4,7 +4,7 @@ This document outlines how releases of the Zstandard plugin and CLI are prepared
 
 ## Versioning
 
-- All packages (zstandard, zstandard_platform_interface, **zstandard_native**, zstandard_android, zstandard_ios, zstandard_macos, zstandard_linux, zstandard_windows, zstandard_web, zstandard_cli) share the **same version number** (e.g. 1.4.0). **zstandard_native** contains the shared C source and is published so that platform packages and the CLI can depend on it from pub.dev.
+- All packages (zstandard, zstandard_platform_interface, **zstandard_native**, zstandard_android, zstandard_ios, zstandard_macos, zstandard_linux, zstandard_windows, zstandard_web, zstandard_cli) share the **same version number** (e.g. 1.5.0). **zstandard_native** contains the shared C source and is published so that platform packages and the CLI can depend on it from pub.dev.
 - Follow [semantic versioning](https://semver.org/): MAJOR.MINOR.PATCH. Bump:
   - **MAJOR** for incompatible API changes.
   - **MINOR** for new backward-compatible features.
@@ -26,11 +26,11 @@ The project uses a **Release** workflow (e.g. GitHub Actions “Task - Release�
 2. **Copies** CHANGELOG.md into each package (including zstandard_native).
 3. **Updates** `version:` and dependency versions in every package’s `pubspec.yaml`.
 4. **Publishes** packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard and zstandard_cli**.
-5. **Creates** a git tag (e.g. `v1.4.0`) and possibly a GitHub release.
+5. **Creates** a git tag (e.g. `v1.5.0`) and possibly a GitHub release.
 
 The workflow is typically triggered manually (workflow_dispatch) with inputs such as:
 
-- **version**: e.g. `1.4.0`
+- **version**: e.g. `1.5.0`
 - **title**: Release title
 - **changelog**: Summary of changes
 - **issue**: Optional launcher issue reference
@@ -49,7 +49,7 @@ If you need to release without the full workflow:
    - Platform packages (android, ios, macos, linux, windows, web)
    - `zstandard`
    - `zstandard_cli`
-6. **Tag** the release: `git tag vX.Y.Z` (e.g. `v1.4.0`) and push the tag.
+6. **Tag** the release: `git tag vX.Y.Z` (e.g. `v1.5.0`) and push the tag.
 7. **Create** a GitHub release from the tag and paste the changelog.
 
 ## Publishing to pub.dev
@@ -60,10 +60,10 @@ If you need to release without the full workflow:
 
 ## After Release
 
-- Bump the development version in `pubspec.yaml` files if the project uses a separate “next” version (e.g. 1.3.30+1 or 1.4.0-dev).
+- Bump the development version in `pubspec.yaml` files if the project uses a separate “next” version (e.g. 1.3.30+1 or 1.5.0-dev).
 - Add an “Unreleased” or “Next” section in CHANGELOG.md for the next release.
 - Announce the release (e.g. GitHub release notes, changelog link) as appropriate.
 
 ## Hotfixes
 
-For critical fixes, the project may use a **hotfix** workflow (see `.github/workflows/hotfix_workflow.yml` and issue templates). Follow the same versioning and publish order; use a PATCH bump (e.g. 1.4.0 → 1.4.1).
+For critical fixes, the project may use a **hotfix** workflow (see `.github/workflows/hotfix_workflow.yml` and issue templates). Follow the same versioning and publish order; use a PATCH bump (e.g. 1.5.0 → 1.4.1).

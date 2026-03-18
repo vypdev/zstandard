@@ -8,7 +8,7 @@ In your Flutter app’s `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  zstandard: ^1.4.0
+  zstandard: ^1.5.0
 ```
 
 Then run:
@@ -54,7 +54,7 @@ For a pure Dart app on macOS, Windows, or Linux (no Flutter):
 
 ```yaml
 dependencies:
-  zstandard_cli: ^1.4.0
+  zstandard_cli: ^1.5.0
 ```
 
 ```dart
