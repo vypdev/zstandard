@@ -89,7 +89,7 @@ The canonical zstd C source lives in **`zstandard_native/src/zstd/`**. To upgrad
    ./scripts/update_zstd.sh v1.5.7   # or a specific tag/branch
    ```
    This fetches from [facebook/zstd](https://github.com/facebook/zstd) and updates `zstandard_native/src/zstd/`.
-2. Run `./scripts/sync_zstd_ios_macos.sh` so iOS/macOS have the updated source for CocoaPods.
+2. Run `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` (from repo root) so iOS/macOS have the updated source for CocoaPods.
 3. Optionally run `./scripts/regenerate_bindings.sh` and commit any changed `*_bindings_generated.dart` files.
 4. Commit the changes. For releases, the workflow builds precompiled CLI libraries; see `.github/workflows/release_workflow.yml` for how each runner obtains the zstd source (e.g. from the repo or a pinned ref).
 
