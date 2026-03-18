@@ -22,7 +22,7 @@ Linux and Windows tests still run only on their native OS in CI.
 
 See [Emulator and simulator setup](emulator-setup.md) for details.
 
-### Running all tests (no skipeos)
+### Running all tests (no skips)
 
 From the repository root:
 
@@ -30,7 +30,7 @@ From the repository root:
 ./scripts/test_all_integration.sh
 ```
 
-This runs unit tests for pure Dart packages, then integration tests for Android (emulator), iOS (simulator), macOS (after building the framework), and Web (Chrome).
+This runs unit tests for pure Dart packages, then integration tests for Android (emulator), iOS (simulator), macOS (after building the framework), and Web (Chrome), without skipping platform-specific tests.
 
 ### Running individual platform tests
 
@@ -96,7 +96,7 @@ dart test
 ./scripts/test_all.sh
 ```
 
-Use `./scripts/test_all_integration.sh` for full coverage without skipeos (see above).
+Use `./scripts/test_all_integration.sh` for full coverage without skips (see above).
 
 ### Integration tests (main plugin)
 
@@ -112,7 +112,7 @@ Use `-d <device_id>` to run on a specific device or simulator.
 ## Test Structure
 
 - **Unit tests**: In each package’s `test/` directory. Use `test()` and `group()` from `package:test` or `package:flutter_test`. Mock the platform when testing the main plugin or platform interface. For Android, iOS, macOS, and Web, the main platform tests have been moved to integration tests.
-- **Integration tests**: In each platform example’s `integration_test/` directory. They run on a real device, emulator, simulator, or Chrome and exercise the full native/WASM stack with no skipeos.
+- **Integration tests**: In each platform example’s `integration_test/` directory. They run on a real device, emulator, simulator, or Chrome and exercise the full native/WASM stack with no skips.
 
 ## Writing Tests
 

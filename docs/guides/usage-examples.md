@@ -6,6 +6,7 @@ This page shows common usage patterns for the Zstandard plugin and CLI.
 
 ```dart
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:zstandard/zstandard.dart';
 
 Future<void> roundtrip() async {

@@ -42,7 +42,7 @@ The native libraries (e.g. Android .so, iOS framework, Windows DLL, Linux .so) a
 
 ## Native Libraries (Platform Packages)
 
-All platforms use a **single source of truth** for the zstd C library: **`zstd/`** at the repository root. Android, Linux, and Windows compile directly from `zstd/` via CMake (`zstd_build/`). iOS and macOS copy `zstd/` into the plugin’s `Classes/zstd/` at pod install or build time (see below); that copy is temporary and should not be edited.
+All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). iOS and macOS copy it into the plugin’s `Classes/zstd/` at pod install or build time (see below); that copy is temporary and should not be edited.
 
 If you are developing or modifying a platform package’s native code:
 

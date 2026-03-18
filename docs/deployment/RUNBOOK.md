@@ -75,6 +75,10 @@ cd zstandard && dart pub publish -f && cd ../..
   - **Dependency not found**: A package (e.g. `zstandard_platform_interface`) was just published and pub.dev has not indexed it yet. The workflow waits up to ~10 minutes (with backoff) and verifies via the pub.dev API; if it still fails, wait a bit and re-run the same version.
   - **Tests or analyze**: Fix the failing package locally, commit, and re-run the release with the same version.
 
+## Building precompiled CLI libraries (release workflow)
+
+The release workflow jobs that build macOS, Linux, and Windows CLI libraries currently run `cp -r zstd zstandard_cli/`, expecting a **`zstd`** directory at the repository root. The canonical source in the repo is **`zstandard_native/src/zstd/`**. If the "Copy zstd from repo root" step fails (e.g. in a normal clone there is no `zstd` at root), update the workflow to copy from `zstandard_native/src/zstd` into `zstandard_cli/zstd` instead, or ensure the runner has `zstd` at root (e.g. symlink or copy from `zstandard_native/src/zstd`).
+
 ## Updating the zstd (C library) version
 
 The canonical zstd C source lives in **`zstandard_native/src/zstd/`**. To upgrade:

@@ -22,6 +22,7 @@ flutter pub get
 Import and use the main class:
 
 ```dart
+import 'package:flutter/foundation.dart';
 import 'package:zstandard/zstandard.dart';
 
 void main() async {
