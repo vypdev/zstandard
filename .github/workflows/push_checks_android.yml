@@ -72,6 +72,53 @@ jobs:
         if: always()
         run: ./scripts/manage_android_emulator.sh stop || true
 
+  check_android_test_from_pub_cache:
+    name: Test Android (from pub cache)
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        run: rm -rf zstandard_native
+
+      - name: Clean and get dependencies (force pub cache)
+        working-directory: zstandard_android
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Get dependencies in example (force pub cache)
+        working-directory: zstandard_android/example
+        run: |
+          flutter clean
+          flutter pub get
+  
+      - name: Set up JDK 17 (required by sdkmanager/avdmanager)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Create and start emulator
+        run: |
+          chmod +x scripts/manage_android_emulator.sh
+          ./scripts/manage_android_emulator.sh create || true
+          ./scripts/manage_android_emulator.sh start
+
+      - name: Run integration tests (C sources from pub cache)
+        run: |
+          DEVICE_ID=$(./scripts/manage_android_emulator.sh device-id)
+          cd zstandard_android/example && flutter test integration_test/ -d "$DEVICE_ID"
+
+      - name: Stop emulator
+        if: always()
+        run: ./scripts/manage_android_emulator.sh stop || true
+
   check_android_publish_dry_run:
     name: Dry Run Publish Android
     runs-on: [self-hosted, macOS]

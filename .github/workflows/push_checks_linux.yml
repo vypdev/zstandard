@@ -63,6 +63,34 @@ jobs:
         working-directory: zstandard_linux/example
         run: flutter test integration_test/ -d linux
 
+  check_linux_test_from_pub_cache:
+    name: Test Linux (from pub cache)
+    runs-on: [self-hosted, Linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        run: rm -rf zstandard_native
+
+      - name: Get dependencies (platform package resolves zstandard_native from pub)
+        working-directory: zstandard_linux
+        run: flutter pub get
+
+      - name: Clean and get dependencies in example (force pub cache)
+        working-directory: zstandard_linux/example
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Run integration tests (C sources from pub cache)
+        working-directory: zstandard_linux/example
+        run: flutter test integration_test/ -d linux
+
   check_linux_publish_dry_run:
     name: Dry Run Publish Linux
     runs-on: [self-hosted, Linux]

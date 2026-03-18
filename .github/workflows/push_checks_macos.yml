@@ -56,6 +56,35 @@ jobs:
         working-directory: zstandard_macos/example
         run: flutter test integration_test/ -d macos
 
+  check_macos_test_from_pub_cache:
+    name: Test macOS (from pub cache)
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        run: rm -rf zstandard_native
+
+      - name: Ensure macOS framework and get dependencies (from pub)
+        run: |
+          chmod +x scripts/ensure_macos_framework.sh
+          ./scripts/ensure_macos_framework.sh
+
+      - name: Clean and get dependencies in example (force pub cache)
+        working-directory: zstandard_macos/example
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Run integration tests (C sources from pub cache)
+        working-directory: zstandard_macos/example
+        run: flutter test integration_test/ -d macos
+
   check_macos_publish_dry_run:
     name: Dry Run Publish macOS
     runs-on: [self-hosted, macOS]

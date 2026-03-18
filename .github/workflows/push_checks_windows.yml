@@ -57,6 +57,31 @@ jobs:
         shell: cmd
         run: flutter test integration_test/ -d windows
 
+  check_windows_test_from_pub_cache:
+    name: Test Windows (from pub cache)
+    runs-on: [self-hosted, Windows]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Remove zstandard_native to force resolution from pub cache
+        shell: cmd
+        run: rmdir /s /q zstandard_native
+
+      - name: Get dependencies (platform package resolves zstandard_native from pub)
+        working-directory: zstandard_windows
+        shell: cmd
+        run: flutter pub get
+
+      - name: Clean and get dependencies in example (force pub cache)
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter clean && flutter pub get
+
+      - name: Run integration tests (C sources from pub cache)
+        working-directory: zstandard_windows/example
+        shell: cmd
+        run: flutter test integration_test/ -d windows
+
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows
     runs-on: [self-hosted, Windows]
