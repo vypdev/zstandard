@@ -9,7 +9,7 @@ import 'package:zstandard_ios/zstandard_ios.dart';
 
 /// iOS integration tests: single file to avoid Flutter bug with multiple
 /// integration test files (second file fails with VmServiceDisappearedException).
-/// Run: flutter test integration_test/ -d <device_id>
+/// Run: flutter test integration_test/ -d `device_id`
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
