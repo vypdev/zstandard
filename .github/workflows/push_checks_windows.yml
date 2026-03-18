@@ -67,12 +67,12 @@ jobs:
         shell: cmd
         run: rmdir /s /q zstandard_native
 
-      - name: Get dependencies (platform package resolves zstandard_native from pub)
+      - name: Clean and get dependencies (force pub cache)
         working-directory: zstandard_windows
         shell: cmd
-        run: flutter pub get
+        run: flutter clean && flutter pub get
 
-      - name: Clean and get dependencies in example (force pub cache)
+      - name: Get dependencies in example (force pub cache)
         working-directory: zstandard_windows/example
         shell: cmd
         run: flutter clean && flutter pub get

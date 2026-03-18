@@ -77,11 +77,13 @@ jobs:
       - name: Remove zstandard_native to force resolution from pub cache
         run: rm -rf zstandard_native
 
-      - name: Get dependencies (platform package resolves zstandard_native from pub)
+      - name: Clean and get dependencies (force pub cache)
         working-directory: zstandard_linux
-        run: flutter pub get
+        run: |
+          flutter clean
+          flutter pub get
 
-      - name: Clean and get dependencies in example (force pub cache)
+      - name: Get dependencies in example (force pub cache)
         working-directory: zstandard_linux/example
         run: |
           flutter clean

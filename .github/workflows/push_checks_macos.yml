@@ -75,7 +75,13 @@ jobs:
           chmod +x scripts/ensure_macos_framework.sh
           ./scripts/ensure_macos_framework.sh
 
-      - name: Clean and get dependencies in example (force pub cache)
+      - name: Clean and get dependencies (force pub cache)
+        working-directory: zstandard_macos
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Get dependencies in example (force pub cache)
         working-directory: zstandard_macos/example
         run: |
           flutter clean

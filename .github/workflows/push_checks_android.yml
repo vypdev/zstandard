@@ -97,7 +97,7 @@ jobs:
         run: |
           flutter clean
           flutter pub get
-  
+
       - name: Set up JDK 17 (required by sdkmanager/avdmanager)
         uses: actions/setup-java@v4
         with:
