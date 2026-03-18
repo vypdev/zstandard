@@ -1,6 +1,6 @@
 name: zstandard_web
 description: Web platform implementation of zstandard
-version: 1.4.3
+version: 1.4.4
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_web
@@ -22,7 +22,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  zstandard_platform_interface: ^1.4.3
+  zstandard_platform_interface: ^1.4.4
   web: ">=1.0.0 <2.0.0"
 
 dev_dependencies:
