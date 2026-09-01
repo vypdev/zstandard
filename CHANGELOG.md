@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Fixed intermittent iOS and macOS build failures caused by deleting synced zstd sources during compilation.
+- Updated the minimum supported SDK version to Flutter 3.44/Dart 3.12 and migrated Android builds to Built-in Kotlin on AGP 9+.
 
 ## 1.5.0 - Dependencies Updated
 

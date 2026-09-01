@@ -6,8 +6,8 @@ homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard
 
 environment:
-  sdk: ^3.6.0
-  flutter: '>=3.3.0'
+  sdk: ^3.12.0
+  flutter: '>=3.44.0'
 
 flutter:
   plugin:

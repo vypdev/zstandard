@@ -49,6 +49,7 @@ If you are developing or modifying a platform package’s native code:
 ### Android
 
 - The plugin builds the native library via `zstandard_android/zstd_build/CMakeLists.txt`, which compiles sources from `zstandard_native/src/zstd/` (resolved from the repo or pub cache).
+- The Android plugin uses Built-in Kotlin with AGP 9 and newer. The Android examples exercise this path with Flutter 3.47+.
 - Building the Android app (e.g. `flutter build apk` or running from Android Studio) triggers the native build via Gradle/CMake.
 - Ensure the NDK is installed and that `zstandard_native` is available (e.g. `flutter pub get` so the canonical `zstandard_native/src/zstd/` is resolved).
 
