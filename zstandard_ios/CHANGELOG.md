@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Fixed intermittent iOS build failures caused by deleting synced zstd sources during compilation.
+- Added Swift Package Manager support for iOS through the shared `zstandard-native` product; the plugin no longer carries a duplicate zstd source tree.
 
 ## 1.5.0 - Dependencies Updated
 

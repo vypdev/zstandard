@@ -49,6 +49,12 @@ final decompressed = await compressed?.decompress();
 
 This package uses Dart FFI with the zstandard_ios framework (native zstd C library). The framework is built as part of your iOS app when you build or run from Xcode or Flutter.
 
+## Swift Package Manager
+
+The plugin supports Swift Package Manager through the manifest at `ios/zstandard_ios/Package.swift`. Flutter uses this package when Swift Package Manager is enabled for iOS; CocoaPods remains supported for projects using the default dependency manager.
+
+Swift Package Manager gets the `zstandard-native` product from the repository-level package, whose target path is the canonical `zstandard_native/src/zstd/`. The plugin does not carry a second C source tree. CocoaPods refreshes an ignored copy under `ios/Classes/zstd/` at install/build time; run `scripts/sync_zstd.sh` manually only when diagnosing a CocoaPods build.
+
 ## Testing
 
 From the package directory:

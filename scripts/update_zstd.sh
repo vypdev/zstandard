@@ -19,7 +19,9 @@ git clone --depth 1 --branch "$REF" https://github.com/facebook/zstd.git "$TMP"
 
 mkdir -p "$ZSTD_DIR"
 echo "Copying lib/ into $ZSTD_DIR ..."
-rsync -a --delete "$TMP/lib/" "$ZSTD_DIR/"
+# `include/` contains SwiftPM public-header bridges maintained by this repo;
+# preserve it while replacing the upstream source tree.
+rsync -a --delete --exclude='include/' "$TMP/lib/" "$ZSTD_DIR/"
 rm -rf "$TMP"
 
 if [[ ! -f "$ZSTD_DIR/zstd.h" ]]; then

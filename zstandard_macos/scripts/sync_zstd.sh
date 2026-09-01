@@ -51,7 +51,7 @@ fi
 echo "Syncing zstd from $SRC -> $DEST"
 rm -rf "$DEST"
 mkdir -p "$DEST"
-rsync -a "$SRC/" "$DEST/"
+rsync -a --exclude='include' "$SRC/" "$DEST/"
 if [[ -f "$DEST/module.modulemap" ]]; then
   rm -f "$DEST/module.modulemap"
   echo "  Removed module.modulemap from macOS copy (not used by the pod)."

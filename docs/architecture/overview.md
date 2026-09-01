@@ -55,7 +55,7 @@ The C source code of [facebook/zstd](https://github.com/facebook/zstd) and the s
 | Package | Technology | Notes |
 |---------|------------|--------|
 | zstandard_android | FFI + JNI | Native zstd from zstandard_native, CMake in `zstd_build/` |
-| zstandard_ios | FFI | zstd synced from zstandard_native into `Classes/zstd/`, CocoaPods |
+| zstandard_ios | FFI | Swift Package Manager consumes the shared native product; CocoaPods uses an ignored generated copy |
 | zstandard_macos | FFI | zstd synced from zstandard_native into `Classes/zstd/`, CocoaPods |
 | zstandard_linux | FFI | Native zstd from zstandard_native, CMake in `zstd_build/` |
 | zstandard_windows | FFI | Native zstd from zstandard_native, CMake in `windows/` |

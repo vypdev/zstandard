@@ -14,14 +14,14 @@ A new Flutter FFI plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
 
-  # Zstd C sources: synced from zstandard_native/src/zstd/ into Classes/zstd/ by
-  # scripts/sync_zstd.sh (in this plugin). Must exist at pod install time so source_files glob finds them.
+  # Zstd C sources are generated from zstandard_native for CocoaPods. SPM uses
+  # the repository-level package and does not use this generated directory.
   s.source           = { :path => '.' }
-  s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h', 'Classes/*.swift'
+  s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h', 'zstandard_ios/Sources/zstandard_ios/*.swift'
   # zstd.h includes zstd_errors.h; both must be public so the module build finds them.
   s.public_header_files = 'Classes/zstd/zstd.h', 'Classes/zstd/zstd_errors.h'
 
-  # Run at pod install so Classes/zstd exists when CocoaPods globs source_files.
+  # Run at pod install so Classes/zstd exists when source_files is evaluated.
   s.prepare_command = "bash '../scripts/sync_zstd.sh'"
 
   s.dependency 'Flutter'

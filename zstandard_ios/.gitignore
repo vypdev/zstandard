@@ -29,5 +29,5 @@ migrate_working_dir/
 build/
 *.lock
 
-# Generated zstd sources copied from zstandard_native by the podspec sync step.
+# Generated zstd sources copied from zstandard_native by the CocoaPods sync step.
 /ios/Classes/zstd/

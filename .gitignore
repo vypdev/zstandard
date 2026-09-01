@@ -4,6 +4,8 @@ zstandard_cli/zstd/
 */.idea/
 */build/
 */coverage/
+.build/
+.swiftpm/
 
 */*.lock
 .env

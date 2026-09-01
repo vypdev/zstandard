@@ -49,6 +49,10 @@ final decompressed = await compressed?.decompress();
 
 This package uses Dart FFI with the zstandard_macos framework (native zstd C library). Supports x64 and arm64 (Apple Silicon).
 
+## Swift Package Manager
+
+The plugin supports Swift Package Manager through `macos/zstandard_macos/Package.swift`. That package consumes the shared `zstandard-native` product from the repository-level package, so the macOS plugin does not carry a duplicate zstd source tree. CocoaPods remains supported and refreshes its ignored `macos/Classes/zstd/` copy during install/build.
+
 ## Testing
 
 From the package directory:

@@ -42,7 +42,7 @@ The native libraries (e.g. Android .so, iOS framework, Windows DLL, Linux .so) a
 
 ## Native Libraries (Platform Packages)
 
-All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). iOS and macOS copy it into the plugin’s `Classes/zstd/` at pod install or build time (see below); those generated copies should not be edited.
+All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). The repository-level `Package.swift` exposes the same source as the `zstandard-native` SwiftPM product for iOS and macOS. CocoaPods still refreshes ignored copies under each Apple plugin at build time (see below); those generated copies should not be edited directly.
 
 If you are developing or modifying a platform package’s native code:
 
@@ -55,9 +55,10 @@ If you are developing or modifying a platform package’s native code:
 
 ### iOS / macOS
 
-- The canonical source is **`zstandard_native/src/zstd/`**. CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
-- The iOS and macOS generated copies are retained after the build and ignored by Git; this prevents cleanup phases from deleting files while Xcode is compiling them.
-- Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed, then `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` from repo root). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
+- The canonical source is **`zstandard_native/src/zstd/`**. The iOS plugin’s `ios/zstandard_ios/Package.swift` depends on the repository-level `zstandard-native` SwiftPM product; it does not contain a second C source tree.
+- For CocoaPods, `zstandard_ios/scripts/sync_zstd.sh` refreshes the ignored `zstandard_ios/ios/Classes/zstd/` directory at pod install/build time.
+- The macOS plugin uses a `prepare_command` and a script phase to refresh its ignored `zstandard_macos/macos/Classes/zstd/` copy for CocoaPods. No `pre_install` in the app Podfile is required.
+- Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed). To exercise SPM in the iOS example, run `flutter config --enable-swift-package-manager` followed by `flutter build ios --no-codesign`; build iOS/macOS normally to exercise CocoaPods.
 - The product is a framework that the Dart code loads via FFI.
 
 ### Linux
@@ -115,14 +116,12 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
    ```
    This fetches from the [official repo](https://github.com/facebook/zstd) and updates `zstandard_native/src/zstd/`.
 
-2. **Sync zstd into iOS and macOS** (so CocoaPods can see the C sources):
+2. **Refresh the CocoaPods source trees for iOS and macOS**:
    ```bash
    bash zstandard_ios/scripts/sync_zstd.sh
    bash zstandard_macos/scripts/sync_zstd.sh
    ```
-   These copy `zstandard_native/src/zstd/` into each plugin’s `Classes/zstd/`. The **podspecs** also run the same scripts: `prepare_command` at pod install and a script phase before headers at build time. You only need to run the scripts by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
-
-   The iOS and macOS podspecs keep their generated `Classes/zstd` directories after the build.
+   Both scripts refresh ignored build-time copies used by CocoaPods. Swift Package Manager reads the canonical source through the repository-level `Package.swift`, so no iOS source copy is committed. Run both after `update_zstd.sh`; the podspecs also run their scripts during install/build.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash
