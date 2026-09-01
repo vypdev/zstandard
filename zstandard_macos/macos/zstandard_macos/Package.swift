@@ -13,7 +13,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(name: "FlutterMacOS", path: "../FlutterMacOS"),
+        .package(name: "FlutterFramework", path: "../FlutterFramework"),
         .package(
             url: "https://github.com/vypdev/zstandard.git",
             branch: "develop"
@@ -23,7 +23,7 @@ let package = Package(
         .target(
             name: "zstandard_macos",
             dependencies: [
-                .product(name: "FlutterMacOS", package: "FlutterMacOS"),
+                .product(name: "FlutterFramework", package: "FlutterFramework"),
                 .product(name: "zstandard-native", package: "zstandard"),
             ],
             path: "Sources/zstandard_macos",
