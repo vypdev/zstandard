@@ -1,3 +1,7 @@
+## Unreleased
+
+- Fixed intermittent macOS build failures caused by deleting synced zstd sources during compilation.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

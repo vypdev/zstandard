@@ -22,7 +22,7 @@ No additional setup is required for normal use. The plugin registers the macOS i
 
 ## Architecture
 
-- **Native layer**: The facebook/zstd C library is synced from the repo root `zstd/` into the package’s `macos/Classes/zstd/` (via the podspec’s prepare_command and script phases) and built as part of the CocoaPods target, producing a framework that the Dart plugin loads via FFI.
+- **Native layer**: The canonical facebook/zstd C library lives in `zstandard_native/src/zstd/`. The macOS podspec synchronizes it into the generated `macos/Classes/zstd/` directory at pod install/build time and builds it as part of the CocoaPods target, producing a framework that the Dart plugin loads via FFI.
 - **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
 - **Isolates**: The implementation may use a helper isolate for async compression/decompression.
 
@@ -49,9 +49,11 @@ final decompressed = await compressed?.decompress();
 
 If you are developing the zstandard_macos package:
 
-1. The canonical zstd source is at the repo root `zstd/`; the podspec syncs it into `macos/Classes/zstd/` at install/build time.
+1. The canonical zstd source is at `zstandard_native/src/zstd/`; the podspec syncs it into the generated `macos/Classes/zstd/` directory at install/build time.
 2. The macOS build (CocoaPods/Xcode) compiles zstd from `Classes/zstd/` and produces the framework.
 3. FFI bindings are generated (e.g. with `ffigen`) from the zstd headers.
+
+The generated source directory is retained after the build so the Xcode build system cannot delete files while compiling them. It is ignored by Git and must not be edited directly; update `zstandard_native/src/zstd/` instead.
 
 See the package’s build configuration and the repo’s [Building](development/building.md) guide.
 

@@ -55,7 +55,7 @@ If you are developing or modifying a platform package’s native code:
 ### iOS / macOS
 
 - The canonical source is **`zstandard_native/src/zstd/`**. CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
-- The iOS generated copy is retained after the build and ignored by Git; this prevents a cleanup phase from deleting files while Xcode is compiling them. The analogous macOS cleanup phase remains separate follow-up work.
+- The iOS and macOS generated copies are retained after the build and ignored by Git; this prevents cleanup phases from deleting files while Xcode is compiling them.
 - Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed, then `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` from repo root). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
 - The product is a framework that the Dart code loads via FFI.
 
@@ -121,7 +121,7 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
    ```
    These copy `zstandard_native/src/zstd/` into each plugin’s `Classes/zstd/`. The **podspecs** also run the same scripts: `prepare_command` at pod install and a script phase before headers at build time. You only need to run the scripts by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
 
-   The iOS podspec keeps its generated `Classes/zstd` directory after the build; the macOS podspec still removes its generated copy and will be addressed separately.
+   The iOS and macOS podspecs keep their generated `Classes/zstd` directories after the build.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash

@@ -27,3 +27,6 @@ migrate_working_dir/
 **/doc/api/
 .dart_tool/
 build/
+
+# Generated zstd sources copied from zstandard_native by the podspec sync step.
+/macos/Classes/zstd/

@@ -1,6 +1,6 @@
 ## Unreleased
 
-- Fixed intermittent iOS build failures caused by deleting synced zstd sources during compilation.
+- Fixed intermittent iOS and macOS build failures caused by deleting synced zstd sources during compilation.
 
 ## 1.5.0 - Dependencies Updated
 
