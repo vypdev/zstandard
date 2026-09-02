@@ -23,7 +23,12 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: save
 
       - uses: ./.github/actions/setup-preinstalled-flutter
         with:
@@ -32,6 +37,11 @@ jobs:
       - name: Get dependencies
         working-directory: zstandard_ios
         run: flutter pub get
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: restore
 
       - name: Analyze check
         working-directory: zstandard_ios
@@ -45,13 +55,22 @@ jobs:
     name: Test iOS (${{ matrix.dependency_manager }}, ${{ matrix.source }})
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 90
+    concurrency:
+      group: zstandard-apple-native-runner
+      cancel-in-progress: false
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         dependency_manager: [swiftpm, cocoapods]
         source: [workspace, pub-cache]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: save
 
       - uses: ./.github/actions/setup-preinstalled-flutter
         with:
@@ -69,9 +88,10 @@ jobs:
         if: matrix.dependency_manager == 'swiftpm' && matrix.source == 'workspace'
         run: echo "ZSTANDARD_NATIVE_PACKAGE_PATH=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
 
-      - name: Remove workspace native package to force Pub cache resolution
+      - name: Hide workspace native package to force Pub cache resolution
         if: matrix.source == 'pub-cache'
-        run: rm -rf zstandard_native
+        run: |
+          mv zstandard_native "$RUNNER_TEMP/zstandard_native"
 
       - name: Clean plugin and example
         run: |
@@ -85,6 +105,11 @@ jobs:
       - name: Get example dependencies
         working-directory: zstandard_ios/example
         run: flutter pub get
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: restore
 
       - name: Install CocoaPods dependencies
         if: matrix.dependency_manager == 'cocoapods'
@@ -110,12 +135,24 @@ jobs:
         if: always()
         run: ./scripts/manage_ios_simulator.sh stop
 
+      - name: Restore workspace native package
+        if: always() && matrix.source == 'pub-cache'
+        run: |
+          if [[ -d "$RUNNER_TEMP/zstandard_native" ]]; then
+            mv "$RUNNER_TEMP/zstandard_native" zstandard_native
+          fi
+
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: save
 
       - uses: ./.github/actions/setup-preinstalled-flutter
         with:
@@ -124,6 +161,11 @@ jobs:
       - name: Get dependencies
         working-directory: zstandard_ios
         run: flutter pub get
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: restore
 
       - name: Publish Dry Run
         working-directory: zstandard_ios

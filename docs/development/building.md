@@ -62,7 +62,10 @@ If you are developing or modifying a platform package’s native code:
 - CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
 - The iOS and macOS generated copies are retained after the build and ignored by Git; this prevents cleanup phases from deleting files while Xcode is compiling them.
 - To build with Swift Package Manager, use Flutter 3.44 or newer and enable it with `flutter config --enable-swift-package-manager`. To build with CocoaPods, use `flutter config --no-enable-swift-package-manager`, run `pod install`, and then build the example app.
+- The checked-in Apple examples target iOS 15.0 and macOS 12.0, matching the minimum deployment targets enforced by the Flutter 3.47.2 SDK used in CI.
 - In SwiftPM mode the native target is statically linked into the app and Dart FFI resolves its symbols from the process. In CocoaPods mode the plugin framework is embedded and loaded by path.
+
+The Apple workflows run the example applications through a serialized matrix covering both dependency managers (`swiftpm` and `cocoapods`) and both native-source locations (the repository workspace and the pub cache). Each native job builds the example, launches it through Flutter's integration-test runner, and executes the integration tests on the iOS simulator or macOS desktop. The runner uses its preinstalled Apple Silicon Flutter SDK; no SDK download action is used.
 
 ### Linux
 
