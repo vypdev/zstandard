@@ -8,9 +8,10 @@ if [[ -z "${EMULATOR_PORT:-}" ]]; then
 fi
 
 device="emulator-${EMULATOR_PORT}"
-max_attempts=180
-required_consecutive_successes=18
-probe_timeout_seconds=30
+max_attempts=30
+required_consecutive_successes=4
+probe_timeout_seconds=15
+probe_interval_seconds=30
 
 echo "Waiting for Android package services on ${device}..."
 adb -s "$device" wait-for-device
@@ -22,7 +23,6 @@ for attempt in $(seq 1 "$max_attempts"); do
     service check input
     service check settings
     pm path android
-    cmd package list packages
   ' 2>/dev/null || true)"
 
   if [[ "$services" == *"Service package: found"* ]] \
@@ -41,15 +41,12 @@ for attempt in $(seq 1 "$max_attempts"); do
     consecutive_successes=0
   fi
 
-  sleep 5
+  sleep "$probe_interval_seconds"
 done
 
-echo "Android package services did not remain stable for $((required_consecutive_successes * 5)) seconds within $((max_attempts * 5)) seconds." >&2
+echo "Android package services did not remain stable for $((required_consecutive_successes * probe_interval_seconds)) seconds within $((max_attempts * probe_interval_seconds)) seconds." >&2
 adb -s "$device" get-state >&2 || true
 adb -s "$device" shell getprop sys.boot_completed >&2 || true
-adb -s "$device" shell cmd package list packages >&2 || true
-adb -s "$device" shell service check package >&2 || true
-adb -s "$device" shell service check input >&2 || true
-adb -s "$device" shell service check settings >&2 || true
+adb -s "$device" shell 'service check package; service check input; service check settings; pm path android' >&2 || true
 adb -s "$device" logcat -d -b all -t 250 >&2 || true
 exit 1
