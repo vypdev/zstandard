@@ -58,7 +58,7 @@ jobs:
         working-directory: zstandard_android/example
         run: flutter pub get
 
-      - name: Set up JDK 17 (required by android-emulator-runner / sdkmanager)
+      - name: Set up JDK 17 (required by Android SDK tools and Gradle)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -75,24 +75,11 @@ jobs:
         run: flutter build apk --debug
 
       - name: Run integration tests on emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: google_apis
-          profile: pixel_4
-          arch: x86_64
-          avd-name: zstandard_ci_test
-          emulator-port: 5554
-          emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -noaudio -no-boot-anim -camera-back none'
-          disable-linux-hw-accel: true
-          emulator-boot-timeout: 900
-          # The software API 30 image can report boot_completed before the
-          # Android settings service is ready. The tests do not depend on
-          # animations being disabled, so avoid that fragile helper step.
-          disable-animations: false
-          script: |
-            bash scripts/wait_for_android_ci_services.sh
-            cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
+        run: |
+          # Launch the emulator directly so a slow software boot cannot fail
+          # on the action's unconditional input-keyevent helper.
+          bash scripts/run_android_emulator_ci.sh \
+            bash -c 'cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}'
 
   check_android_test_from_pub_cache:
     name: Test Android (from pub cache)
@@ -126,7 +113,7 @@ jobs:
           flutter clean
           flutter pub get
 
-      - name: Set up JDK 17 (required by android-emulator-runner / sdkmanager)
+      - name: Set up JDK 17 (required by Android SDK tools and Gradle)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -143,21 +130,9 @@ jobs:
         run: flutter build apk --debug
 
       - name: Run integration tests on emulator (from pub cache)
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          target: google_apis
-          profile: pixel_4
-          arch: x86_64
-          avd-name: zstandard_ci_test_pubcache
-          emulator-port: 5556
-          emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -noaudio -no-boot-anim -camera-back none'
-          disable-linux-hw-accel: true
-          emulator-boot-timeout: 900
-          disable-animations: false
-          script: |
-            bash scripts/wait_for_android_ci_services.sh
-            cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
+        run: |
+          bash scripts/run_android_emulator_ci.sh \
+            bash -c 'cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}'
 
   check_android_publish_dry_run:
     name: Dry Run Publish Android

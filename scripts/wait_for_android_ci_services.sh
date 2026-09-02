@@ -3,7 +3,7 @@
 set -euo pipefail
 
 if [[ -z "${EMULATOR_PORT:-}" ]]; then
-  echo "EMULATOR_PORT must be set by android-emulator-runner." >&2
+  echo "EMULATOR_PORT must be set by the Android emulator launcher." >&2
   exit 1
 fi
 
