@@ -85,6 +85,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_platform_interface
+          mode: save
+
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
@@ -93,6 +98,11 @@ jobs:
       - name: Get dependencies
         working-directory: zstandard_platform_interface
         run: flutter pub get
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_platform_interface
+          mode: restore
 
       - name: Publish Dry Run
         working-directory: zstandard_platform_interface

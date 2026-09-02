@@ -1,0 +1,42 @@
+name: Preserve Flutter project files
+description: Preserve files that Flutter may rewrite during dependency resolution.
+
+inputs:
+  package:
+    description: Package directory relative to the repository root.
+    required: true
+  mode:
+    description: Save files before Flutter commands or restore them afterwards.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Save or restore analysis options
+      shell: bash
+      env:
+        PACKAGE: ${{ inputs.package }}
+        MODE: ${{ inputs.mode }}
+      run: |
+        set -euo pipefail
+        BACKUP_DIR="$RUNNER_TEMP/flutter-project-files/${PACKAGE//\//_}"
+        files=("analysis_options.yaml" "example/analysis_options.yaml")
+
+        if [[ "$MODE" == 'save' ]]; then
+          mkdir -p "$BACKUP_DIR"
+          for file in "${files[@]}"; do
+            if [[ -f "$PACKAGE/$file" ]]; then
+              mkdir -p "$BACKUP_DIR/$(dirname "$file")"
+              cp "$PACKAGE/$file" "$BACKUP_DIR/$file"
+            fi
+          done
+        elif [[ "$MODE" == 'restore' ]]; then
+          for file in "${files[@]}"; do
+            if [[ -f "$BACKUP_DIR/$file" ]]; then
+              cp "$BACKUP_DIR/$file" "$PACKAGE/$file"
+            fi
+          done
+        else
+          echo "Unsupported mode: $MODE (expected save or restore)."
+          exit 1
+        fi

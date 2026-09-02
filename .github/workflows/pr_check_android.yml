@@ -159,6 +159,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_android
+          mode: save
+
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
@@ -167,6 +172,11 @@ jobs:
       - name: Get dependencies
         working-directory: zstandard_android
         run: flutter pub get
+
+      - uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_android
+          mode: restore
 
       - name: Publish Dry Run
         working-directory: zstandard_android
