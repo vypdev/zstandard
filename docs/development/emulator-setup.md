@@ -6,7 +6,7 @@ This document describes how to set up Android emulators, iOS simulators, Linux d
 
 ### CI (GitHub Actions)
 
-The push and release workflows use [ReactiveCircus/android-emulator-runner](https://github.com/ReactiveCircus/android-emulator-runner) on the `[self-hosted, Linux]` runner to start an emulator (API 30, `google_apis`, `pixel_4`) and run the Android integration tests. The workflow builds the APK first and explicitly uses software emulation because the current self-hosted runner does not expose `/dev/kvm`. No local script is used in CI.
+The push and release workflows use [ReactiveCircus/android-emulator-runner](https://github.com/ReactiveCircus/android-emulator-runner) on the `[self-hosted, Linux]` runner to start an emulator (API 30, `google_apis`, `pixel_4`) and run the Android integration tests. The workflow builds the APK first and explicitly uses software emulation because the current self-hosted runner does not expose `/dev/kvm`. Before Flutter starts, `scripts/wait_for_android_ci_services.sh` requires the package manager to pass repeated `adb` checks for two minutes; this avoids the API 30 software image's early `boot_completed` signal. If that readiness check times out, it prints the relevant Android logcat output. No local script is used in CI.
 
 ### Local: Prerequisites
 
