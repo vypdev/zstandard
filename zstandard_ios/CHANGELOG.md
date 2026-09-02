@@ -1,7 +1,7 @@
 ## Unreleased
 
 - Fixed intermittent iOS build failures caused by deleting synced zstd sources during compilation.
-- Added Swift Package Manager support for iOS through the shared `zstandard-native` product; the plugin no longer carries a duplicate zstd source tree.
+- Deferred Swift Package Manager integration; CocoaPods remains the supported iOS dependency manager until CI can validate the alternative toolchain.
 
 ## 1.5.0 - Dependencies Updated
 

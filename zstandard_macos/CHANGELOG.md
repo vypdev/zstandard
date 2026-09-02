@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Fixed intermittent macOS build failures caused by deleting synced zstd sources during compilation.
+- Deferred Swift Package Manager integration; CocoaPods remains the supported macOS dependency manager until CI can validate the alternative toolchain.
 
 ## 1.5.0 - Dependencies Updated
 

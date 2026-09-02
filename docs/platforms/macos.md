@@ -22,7 +22,7 @@ No additional setup is required for normal use. The plugin registers the macOS i
 
 ## Architecture
 
-- **Native layer**: The canonical facebook/zstd C library lives in `zstandard_native/src/zstd/`. Swift Package Manager consumes the shared `zstandard-native` product exposed by the repository-level `Package.swift`; CocoaPods uses an ignored generated copy under `macos/Classes/zstd/`. The resulting framework is loaded by the Dart plugin via FFI.
+- **Native layer**: The canonical facebook/zstd C library lives in `zstandard_native/src/zstd/`. The macOS podspec synchronizes it into the generated `macos/Classes/zstd/` directory at pod install/build time and builds it as part of the CocoaPods target, producing a framework that the Dart plugin loads via FFI.
 - **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
 - **Isolates**: The implementation may use a helper isolate for async compression/decompression.
 
@@ -49,15 +49,14 @@ final decompressed = await compressed?.decompress();
 
 If you are developing the zstandard_macos package:
 
-1. The canonical zstd source is at `zstandard_native/src/zstd/`; do not copy or edit it in the macOS package.
-2. The project supports CocoaPods through the podspec and Swift Package Manager through `macos/zstandard_macos/Package.swift`, which depends on the shared `zstandard-native` product. CocoaPods compiles zstd from its ignored `Classes/zstd/` copy.
+1. The canonical zstd source is at `zstandard_native/src/zstd/`; the podspec syncs it into the generated `macos/Classes/zstd/` directory at install/build time.
+2. The macOS build (CocoaPods/Xcode) compiles zstd from `Classes/zstd/` and produces the framework.
 3. FFI bindings are generated (e.g. with `ffigen`) from the zstd headers.
 
-The CocoaPods source directory is retained after the build so the Xcode build system cannot delete files while compiling them. It is ignored by Git and must not be edited directly; update `zstandard_native/src/zstd/` instead. SwiftPM does not need this generated directory.
-
-To validate Swift Package Manager integration, run `flutter config --enable-swift-package-manager`, then `flutter build macos`.
+The generated source directory is retained after the build so the Xcode build system cannot delete files while compiling them. It is ignored by Git and must not be edited directly; update `zstandard_native/src/zstd/` instead.
 
 See the package’s build configuration and the repo’s [Building](development/building.md) guide.
+See also the [Apple Dependency Strategy](../development/apple-dependencies.md).
 
 ## Testing
 

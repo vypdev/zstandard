@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Sync zstd C sources from zstandard_native into this plugin's
-# ios/Classes/zstd/ for CocoaPods. Swift Package Manager consumes the
-# repository-level package directly and does not use this generated copy.
-# Run it after updating zstandard_native. Works in repo and when published (pub cache).
+# Sync zstd C source from zstandard_native into this plugin's ios/Classes/zstd/
+# so CocoaPods can see the sources. Works in repo and when published (pub cache).
 #
 # Usage: ./scripts/sync_zstd.sh
 # Resolves zstd from: 1) sibling zstandard_native (repo), 2) pub-cache sibling zstandard_native-*, 3) package_config.json (pub or repo).
@@ -53,7 +51,7 @@ fi
 echo "Syncing zstd from $SRC -> $DEST"
 rm -rf "$DEST"
 mkdir -p "$DEST"
-rsync -a --exclude='include' "$SRC/" "$DEST/"
+rsync -a "$SRC/" "$DEST/"
 if [[ -f "$DEST/module.modulemap" ]]; then
   rm -f "$DEST/module.modulemap"
   echo "  Removed module.modulemap from iOS copy (legacy ZSTD_parameters conflict)."

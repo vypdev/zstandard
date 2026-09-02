@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.47.2' }}
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
 
 jobs:
   check_ios_analyze:
@@ -96,28 +96,6 @@ jobs:
         run: |
           DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
           cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
-
-  check_ios_spm:
-    name: Test Swift Package Manager
-    runs-on: [self-hosted, macOS, X64]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Get dependencies
-        working-directory: zstandard_ios/example
-        run: flutter pub get
-
-      - name: Enable Swift Package Manager
-        run: flutter config --enable-swift-package-manager
-
-      - name: Build with Swift Package Manager
-        working-directory: zstandard_ios/example
-        run: flutter build ios --no-codesign
 
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
