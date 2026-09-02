@@ -1,0 +1,41 @@
+name: Use preinstalled Flutter
+description: Validate and expose the Flutter SDK installed on the Apple Silicon runner.
+
+inputs:
+  flutter-version:
+    description: Required Flutter stable version.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify preinstalled Flutter
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        required_version='${{ inputs.flutter-version }}'
+
+        if [[ "$(uname -m)" != "arm64" ]]; then
+          echo "Expected an Apple Silicon runner, got $(uname -m)." >&2
+          exit 1
+        fi
+
+        if ! command -v flutter >/dev/null 2>&1; then
+          echo 'Flutter is not available in the runner service PATH.' >&2
+          exit 1
+        fi
+
+        flutter_bin="$(command -v flutter)"
+        flutter_root="$(cd "$(dirname "$flutter_bin")/.." && pwd)"
+        actual_version="$(flutter --version | sed -n 's/^Flutter \([^ ]*\).*/\1/p' | head -n 1)"
+
+        if [[ "$actual_version" != "$required_version" ]]; then
+          echo "Expected Flutter $required_version, got ${actual_version:-unknown} at $flutter_root." >&2
+          exit 1
+        fi
+
+        echo "Using Flutter $actual_version at $flutter_root"
+        echo "FLUTTER_ROOT=$flutter_root" >> "$GITHUB_ENV"
+        echo "$flutter_root/bin" >> "$GITHUB_PATH"
+        echo "$flutter_root/bin/cache/dart-sdk/bin" >> "$GITHUB_PATH"

@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/setup-preinstalled-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/setup-preinstalled-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
@@ -106,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/setup-flutter
+      - uses: ./.github/actions/setup-preinstalled-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
