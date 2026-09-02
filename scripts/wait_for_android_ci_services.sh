@@ -12,9 +12,10 @@ max_attempts=30
 required_consecutive_successes=4
 probe_timeout_seconds=15
 probe_interval_seconds=30
+adb_timeout_seconds="${ANDROID_ADB_TIMEOUT_SECONDS:-30}"
 
 echo "Waiting for Android package services on ${device}..."
-adb -s "$device" wait-for-device
+timeout "$adb_timeout_seconds" adb -s "$device" wait-for-device
 
 consecutive_successes=0
 for attempt in $(seq 1 "$max_attempts"); do
@@ -45,8 +46,8 @@ for attempt in $(seq 1 "$max_attempts"); do
 done
 
 echo "Android package services did not remain stable for $((required_consecutive_successes * probe_interval_seconds)) seconds within $((max_attempts * probe_interval_seconds)) seconds." >&2
-adb -s "$device" get-state >&2 || true
-adb -s "$device" shell getprop sys.boot_completed >&2 || true
-adb -s "$device" shell 'service check package; service check input; service check settings; pm path android' >&2 || true
-adb -s "$device" logcat -d -b all -t 250 >&2 || true
+timeout "$adb_timeout_seconds" adb -s "$device" get-state >&2 || true
+timeout "$adb_timeout_seconds" adb -s "$device" shell getprop sys.boot_completed >&2 || true
+timeout "$adb_timeout_seconds" adb -s "$device" shell 'service check package; service check input; service check settings; pm path android' >&2 || true
+timeout "$adb_timeout_seconds" adb -s "$device" logcat -d -b all -t 250 >&2 || true
 exit 1

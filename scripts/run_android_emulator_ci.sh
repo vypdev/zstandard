@@ -81,8 +81,10 @@ export EMULATOR_PORT="$emulator_port"
 emulator_log="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}.log"
 rm -f "$emulator_log"
 
-"$adb_bin" start-server >/dev/null
-"$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
+adb_timeout_seconds="${ANDROID_ADB_TIMEOUT_SECONDS:-30}"
+
+timeout "$adb_timeout_seconds" "$adb_bin" start-server >/dev/null
+timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
 
 echo "Starting software Android emulator on port ${emulator_port}..."
 "$emulator_bin" \
@@ -101,7 +103,7 @@ emulator_pid=$!
 cleanup() {
   local exit_code=$?
 
-  "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
+  timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
   if kill -0 "$emulator_pid" >/dev/null 2>&1; then
     kill "$emulator_pid" >/dev/null 2>&1 || true
     wait "$emulator_pid" >/dev/null 2>&1 || true
@@ -120,7 +122,7 @@ echo "Waiting for Android emulator boot..."
 boot_timeout_seconds=900
 boot_started_at="$(date +%s)"
 while true; do
-  boot_state="$( "$adb_bin" -s "$device" shell getprop sys.boot_completed 2>/dev/null || true )"
+  boot_state="$( timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell getprop sys.boot_completed 2>/dev/null || true )"
   if [[ "$boot_state" == *"1"* ]]; then
     echo "Android emulator boot completed."
     break
