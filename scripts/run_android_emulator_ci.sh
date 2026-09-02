@@ -7,8 +7,8 @@ if [[ $# -eq 0 ]]; then
   exit 2
 fi
 
-api_level="${ANDROID_API_LEVEL:-30}"
-target="${ANDROID_SYSTEM_IMAGE_TARGET:-google_apis}"
+api_level="${ANDROID_API_LEVEL:-31}"
+target="${ANDROID_SYSTEM_IMAGE_TARGET:-google_atd}"
 arch="${ANDROID_SYSTEM_IMAGE_ARCH:-x86_64}"
 avd_name="${ANDROID_AVD_NAME:-zstandard_ci_test}"
 emulator_port="${EMULATOR_PORT:-5554}"
@@ -70,6 +70,7 @@ echo "Creating AVD ${avd_name}..."
 echo no | "$avdmanager_bin" create avd \
   --force \
   --name "$avd_name" \
+  --abi "${target}/${arch}" \
   --package "system-images;android-${api_level};${target};${arch}" \
   --device pixel_4
 
