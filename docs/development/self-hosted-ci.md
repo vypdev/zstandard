@@ -32,6 +32,8 @@ The workflow also calls [`scripts/check_android_ci_prerequisites.sh`](../../scri
 
 The workflow first bootstraps the Android SDK tools, then runs `flutter build apk --debug`, starts an API 30 `google_apis` `pixel_4` emulator with software acceleration, and runs every file in `zstandard_android/example/integration_test/`. A missing SDK or platform tools fails before the test starts with a diagnostic message. Software emulation is slower than KVM and is given a longer job/boot timeout.
 
+The two Android instrumentation variants run sequentially. They share the runner's ADB daemon, and concurrent software emulators can leave one device offline even after it has booted successfully. The pub-cache variant still runs when the repository-source variant fails, so both dependency resolution paths remain observable.
+
 ## Linux job requirements
 
 The workflow builds `zstandard_linux/example` with `flutter build linux --debug`. It then runs the single desktop integration-test file under Xvfb. The same sequence is repeated after removing the repository copy of `zstandard_native`, which verifies resolution from the published package cache.

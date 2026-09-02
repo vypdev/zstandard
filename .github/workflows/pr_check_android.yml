@@ -83,7 +83,7 @@ jobs:
           arch: x86_64
           avd-name: zstandard_ci_test
           emulator-port: 5554
-          emulator-options: '-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect'
+          emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -noaudio -no-boot-anim -camera-back none'
           disable-linux-hw-accel: true
           emulator-boot-timeout: 900
           disable-animations: true
@@ -92,6 +92,10 @@ jobs:
 
   check_android_test_from_pub_cache:
     name: Test Android (from pub cache)
+    # A self-hosted runner has one shared ADB daemon. Keep the two software
+    # emulators from racing over it when both test jobs target the same host.
+    needs: check_android_test
+    if: ${{ always() }}
     runs-on: [self-hosted, Linux]
     timeout-minutes: 60
     steps:
@@ -143,7 +147,7 @@ jobs:
           arch: x86_64
           avd-name: zstandard_ci_test_pubcache
           emulator-port: 5556
-          emulator-options: '-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect'
+          emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -noaudio -no-boot-anim -camera-back none'
           disable-linux-hw-accel: true
           emulator-boot-timeout: 900
           disable-animations: true
