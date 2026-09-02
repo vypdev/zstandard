@@ -91,6 +91,7 @@ jobs:
           # animations being disabled, so avoid that fragile helper step.
           disable-animations: false
           script: |
+            bash scripts/wait_for_android_ci_services.sh
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
 
   check_android_test_from_pub_cache:
@@ -155,6 +156,7 @@ jobs:
           emulator-boot-timeout: 900
           disable-animations: false
           script: |
+            bash scripts/wait_for_android_ci_services.sh
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
 
   check_android_publish_dry_run:
