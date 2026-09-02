@@ -14,7 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+  # Keep CI aligned with the package constraints. The organisation-level
+  # FLUTTER_VERSION variable may intentionally point to an older SDK.
+  FLUTTER_VERSION: '3.47.2'
 
 jobs:
   check_linux_analyze:
@@ -39,8 +41,13 @@ jobs:
   check_linux_test:
     name: Test Linux
     runs-on: [self-hosted, Linux]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          desktop: 'true'
 
       - uses: subosito/flutter-action@v1
         with:
@@ -59,15 +66,24 @@ jobs:
         working-directory: zstandard_linux/example
         run: flutter pub get
 
+      - name: Build Linux example
+        working-directory: zstandard_linux/example
+        run: flutter build linux --debug
+
       - name: Run integration tests
         working-directory: zstandard_linux/example
-        run: flutter test integration_test/ -d linux
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' flutter test integration_test/ -d linux
 
   check_linux_test_from_pub_cache:
     name: Test Linux (from pub cache)
     runs-on: [self-hosted, Linux]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          desktop: 'true'
 
       - uses: subosito/flutter-action@v1
         with:
@@ -89,9 +105,13 @@ jobs:
           flutter clean
           flutter pub get
 
+      - name: Build Linux example from pub cache
+        working-directory: zstandard_linux/example
+        run: flutter build linux --debug
+
       - name: Run integration tests (C sources from pub cache)
         working-directory: zstandard_linux/example
-        run: flutter test integration_test/ -d linux
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' flutter test integration_test/ -d linux
 
   check_linux_publish_dry_run:
     name: Dry Run Publish Linux

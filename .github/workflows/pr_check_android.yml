@@ -14,12 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.47.2' }}
+  # Keep CI aligned with the package constraints. The organisation-level
+  # FLUTTER_VERSION variable may intentionally point to an older SDK.
+  FLUTTER_VERSION: '3.47.2'
 
 jobs:
   check_android_analyze:
     name: Analyze Android
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 
@@ -36,11 +38,18 @@ jobs:
         working-directory: zstandard_android
         run: flutter analyze
 
+      - name: Run package tests
+        working-directory: zstandard_android
+        run: flutter test
+
   check_android_test:
     name: Test Android
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-dependencies
 
       - uses: subosito/flutter-action@v1
         with:
@@ -57,6 +66,31 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Verify Android emulator prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [[ -z "$SDK_ROOT" ]]; then
+            echo "ANDROID_SDK_ROOT or ANDROID_HOME must be configured on the Linux runner."
+            exit 1
+          fi
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/emulator" >> "$GITHUB_PATH"
+          test -x "$SDK_ROOT/platform-tools/adb"
+          test -x "$SDK_ROOT/emulator/emulator"
+          "$SDK_ROOT/platform-tools/adb" version
+          if [[ ! -e /dev/kvm ]]; then
+            echo "KVM is required for the Android emulator on Linux (/dev/kvm is missing)."
+            exit 1
+          fi
+
+      - name: Build Android example APK
+        working-directory: zstandard_android/example
+        run: flutter build apk --debug
+
       - name: Run integration tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -66,14 +100,19 @@ jobs:
           arch: x86_64
           avd-name: zstandard_ci_test
           emulator-port: 5554
+          emulator-options: '-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect'
+          disable-animations: true
           script: |
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
 
   check_android_test_from_pub_cache:
     name: Test Android (from pub cache)
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-dependencies
 
       - uses: subosito/flutter-action@v1
         with:
@@ -101,6 +140,31 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Verify Android emulator prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [[ -z "$SDK_ROOT" ]]; then
+            echo "ANDROID_SDK_ROOT or ANDROID_HOME must be configured on the Linux runner."
+            exit 1
+          fi
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/emulator" >> "$GITHUB_PATH"
+          test -x "$SDK_ROOT/platform-tools/adb"
+          test -x "$SDK_ROOT/emulator/emulator"
+          "$SDK_ROOT/platform-tools/adb" version
+          if [[ ! -e /dev/kvm ]]; then
+            echo "KVM is required for the Android emulator on Linux (/dev/kvm is missing)."
+            exit 1
+          fi
+
+      - name: Build Android example APK from pub cache
+        working-directory: zstandard_android/example
+        run: flutter build apk --debug
+
       - name: Run integration tests on emulator (from pub cache)
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -110,12 +174,14 @@ jobs:
           arch: x86_64
           avd-name: zstandard_ci_test_pubcache
           emulator-port: 5556
+          emulator-options: '-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect'
+          disable-animations: true
           script: |
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
 
   check_android_publish_dry_run:
     name: Dry Run Publish Android
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 

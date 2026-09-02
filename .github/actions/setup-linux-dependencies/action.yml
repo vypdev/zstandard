@@ -1,0 +1,53 @@
+name: Set up Linux CI dependencies
+description: Install the native tools required by the Linux self-hosted CI runners.
+
+inputs:
+  desktop:
+    description: Install GTK and Xvfb for desktop integration tests.
+    required: false
+    default: 'false'
+  coverage:
+    description: Install lcov and bc for coverage gates.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Linux packages
+      shell: bash
+      env:
+        DESKTOP: ${{ inputs.desktop }}
+        COVERAGE: ${{ inputs.coverage }}
+      run: |
+        set -euo pipefail
+
+        if ! command -v apt-get >/dev/null 2>&1; then
+          echo "This action requires a Debian/Ubuntu-based Linux runner."
+          exit 1
+        fi
+
+        if [[ "$(id -u)" -eq 0 ]]; then
+          SUDO=()
+        elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+          SUDO=(sudo)
+        else
+          echo "The self-hosted runner needs passwordless sudo to install CI dependencies."
+          exit 1
+        fi
+
+        packages=(build-essential clang cmake ninja-build pkg-config curl)
+        if [[ "$DESKTOP" == 'true' ]]; then
+          packages+=(libgtk-3-dev xvfb)
+        fi
+        if [[ "$COVERAGE" == 'true' ]]; then
+          packages+=(bc lcov)
+        fi
+
+        "${SUDO[@]}" apt-get update
+        DEBIAN_FRONTEND=noninteractive "${SUDO[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
+
+        cmake --version
+        clang --version
+        ninja --version
+        pkg-config --version

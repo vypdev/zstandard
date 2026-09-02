@@ -23,5 +23,5 @@ chromedriver --port=4444
 flutter drive \
     --driver=test_driver/integration_test.dart \
     --target=integration_test/zstandard_web_integration_test.dart \
-    -d chrome
+    -d web-server --web-port=8080
 ```

@@ -14,12 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+  # Keep CI aligned with the package constraints. The organisation-level
+  # FLUTTER_VERSION variable may intentionally point to an older SDK.
+  FLUTTER_VERSION: '3.47.2'
 
 jobs:
   check_platform_interface_analyze:
     name: Analyze Platform Interface
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 
@@ -38,9 +40,13 @@ jobs:
 
   check_platform_interface_test:
     name: Test Platform Interface
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          coverage: 'true'
 
       - uses: subosito/flutter-action@v1
         with:
@@ -54,9 +60,6 @@ jobs:
       - name: Test check
         working-directory: zstandard_platform_interface
         run: flutter test --coverage
-
-      - name: Install lcov
-        run: brew install lcov
 
       # Coverage threshold: lib/ only (same pattern as CLI)
       - name: Check coverage threshold (85% of lib/)
@@ -78,7 +81,7 @@ jobs:
 
   check_platform_interface_publish_dry_run:
     name: Dry Run Publish Platform Interface
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 

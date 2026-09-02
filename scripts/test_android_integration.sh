@@ -28,6 +28,9 @@ if [[ ! -x "$ADB" ]]; then
   exit 1
 fi
 
+echo "Building Android example APK..."
+(cd "$ROOT/zstandard_android/example" && flutter build apk --debug)
+
 # Use explicit device id if set; otherwise first connected device/emulator from adb
 if [[ -n "$FLUTTER_DEVICE_ID" ]]; then
   DEVICE_ID="$FLUTTER_DEVICE_ID"

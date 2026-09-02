@@ -14,12 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+  # Keep CI aligned with the repository toolchain. The organisation-level
+  # FLUTTER_VERSION variable may intentionally point to an older SDK.
+  FLUTTER_VERSION: '3.47.2'
 
 jobs:
   check_cli_analyze:
     name: Analyze CLI
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 
@@ -38,10 +40,14 @@ jobs:
 
   check_cli_test:
     name: Test CLI
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          coverage: 'true'
 
       - uses: subosito/flutter-action@v1
         with:
@@ -59,9 +65,6 @@ jobs:
       - name: Format coverage to lcov
         working-directory: zstandard_cli
         run: dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json
-
-      - name: Install lcov
-        run: brew install lcov
 
       # Coverage threshold: lib/ only, excluding generated bindings
       - name: Check coverage threshold (79% of lib/)
@@ -82,23 +85,25 @@ jobs:
           flags: cli
           fail_ci_if_error: true
 
-      - name: Run benchmarks
+      - name: Run benchmarks (informational)
         working-directory: zstandard_cli
         run: dart run benchmark/benchmark_suite.dart --output=benchmark_results.json || true
 
-      - name: Check performance regression (if baseline exists)
+      - name: Check Linux performance regression (if baseline exists)
         working-directory: zstandard_cli
         run: |
-          if [ -f benchmark/baselines/baseline_macos_arm64.json ]; then
+          if [ -f benchmark/baselines/baseline_linux_x64.json ]; then
             dart run ../../scripts/check_performance_regression.dart \
-              --baseline=benchmark/baselines/baseline_macos_arm64.json \
+              --baseline=benchmark/baselines/baseline_linux_x64.json \
               --current=benchmark_results.json \
               --threshold=0.10 || true
+          else
+            echo "No Linux baseline found; skipping performance regression check."
           fi
 
   check_cli_publish_dry_run:
     name: Dry Run Publish CLI
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v4
 

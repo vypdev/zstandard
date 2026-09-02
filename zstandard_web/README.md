@@ -163,7 +163,7 @@ From the package directory:
 flutter test
 ```
 
-Unit tests run only on web (skipped on other platforms). Full integration tests are in `example/integration_test/` and require a browser (e.g. `flutter test integration_test/ -d chrome`).
+Unit tests run only on web (skipped on other platforms). Full integration tests are in `example/integration_test/` and require ChromeDriver. Run them with `./scripts/test_web_integration.sh` from the repository root.
 
 ## Troubleshooting
 
