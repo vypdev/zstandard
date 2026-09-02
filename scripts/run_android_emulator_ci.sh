@@ -57,7 +57,7 @@ export PATH="$sdk_root/platform-tools:$sdk_root/emulator:$PATH"
 
 echo "Installing Android emulator prerequisites..."
 set +o pipefail
-yes | "$sdkmanager_bin" --licenses >/dev/null
+yes 2>/dev/null | "$sdkmanager_bin" --licenses >/dev/null
 set -o pipefail
 "$sdkmanager_bin" --install \
   "build-tools;37.0.0" \
@@ -77,6 +77,7 @@ avd_config="$HOME/.android/avd/${avd_name}.avd/config.ini"
 printf 'hw.cpu.ncore=2\n' >> "$avd_config"
 
 device="emulator-${emulator_port}"
+export EMULATOR_PORT="$emulator_port"
 emulator_log="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}.log"
 rm -f "$emulator_log"
 
