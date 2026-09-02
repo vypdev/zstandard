@@ -86,7 +86,10 @@ jobs:
           emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -noaudio -no-boot-anim -camera-back none'
           disable-linux-hw-accel: true
           emulator-boot-timeout: 900
-          disable-animations: true
+          # The software API 30 image can report boot_completed before the
+          # Android settings service is ready. The tests do not depend on
+          # animations being disabled, so avoid that fragile helper step.
+          disable-animations: false
           script: |
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
 
@@ -150,7 +153,7 @@ jobs:
           emulator-options: '-no-window -gpu swiftshader_indirect -no-snapshot -no-snapshot-save -noaudio -no-boot-anim -camera-back none'
           disable-linux-hw-accel: true
           emulator-boot-timeout: 900
-          disable-animations: true
+          disable-animations: false
           script: |
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
 
