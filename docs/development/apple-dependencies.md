@@ -58,10 +58,17 @@ native integration tests, not only by manifest parsing.
 Every Apple change must be tested through both dependency managers on the
 ARM64 self-hosted macOS runner:
 
-- iOS simulator integration tests with Swift Package Manager;
-- iOS simulator integration tests with CocoaPods;
-- macOS integration tests with Swift Package Manager; and
-- macOS integration tests with CocoaPods.
+- iOS simulator builds and integration tests with Swift Package Manager;
+- iOS simulator builds and integration tests with CocoaPods;
+- macOS application builds and integration tests with Swift Package Manager; and
+- macOS application builds and integration tests with CocoaPods.
+
+The iOS workflow boots a simulator with `xcrun simctl` and never opens the
+Simulator application. The macOS workflow builds the application explicitly,
+then `flutter test -d macos` launches it and runs the integration suite in the
+runner's existing graphical session. macOS applications still require a
+WindowServer session, so the macOS runner must remain logged in even though no
+manual interaction is needed.
 
 The matrix also exercises the platform packages with the Dart
 `zstandard_native` dependency resolved from the Pub cache. In the workspace

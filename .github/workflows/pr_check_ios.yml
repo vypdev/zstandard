@@ -21,6 +21,7 @@ jobs:
   check_ios_analyze:
     name: Analyze iOS
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +44,7 @@ jobs:
   check_ios_test:
     name: Test iOS (${{ matrix.dependency_manager }}, ${{ matrix.source }})
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -89,7 +91,11 @@ jobs:
         working-directory: zstandard_ios/example/ios
         run: pod install --verbose
 
-      - name: Boot iOS simulator
+      - name: Build iOS example
+        working-directory: zstandard_ios/example
+        run: flutter build ios --simulator --debug --no-codesign
+
+      - name: Boot iOS simulator headlessly
         run: |
           chmod +x scripts/manage_ios_simulator.sh
           ./scripts/manage_ios_simulator.sh start
@@ -107,6 +113,7 @@ jobs:
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
     runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
