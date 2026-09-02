@@ -25,9 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
@@ -49,9 +48,8 @@ jobs:
         with:
           coverage: 'true'
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
@@ -107,9 +105,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies

@@ -25,9 +25,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
@@ -51,9 +50,8 @@ jobs:
 
       - uses: ./.github/actions/setup-linux-dependencies
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
@@ -101,9 +99,8 @@ jobs:
 
       - uses: ./.github/actions/setup-linux-dependencies
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Remove zstandard_native to force resolution from pub cache
@@ -164,9 +161,8 @@ jobs:
           package: zstandard_android
           mode: save
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
