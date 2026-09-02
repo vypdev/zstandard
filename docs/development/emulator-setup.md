@@ -6,13 +6,13 @@ This document describes how to set up Android emulators, iOS simulators, Linux d
 
 ### CI (GitHub Actions)
 
-The push and release workflows use `scripts/run_android_emulator_ci.sh` on the `[self-hosted, Linux]` runner to install the required SDK components, create an API 31 `google_atd` `pixel_4` AVD, and run the Android integration tests. The Android Test Device image avoids Google Play services that are not needed by this package's tests and is suitable for headless execution. The generated AVD disables GPS because the tests do not use location and a headless runner may not provide the IPv6 loopback needed by the emulator's GNSS socket. The workflow builds the APK first and explicitly uses software emulation because the current self-hosted runner does not expose `/dev/kvm`. The launcher intentionally starts the emulator directly instead of using a generic action whose unconditional input-unlock step is unreliable while this slow software image is still bringing up Android services. Before Flutter starts, `scripts/wait_for_android_ci_services.sh` requires the package, input, and settings services plus the package manager to pass a single combined `adb` probe repeatedly for 90 seconds; this avoids relying on the image's early `boot_completed` signal without multiplying slow ADB round trips. Every ADB operation has its own timeout so a stalled ADB daemon cannot consume the whole job silently; `ANDROID_ADB_TIMEOUT_SECONDS` can override the 30-second default. If boot or readiness times out, the launcher prints the emulator log and the readiness script prints Android logcat output.
+The push and release workflows use `scripts/run_android_emulator_ci.sh` on the `[self-hosted, Linux]` runner to install the required SDK components, create an API 31 `google_atd` `pixel_4` AVD, and run the Android integration tests. The Android Test Device image avoids Google Play services that are not needed by this package's tests and is suitable for headless execution. The generated AVD disables GPS because the tests do not use location. The launcher verifies that the host has an IPv6 loopback and enables it temporarily when the runner provides passwordless `sudo`; the emulator uses `::1` for a local GNSS socket even when GPS is disabled in the AVD. The workflow builds the APK first and explicitly uses software emulation because the current self-hosted runner does not expose `/dev/kvm`. The launcher intentionally starts the emulator directly instead of using a generic action whose unconditional input-unlock step is unreliable while this slow software image is still bringing up Android services. Before Flutter starts, `scripts/wait_for_android_ci_services.sh` requires the package, input, and settings services plus the package manager to pass a single combined `adb` probe repeatedly for 90 seconds; this avoids relying on the image's early `boot_completed` signal without multiplying slow ADB round trips. Every ADB operation has its own timeout so a stalled ADB daemon cannot consume the whole job silently; `ANDROID_ADB_TIMEOUT_SECONDS` can override the 30-second default. If boot or readiness times out, the launcher prints the emulator log and the readiness script prints Android logcat output.
 
 ### Local: Prerequisites
 
 - **Android SDK**: Install via [Android Studio](https://developer.android.com/studio) or the [command-line tools](https://developer.android.com/studio#command-tools). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT` to the SDK root (e.g. `~/Library/Android/sdk` on macOS).
 - **Platform tools**: Include `adb` (usually in `$ANDROID_HOME/platform-tools`).
-- **Emulator**: Install the "Android Emulator" package and a system image from SDK Manager (e.g. API 30, `google_apis`, `x86_64` or `arm64-v8a` for Apple Silicon).
+- **Emulator**: Install the "Android Emulator" package and a system image from SDK Manager (e.g. API 31, `google_atd`, `x86_64` or `arm64-v8a` for Apple Silicon).
 - **Linux CI**: `/dev/kvm` is recommended for speed, but the current workflow can run without it using software emulation.
 
 ### Local: Running integration tests
@@ -35,10 +35,10 @@ If you need to create an AVD, install a system image first, then create the AVD 
 
 ```bash
 # Intel / AMD (x86_64)
-$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-30;google_apis;x86_64"
+$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-31;google_atd;x86_64"
 
 # Apple Silicon (arm64-v8a)
-$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-30;google_apis;arm64-v8a"
+$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "system-images;android-31;google_atd;arm64-v8a"
 ```
 
 ### Troubleshooting

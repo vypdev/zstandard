@@ -15,7 +15,7 @@ Linux and Windows tests still run only on their native OS in CI.
 
 ### Prerequisites (macOS)
 
-1. **Android**: Android SDK with emulator (API 28+). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT`; Linux CI additionally requires `/dev/kvm`.
+1. **Android**: Android SDK with emulator (API 28+). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT`; Linux CI uses software emulation and requires an IPv6 loopback for the emulator's local services.
 2. **iOS**: Xcode with simulators installed.
 3. **macOS**: Xcode command-line tools.
 4. **Web**: Chrome browser.

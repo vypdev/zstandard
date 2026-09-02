@@ -26,7 +26,7 @@ In addition to the common Linux baseline, Android jobs require the emulator runt
 - Android SDK root exposed as `ANDROID_SDK_ROOT` or `ANDROID_HOME`.
 - An Android SDK location with writable command-line tools and `platform-tools/adb`. The workflow bootstraps the command-line tools and platform tools when the runner image does not already provide them.
 - Java 17.
-- KVM is useful for accelerating the x86_64 API 30 emulator, but is not required by the current workflow because the runner does not expose `/dev/kvm`; the workflow explicitly uses software emulation.
+- KVM is useful for accelerating the x86_64 API 31 emulator, but is not required by the current workflow because the runner does not expose `/dev/kvm`; the workflow explicitly uses software emulation.
 
 The workflow also calls [`scripts/check_android_ci_prerequisites.sh`](../../scripts/check_android_ci_prerequisites.sh), which discovers SDKs in the standard Linux locations when the environment variable is missing. A runner should still export `ANDROID_SDK_ROOT` explicitly so all Android tooling uses the same installation.
 
