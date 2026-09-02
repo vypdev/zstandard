@@ -21,7 +21,7 @@ The expected baseline is:
 
 ## Android job requirements
 
-In addition to the common Linux baseline, Android jobs require:
+In addition to the common Linux baseline, Android jobs require the emulator runtime libraries installed by the shared Linux action (`android: 'true'`), including X11, XCB, OpenGL, NSS, PulseAudio, and D-Bus libraries:
 
 - Android SDK root exposed as `ANDROID_SDK_ROOT` or `ANDROID_HOME`.
 - An Android SDK location with writable command-line tools and `platform-tools/adb`. The workflow bootstraps the command-line tools and platform tools when the runner image does not already provide them.

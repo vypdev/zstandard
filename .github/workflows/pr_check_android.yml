@@ -49,6 +49,8 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          android: 'true'
 
       - uses: ./.github/actions/setup-flutter
         with:
@@ -93,6 +95,8 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          android: 'true'
 
       - uses: ./.github/actions/setup-flutter
         with:
