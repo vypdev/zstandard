@@ -5,6 +5,9 @@ on:
     branches:
       - '**'
       - '!master'
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
