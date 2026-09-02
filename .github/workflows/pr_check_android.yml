@@ -88,7 +88,9 @@ jobs:
     # A self-hosted runner has one shared ADB daemon. Keep the two software
     # emulators from racing over it when both test jobs target the same host.
     needs: check_android_test
-    if: ${{ always() }}
+    # Keep this coverage after a real failure, but do not start it after the
+    # upstream job was cancelled (for example, by a newer push).
+    if: ${{ always() && needs.check_android_test.result != 'cancelled' }}
     runs-on: [self-hosted, Linux]
     timeout-minutes: 60
     steps:
