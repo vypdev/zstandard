@@ -108,11 +108,19 @@ jobs:
               cat "$DRIVER_LOG"
               exit 1
             fi
+            set +e
             flutter drive \
               --driver=test_driver/integration_test.dart \
               --target=integration_test/zstandard_web_integration_test.dart \
+              --driver-port=4444 \
+              --chrome-binary="$CHROME_EXECUTABLE" \
+              --web-browser-flag=--disable-dev-shm-usage \
+              --web-browser-flag=--disable-gpu \
               -d web-server \
               --web-port=8080
+            DRIVE_EXIT=$?
+            cat "$DRIVER_LOG"
+            exit "$DRIVE_EXIT"
           '
 
   check_web_publish_dry_run:

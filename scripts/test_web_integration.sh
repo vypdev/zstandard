@@ -102,9 +102,17 @@ elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zst
 
       sleep 2
       echo "Running zstandard_web example integration tests (flutter drive -d web-server)..."
+      local chrome_args=()
+      if [[ -n "${CHROME_EXECUTABLE:-}" ]]; then
+        chrome_args+=("--chrome-binary=$CHROME_EXECUTABLE")
+      fi
       flutter drive \
         --driver=test_driver/integration_test.dart \
         --target=integration_test/zstandard_web_integration_test.dart \
+        --driver-port="$CHROMEDRIVER_PORT" \
+        "${chrome_args[@]}" \
+        --web-browser-flag=--disable-dev-shm-usage \
+        --web-browser-flag=--disable-gpu \
         -d web-server \
         --web-port=8080
     }
