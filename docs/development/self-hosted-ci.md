@@ -26,7 +26,9 @@ In addition to the common Linux baseline, Android jobs require:
 - Android SDK root exposed as `ANDROID_SDK_ROOT` or `ANDROID_HOME`.
 - Executable SDK `platform-tools/adb` and `emulator` binaries.
 - Java 17.
-- Access to `/dev/kvm` for the x86_64 API 30 emulator.
+- Access to `/dev/kvm` for the x86_64 API 30 emulator. The workflow checks read/write access.
+
+The workflow also calls [`scripts/check_android_ci_prerequisites.sh`](../../scripts/check_android_ci_prerequisites.sh), which discovers SDKs in the standard Linux locations when the environment variable is missing. A runner should still export `ANDROID_SDK_ROOT` explicitly so all Android tooling uses the same installation.
 
 The workflow first runs `flutter build apk --debug`, then starts an API 30 `google_apis` `pixel_4` emulator and runs every file in `zstandard_android/example/integration_test/`. A missing SDK, emulator binary, or KVM device fails before the test starts with a diagnostic message.
 
