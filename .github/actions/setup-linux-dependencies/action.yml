@@ -36,7 +36,7 @@ runs:
           exit 1
         fi
 
-        packages=(build-essential clang cmake ninja-build pkg-config curl)
+        packages=(build-essential clang cmake ninja-build pkg-config curl unzip)
         if [[ "$DESKTOP" == 'true' ]]; then
           packages+=(libgtk-3-dev xvfb)
         fi

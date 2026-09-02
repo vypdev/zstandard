@@ -66,6 +66,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v4
+
       - name: Verify Android emulator prerequisites
         run: bash scripts/check_android_ci_prerequisites.sh
 
@@ -121,6 +124,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Set up Android SDK tools
+        uses: android-actions/setup-android@v4
 
       - name: Verify Android emulator prerequisites
         run: bash scripts/check_android_ci_prerequisites.sh

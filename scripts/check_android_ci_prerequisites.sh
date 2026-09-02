@@ -11,11 +11,13 @@ find_sdk_root() {
     "${ANDROID_SDK_ROOT:-}" \
     "${ANDROID_HOME:-}" \
     "$HOME/Android/Sdk" \
+    "$HOME/.android/sdk" \
     "/opt/android-sdk" \
     "/opt/android-sdk-linux" \
     "/usr/local/lib/android/sdk" \
-    "/root/Android/Sdk"; do
-    if [[ -n "$candidate" && -x "$candidate/platform-tools/adb" && -x "$candidate/emulator/emulator" ]]; then
+    "/root/Android/Sdk" \
+    "/root/.android/sdk"; do
+    if [[ -n "$candidate" && -x "$candidate/platform-tools/adb" ]]; then
       printf '%s\n' "$candidate"
       return 0
     fi
@@ -27,10 +29,8 @@ find_sdk_root() {
     adb_path=$(find "$search_root" -type f -path '*/platform-tools/adb' -executable -print -quit 2>/dev/null || true)
     if [[ -n "$adb_path" ]]; then
       candidate="${adb_path%/platform-tools/adb}"
-      if [[ -x "$candidate/emulator/emulator" ]]; then
-        printf '%s\n' "$candidate"
-        return 0
-      fi
+      printf '%s\n' "$candidate"
+      return 0
     fi
   done
 
@@ -59,8 +59,6 @@ if [[ -n "${GITHUB_PATH:-}" ]]; then
 fi
 
 "$SDK_ROOT/platform-tools/adb" version
-"$SDK_ROOT/emulator/emulator" -version
-
 if [[ ! -e /dev/kvm ]]; then
   echo "KVM is required for the Android emulator on Linux (/dev/kvm is missing)." >&2
   exit 1
