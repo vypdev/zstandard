@@ -1,6 +1,11 @@
 name: Diagnose macOS Flutter runner
 
 on:
+  push:
+    branches:
+      - develop
+    paths:
+      - .github/workflows/diagnose_macos_flutter.yml
   workflow_dispatch:
     inputs:
       run_full_flutter_setup:
