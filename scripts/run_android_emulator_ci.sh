@@ -75,7 +75,9 @@ echo no | "$avdmanager_bin" create avd \
   --device pixel_4
 
 avd_config="$HOME/.android/avd/${avd_name}.avd/config.ini"
-printf 'hw.cpu.ncore=2\n' >> "$avd_config"
+# The headless runner does not provide a usable IPv6 loopback for the
+# emulator's GNSS socket, and these integration tests do not use location.
+printf 'hw.cpu.ncore=2\nhw.gps=no\n' >> "$avd_config"
 
 device="emulator-${emulator_port}"
 export EMULATOR_PORT="$emulator_port"
