@@ -9,20 +9,27 @@ fi
 
 device="emulator-${EMULATOR_PORT}"
 max_attempts=180
-required_consecutive_successes=24
+required_consecutive_successes=18
+probe_timeout_seconds=30
 
 echo "Waiting for Android package services on ${device}..."
 adb -s "$device" wait-for-device
 
 consecutive_successes=0
 for attempt in $(seq 1 "$max_attempts"); do
-  packages="$(adb -s "$device" shell cmd package list packages 2>/dev/null || true)"
-  framework_path="$(adb -s "$device" shell pm path android 2>/dev/null || true)"
-  package_service="$(adb -s "$device" shell service check package 2>/dev/null || true)"
+  services="$(timeout "$probe_timeout_seconds" adb -s "$device" shell '
+    service check package
+    service check input
+    service check settings
+    pm path android
+    cmd package list packages
+  ' 2>/dev/null || true)"
 
-  if [[ "$packages" == *"package:"* ]] \
-    && [[ "$framework_path" == *"package:/system/framework/framework-res.apk"* ]] \
-    && [[ "$package_service" == *"Service package: found"* ]]; then
+  if [[ "$services" == *"Service package: found"* ]] \
+    && [[ "$services" == *"Service input: found"* ]] \
+    && [[ "$services" == *"Service settings: found"* ]] \
+    && [[ "$services" == *"package:/system/framework/framework-res.apk"* ]] \
+    && [[ "$services" == *"package:"* ]]; then
     consecutive_successes=$((consecutive_successes + 1))
     echo "Android package services passed readiness check ${consecutive_successes}/${required_consecutive_successes}."
 
@@ -42,5 +49,7 @@ adb -s "$device" get-state >&2 || true
 adb -s "$device" shell getprop sys.boot_completed >&2 || true
 adb -s "$device" shell cmd package list packages >&2 || true
 adb -s "$device" shell service check package >&2 || true
+adb -s "$device" shell service check input >&2 || true
+adb -s "$device" shell service check settings >&2 || true
 adb -s "$device" logcat -d -b all -t 250 >&2 || true
 exit 1
