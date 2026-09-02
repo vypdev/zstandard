@@ -1,5 +1,8 @@
 # Building
 
+For the current Apple dependency policy, see
+[Apple Dependency Strategy](apple-dependencies.md).
+
 This document describes how to build the Zstandard plugin, its native libraries, and the CLI package.
 
 ## All-in-one (macOS)
@@ -42,19 +45,21 @@ The native libraries (e.g. Android .so, iOS framework, Windows DLL, Linux .so) a
 
 ## Native Libraries (Platform Packages)
 
-All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). iOS and macOS copy it into the plugin’s `Classes/zstd/` at pod install or build time (see below); that copy is temporary and should not be edited.
+All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). iOS and macOS copy it into the plugin’s `Classes/zstd/` at pod install or build time (see below); those generated copies should not be edited.
 
 If you are developing or modifying a platform package’s native code:
 
 ### Android
 
 - The plugin builds the native library via `zstandard_android/zstd_build/CMakeLists.txt`, which compiles sources from `zstandard_native/src/zstd/` (resolved from the repo or pub cache).
+- The Android plugin uses Built-in Kotlin with AGP 9 and newer. The Android examples exercise this path with Flutter 3.47+.
 - Building the Android app (e.g. `flutter build apk` or running from Android Studio) triggers the native build via Gradle/CMake.
 - Ensure the NDK is installed and that `zstandard_native` is available (e.g. `flutter pub get` so the canonical `zstandard_native/src/zstd/` is resolved).
 
 ### iOS / macOS
 
 - The canonical source is **`zstandard_native/src/zstd/`**. CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
+- The iOS and macOS generated copies are retained after the build and ignored by Git; this prevents cleanup phases from deleting files while Xcode is compiling them.
 - Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed, then `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` from repo root). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
 - The product is a framework that the Dart code loads via FFI.
 
@@ -120,7 +125,7 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
    ```
    These copy `zstandard_native/src/zstd/` into each plugin’s `Classes/zstd/`. The **podspecs** also run the same scripts: `prepare_command` at pod install and a script phase before headers at build time. You only need to run the scripts by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
 
-   After each build, the iOS and macOS podspecs run a script phase that **removes** the copied `Classes/zstd` directory. The next build recreates it via the podspec’s sync phase.
+   The iOS and macOS podspecs keep their generated `Classes/zstd` directories after the build.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash

@@ -21,6 +21,10 @@ dependencies:
 
 No additional Gradle or native setup is required for normal use. The plugin registers the Android implementation automatically when running on Android.
 
+## Android build requirements
+
+The plugin uses Built-in Kotlin with Android Gradle Plugin 9 or newer and requires Flutter 3.44 or newer (Dart 3.12 or newer). Its example projects validate the AGP 9 path with Flutter 3.47 or newer.
+
 ## Architecture
 
 - **Native layer**: The facebook/zstd C library is built as part of the Android project (e.g. via CMake or Android NDK) and exposed as a shared library (e.g. `libzstandard_android_plugin.so`).

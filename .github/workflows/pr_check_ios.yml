@@ -5,6 +5,9 @@ on:
     branches:
       - '**'
       - '!master'
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,7 +19,7 @@ env:
 jobs:
   check_ios_analyze:
     name: Analyze iOS
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +38,7 @@ jobs:
 
   check_ios_test:
     name: Test iOS
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +63,7 @@ jobs:
 
   check_ios_test_from_pub_cache:
     name: Test iOS (from pub cache)
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -96,7 +99,7 @@ jobs:
 
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, X64]
     steps:
       - uses: actions/checkout@v4
 

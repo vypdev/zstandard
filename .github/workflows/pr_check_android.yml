@@ -5,13 +5,16 @@ on:
     branches:
       - '**'
       - '!master'
+  push:
+    branches:
+      - develop
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.47.2' }}
 
 jobs:
   check_android_analyze:

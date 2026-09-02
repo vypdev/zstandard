@@ -4,7 +4,6 @@ group = "dev.vyp.zstandard_android"
 version = "1.0"
 
 buildscript {
-    ext.kotlin_version = "1.8.22"
     repositories {
         google()
         mavenCentral()
@@ -12,8 +11,7 @@ buildscript {
 
     dependencies {
         // The Android Gradle Plugin knows how to build native code with the NDK.
-        classpath("com.android.tools.build:gradle:8.2.2")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+        classpath("com.android.tools.build:gradle:9.1.0")
     }
 }
 
@@ -25,7 +23,6 @@ rootProject.allprojects {
 }
 
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
 
 android {
     if (project.android.hasProperty("namespace")) {
@@ -55,14 +52,6 @@ android {
             // the plugin to fail to compile for some customers of the plugin.
             // version "3.10.2"
         }
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_1_8
-    }
-
-    sourceSets {
-        main.java.srcDirs += "src/main/kotlin"
     }
 
     compileOptions {

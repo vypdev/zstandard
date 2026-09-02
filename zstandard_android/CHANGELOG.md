@@ -1,3 +1,8 @@
+## Unreleased
+
+- Updated the minimum supported SDK version to Flutter 3.44/Dart 3.12.
+- Migrated Android builds to Built-in Kotlin on AGP 9+.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies
