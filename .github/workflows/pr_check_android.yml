@@ -45,7 +45,7 @@ jobs:
   check_android_test:
     name: Test Android
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +69,7 @@ jobs:
       - name: Set up Android SDK tools
         uses: android-actions/setup-android@v4
 
-      - name: Verify Android emulator prerequisites
+      - name: Verify Android SDK prerequisites
         run: bash scripts/check_android_ci_prerequisites.sh
 
       - name: Build Android example APK
@@ -86,6 +86,8 @@ jobs:
           avd-name: zstandard_ci_test
           emulator-port: 5554
           emulator-options: '-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect'
+          disable-linux-hw-accel: true
+          emulator-boot-timeout: 900
           disable-animations: true
           script: |
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}
@@ -93,7 +95,7 @@ jobs:
   check_android_test_from_pub_cache:
     name: Test Android (from pub cache)
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -128,7 +130,7 @@ jobs:
       - name: Set up Android SDK tools
         uses: android-actions/setup-android@v4
 
-      - name: Verify Android emulator prerequisites
+      - name: Verify Android SDK prerequisites
         run: bash scripts/check_android_ci_prerequisites.sh
 
       - name: Build Android example APK from pub cache
@@ -145,6 +147,8 @@ jobs:
           avd-name: zstandard_ci_test_pubcache
           emulator-port: 5556
           emulator-options: '-no-window -no-audio -no-boot-anim -gpu swiftshader_indirect'
+          disable-linux-hw-accel: true
+          emulator-boot-timeout: 900
           disable-animations: true
           script: |
             cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}

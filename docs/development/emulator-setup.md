@@ -6,14 +6,14 @@ This document describes how to set up Android emulators, iOS simulators, Linux d
 
 ### CI (GitHub Actions)
 
-The push and release workflows use [ReactiveCircus/android-emulator-runner](https://github.com/ReactiveCircus/android-emulator-runner) on the `[self-hosted, Linux]` runner to start an emulator (API 30, `google_apis`, `pixel_4`) and run the Android integration tests. The workflow builds the APK first and requires KVM (`/dev/kvm`). No local script is used in CI.
+The push and release workflows use [ReactiveCircus/android-emulator-runner](https://github.com/ReactiveCircus/android-emulator-runner) on the `[self-hosted, Linux]` runner to start an emulator (API 30, `google_apis`, `pixel_4`) and run the Android integration tests. The workflow builds the APK first and explicitly uses software emulation because the current self-hosted runner does not expose `/dev/kvm`. No local script is used in CI.
 
 ### Local: Prerequisites
 
 - **Android SDK**: Install via [Android Studio](https://developer.android.com/studio) or the [command-line tools](https://developer.android.com/studio#command-tools). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT` to the SDK root (e.g. `~/Library/Android/sdk` on macOS).
 - **Platform tools**: Include `adb` (usually in `$ANDROID_HOME/platform-tools`).
 - **Emulator**: Install the "Android Emulator" package and a system image from SDK Manager (e.g. API 30, `google_apis`, `x86_64` or `arm64-v8a` for Apple Silicon).
-- **Linux CI**: Enable hardware virtualization and grant the runner account access to `/dev/kvm`.
+- **Linux CI**: `/dev/kvm` is recommended for speed, but the current workflow can run without it using software emulation.
 
 ### Local: Running integration tests
 
@@ -163,4 +163,4 @@ flutter test -d chrome
 
 - **Android**: Reuse a single emulator and avoid closing it between test runs to save boot time. Leave the emulator running and run `./scripts/test_android_integration.sh` as needed.
 - **iOS**: Similarly, leaving the simulator booted between runs avoids repeated boot time.
-- **CI**: Self-hosted runners with pre-created AVDs and simulators can reduce job time. Ensure `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) and KVM are configured for Linux Android jobs, and Xcode is configured for Apple jobs.
+- **CI**: Self-hosted runners with pre-created AVDs and simulators can reduce job time. Ensure `ANDROID_HOME` (or `ANDROID_SDK_ROOT`) is available for Linux Android jobs; KVM is optional for the current software-emulation configuration, and Xcode is configured for Apple jobs.
