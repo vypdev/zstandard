@@ -55,40 +55,6 @@ export ANDROID_HOME="$sdk_root"
 export ANDROID_SDK_ROOT="$sdk_root"
 export PATH="$sdk_root/platform-tools:$sdk_root/emulator:$PATH"
 
-run_privileged() {
-  if [[ "$(id -u)" -eq 0 ]]; then
-    "$@"
-  elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-    sudo -n "$@"
-  else
-    echo "Android emulator CI requires root or passwordless sudo to enable IPv6 loopback." >&2
-    return 1
-  fi
-}
-
-ensure_ipv6_loopback() {
-  if ! command -v ip >/dev/null 2>&1 || ! command -v sysctl >/dev/null 2>&1; then
-    echo "Android emulator CI requires iproute2 and procps to configure IPv6 loopback." >&2
-    return 1
-  fi
-
-  if ip -6 addr show dev lo scope host 2>/dev/null | grep -Eq 'inet6[[:space:]]+::1/'; then
-    return 0
-  fi
-
-  echo "Enabling IPv6 loopback required by the Android emulator..."
-  run_privileged sysctl -w net.ipv6.conf.all.disable_ipv6=0 >/dev/null
-  run_privileged sysctl -w net.ipv6.conf.lo.disable_ipv6=0 >/dev/null
-  run_privileged ip -6 addr add ::1/128 dev lo >/dev/null 2>&1 || true
-
-  if ! ip -6 addr show dev lo scope host 2>/dev/null | grep -Eq 'inet6[[:space:]]+::1/'; then
-    echo "Android emulator CI could not enable IPv6 loopback (::1)." >&2
-    return 1
-  fi
-}
-
-ensure_ipv6_loopback
-
 echo "Installing Android emulator prerequisites..."
 set +o pipefail
 yes 2>/dev/null | "$sdkmanager_bin" --licenses >/dev/null
@@ -109,8 +75,7 @@ echo no | "$avdmanager_bin" create avd \
   --device pixel_4
 
 avd_config="$HOME/.android/avd/${avd_name}.avd/config.ini"
-# The headless runner does not provide a usable IPv6 loopback for the
-# emulator's GNSS socket, and these integration tests do not use location.
+# Location is outside the scope of these integration tests.
 printf 'hw.cpu.ncore=2\nhw.gps=no\n' >> "$avd_config"
 
 device="emulator-${emulator_port}"
@@ -130,6 +95,7 @@ echo "Starting software Android emulator on port ${emulator_port}..."
   -no-window \
   -gpu swiftshader_indirect \
   -feature -Vulkan \
+  -feature -GnssGrpcV1 \
   -no-snapshot \
   -no-snapshot-save \
   -noaudio \
