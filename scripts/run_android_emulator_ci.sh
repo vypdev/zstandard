@@ -129,6 +129,7 @@ echo "Starting software Android emulator on port ${emulator_port}..."
   -avd "$avd_name" \
   -no-window \
   -gpu swiftshader_indirect \
+  -feature -Vulkan \
   -no-snapshot \
   -no-snapshot-save \
   -noaudio \
