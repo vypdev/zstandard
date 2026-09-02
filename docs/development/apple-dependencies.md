@@ -1,50 +1,96 @@
 # Apple Dependency Strategy
 
-## Current policy
+## Supported dependency managers
 
-iOS and macOS use CocoaPods as the only supported native dependency manager in
-this repository.
+iOS and macOS support both Swift Package Manager and CocoaPods.
 
-The canonical zstd C source is kept in
-`zstandard_native/src/zstd/`. It is not duplicated in either Apple plugin. The
-CocoaPods podspecs run the corresponding sync script at install time and in a
-build script phase, refreshing the ignored generated copies at
-`zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/`.
-Those generated directories must not be edited or committed.
+Swift Package Manager is the primary path for current Flutter projects. The
+Apple plugin packages expose a SwiftPM target that links the canonical C
+implementation from the repository-level `Package.swift`. CocoaPods remains
+available for applications and Flutter versions that still use podspecs.
 
-The Swift plugin sources remain in each plugin's `ios/Classes/` or
-`macos/Classes/` directory, as required by the CocoaPods podspec.
+The canonical zstd C source is kept only in
+`zstandard_native/src/zstd/`. The repository-level SwiftPM facade exposes that
+directory as the `zstandard-native` product. CocoaPods cannot consume a Dart
+package as a native target, so the podspecs refresh ignored generated copies
+under `ios/Classes/zstd/` and `macos/Classes/zstd/` at install/build time.
+Those copies are a CocoaPods compatibility mechanism, not a second source of
+truth, and must not be edited or committed.
 
-## Why Swift Package Manager is deferred
+The Swift plugin sources live under the SwiftPM-standard paths:
 
-Swift Package Manager was investigated as a way for Apple platforms to consume
-the canonical native source without generated CocoaPods copies. The experiment
-is intentionally not part of the supported implementation yet:
+- `zstandard_ios/ios/zstandard_ios/Sources/zstandard_ios/`
+- `zstandard_macos/macos/zstandard_macos/Sources/zstandard_macos/`
 
-1. The self-hosted Apple CI runner is an Intel Mac running macOS Ventura and an
-   older Xcode release.
-2. The Flutter toolchain currently selected by the repository CI cannot start
-   on that runner's macOS version, so a Swift Package Manager build cannot be
-   validated there.
-3. Shipping an untestable dependency path would make the result less reliable
-   than the CocoaPods path already covered by the existing plugin integration
-   tests.
+The CocoaPods podspecs point to those same Swift files, so the two dependency
+managers build the same plugin implementation.
 
-For this reason, the repository contains no Swift Package Manager manifests,
-SwiftPM-only header bridges, or SwiftPM-specific tests. The iOS and macOS
-workflows exercise CocoaPods and retain their push checks for `develop`.
+## Swift Package Manager dependency
 
-## Reconsideration checklist
+The iOS and macOS manifests depend on the repository-level SwiftPM facade:
 
-Swift Package Manager may be reconsidered when CI has a supported Apple
-toolchain and can validate, from a clean checkout:
+```swift
+.package(
+    url: "https://github.com/vypdev/zstandard.git",
+    branch: "develop"
+)
+```
 
-- an iOS simulator build and integration test;
-- a macOS build and integration test;
-- both debug and release configurations; and
-- the absence of a second checked-in zstd source tree.
+The development branch is used while the facade is being integrated into the
+next release. Before publishing a plugin release, replace it with an
+immutable release tag (or revision) that contains the matching
+`zstandard_native` source and `Package.swift`.
 
-Until then, update `zstandard_native/src/zstd/` and use the CocoaPods sync
-scripts when changing the native library. The generated Apple copies are
-implementation details of the CocoaPods build and are intentionally retained
-after compilation so that Xcode cannot delete sources while compiling them.
+The SwiftPM target deliberately excludes unsupported or unnecessary upstream
+directories and disables assembly for the Apple build. It also preserves the
+FFI entry points when release dead-code stripping is enabled. The public
+headers in `zstandard_native/src/zstd/include/` are thin forwarding headers;
+the actual headers and all C implementation files remain in the canonical
+directory.
+
+SwiftPM links the C target statically into the application, so the Apple Dart
+bindings use `DynamicLibrary.process()` as a fallback. CocoaPods continues to
+load the embedded plugin framework. This distinction is covered by the
+native integration tests, not only by manifest parsing.
+
+## Verification policy
+
+Every Apple change must be tested through both dependency managers on the
+ARM64 self-hosted macOS runner:
+
+- iOS simulator integration tests with Swift Package Manager;
+- iOS simulator integration tests with CocoaPods;
+- macOS integration tests with Swift Package Manager; and
+- macOS integration tests with CocoaPods.
+
+The matrix also exercises the platform packages with the Dart
+`zstandard_native` dependency resolved from the Pub cache. In the workspace
+rows, SwiftPM receives `ZSTANDARD_NATIVE_PACKAGE_PATH` and uses the checkout's
+repository-level package; in the Pub-cache rows, SwiftPM resolves the remote
+repository package while CocoaPods syncs the native C source from the cached
+`zstandard_native` package. This catches accidental reliance on the monorepo
+checkout and ensures that published platform packages still locate the native
+dependency.
+
+The workflows use Flutter 3.47.2, which is new enough for Flutter's default
+SwiftPM integration. CocoaPods jobs explicitly disable SwiftPM so that both
+paths are tested independently.
+
+## Migration policy
+
+Do not remove CocoaPods support yet. Flutter recommends that plugin authors
+support both systems during the transition. CocoaPods is in maintenance mode,
+but existing pod-based builds remain a supported compatibility path. When the
+minimum Flutter version is raised to a SwiftPM-only release and a breaking
+package release is planned, reassess whether the podspecs and generated
+compatibility copies can be removed.
+
+When updating zstd:
+
+1. Update `zstandard_native/src/zstd/`.
+2. Validate the repository-level SwiftPM target.
+3. Run both CocoaPods sync scripts if the generated compatibility trees are
+   needed locally.
+4. Run the Apple CI matrix in both dependency-manager modes.
+
+Never edit generated `Classes/zstd/` files directly.

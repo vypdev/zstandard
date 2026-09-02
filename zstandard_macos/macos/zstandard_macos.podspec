@@ -17,7 +17,7 @@ A new Flutter FFI plugin project.
   # Zstd C sources: synced from zstandard_native/src/zstd/ into Classes/zstd/ by
   # scripts/sync_zstd.sh (in this plugin). Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
-  s.source_files     = 'Classes/zstandard_macos.c', 'Classes/**/*.swift',
+  s.source_files     = 'Classes/zstandard_macos.c', 'zstandard_macos/Sources/zstandard_macos/*.swift',
                        'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
                        'Classes/zstd/compress/*.c', 'Classes/zstd/compress/*.h',
                        'Classes/zstd/decompress/*.c', 'Classes/zstd/decompress/*.h',
@@ -38,7 +38,7 @@ A new Flutter FFI plugin project.
     'DEFINES_MODULE' => 'YES',
     'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/zstd',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY -fvisibility=default',
+    'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY -DZSTD_DISABLE_ASM -fvisibility=default',
     'DEAD_CODE_STRIPPING' => 'NO',
     'STRIP_INSTALLED_PRODUCT' => 'NO',
   }

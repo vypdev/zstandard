@@ -7,7 +7,8 @@ The **zstandard_ios** package provides the iOS implementation of the Zstandard F
 | Architecture | Support |
 |--------------|---------|
 | arm64        | Yes (device) |
-| x86_64       | Yes (simulator) |
+| arm64        | Yes (simulator on Apple Silicon) |
+| x86_64       | Yes (simulator on Intel hosts) |
 
 ## Installation
 
@@ -22,7 +23,7 @@ No additional setup is required for normal use. The plugin registers the iOS imp
 
 ## Architecture
 
-- **Native layer**: The canonical facebook/zstd C library lives in `zstandard_native/src/zstd/`. The iOS podspec synchronizes it into the generated `ios/Classes/zstd/` directory at pod install/build time and builds it as part of the CocoaPods target. It is linked into the app and loaded by the Dart plugin via FFI.
+- **Native layer**: The canonical facebook/zstd C library lives in `zstandard_native/src/zstd/`. Swift Package Manager statically links it through the repository-level `Package.swift`; CocoaPods synchronizes it into the generated `ios/Classes/zstd/` directory and embeds the plugin framework. Dart FFI resolves the symbols from the application process in SwiftPM builds or from the framework in CocoaPods builds.
 - **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
 - **Isolates**: The implementation may use a helper isolate for async compression/decompression to avoid blocking the UI thread.
 
@@ -49,11 +50,11 @@ final decompressed = await compressed?.decompress();
 
 If you are developing the zstandard_ios package:
 
-1. The canonical zstd source is at `zstandard_native/src/zstd/`; the podspec syncs it into the generated `ios/Classes/zstd/` directory at install/build time.
-2. The project uses a Podspec and CocoaPods to build the framework.
+1. The canonical zstd source is at `zstandard_native/src/zstd/`; SwiftPM consumes it directly through the shared native product.
+2. The project also supports CocoaPods through the podspec and its ignored generated compatibility tree.
 3. FFI bindings are generated (e.g. with `ffigen`) from the zstd headers.
 
-The generated source directory is retained after the build so the Xcode build system cannot delete files while compiling them. It is ignored by Git and must not be edited directly; update `zstandard_native/src/zstd/` instead.
+The generated CocoaPods source directory is retained after the build so the Xcode build system cannot delete files while compiling them. It is ignored by Git and must not be edited directly; update `zstandard_native/src/zstd/` instead.
 
 See the package’s `ios/` directory and the repo’s [Building](development/building.md) guide.
 See also the [Apple Dependency Strategy](../development/apple-dependencies.md).

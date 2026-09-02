@@ -14,18 +14,18 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  FLUTTER_VERSION: ${{ vars.FLUTTER_VERSION || '3.41.4' }}
+  # Swift Package Manager support requires Flutter 3.44 or newer.
+  FLUTTER_VERSION: '3.47.2'
 
 jobs:
   check_ios_analyze:
     name: Analyze iOS
-    runs-on: [self-hosted, macOS, X64]
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v1
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
@@ -36,20 +36,58 @@ jobs:
         working-directory: zstandard_ios
         run: flutter analyze
 
+      - name: Run package tests
+        working-directory: zstandard_ios
+        run: flutter test
+
   check_ios_test:
-    name: Test iOS
-    runs-on: [self-hosted, macOS, X64]
+    name: Test iOS (${{ matrix.dependency_manager }}, ${{ matrix.source }})
+    runs-on: [self-hosted, macOS, ARM64]
+    strategy:
+      fail-fast: false
+      matrix:
+        dependency_manager: [swiftpm, cocoapods]
+        source: [workspace, pub-cache]
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v1
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Get dependencies
+      - name: Select native dependency manager
+        run: |
+          if [[ "${{ matrix.dependency_manager }}" == "swiftpm" ]]; then
+            flutter config --enable-swift-package-manager
+          else
+            flutter config --no-enable-swift-package-manager
+          fi
+
+      - name: Use checkout for SwiftPM native dependency
+        if: matrix.dependency_manager == 'swiftpm' && matrix.source == 'workspace'
+        run: echo "ZSTANDARD_NATIVE_PACKAGE_PATH=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+      - name: Remove workspace native package to force Pub cache resolution
+        if: matrix.source == 'pub-cache'
+        run: rm -rf zstandard_native
+
+      - name: Clean plugin and example
+        run: |
+          (cd zstandard_ios && flutter clean)
+          (cd zstandard_ios/example && flutter clean)
+
+      - name: Get plugin dependencies
+        working-directory: zstandard_ios
+        run: flutter pub get
+
+      - name: Get example dependencies
         working-directory: zstandard_ios/example
         run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        if: matrix.dependency_manager == 'cocoapods'
+        working-directory: zstandard_ios/example/ios
+        run: pod install --verbose
 
       - name: Boot iOS simulator
         run: |
@@ -59,53 +97,21 @@ jobs:
       - name: Run integration tests
         run: |
           DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
-          cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
+          cd zstandard_ios/example
+          flutter test integration_test/ -d "$DEVICE_ID"
 
-  check_ios_test_from_pub_cache:
-    name: Test iOS (from pub cache)
-    runs-on: [self-hosted, macOS, X64]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'stable'
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Remove zstandard_native to force resolution from pub cache
-        run: rm -rf zstandard_native
-
-      - name: Clean and get dependencies (force pub cache)
-        working-directory: zstandard_ios
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: Get dependencies in example (force pub cache)
-        working-directory: zstandard_ios/example
-        run: |
-          flutter clean
-          flutter pub get
-
-      - name: Boot iOS simulator
-        run: |
-          chmod +x scripts/manage_ios_simulator.sh
-          ./scripts/manage_ios_simulator.sh start
-
-      - name: Run integration tests (C sources from pub cache)
-        run: |
-          DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
-          cd zstandard_ios/example && flutter test integration_test/ -d "$DEVICE_ID"
+      - name: Stop iOS simulator
+        if: always()
+        run: ./scripts/manage_ios_simulator.sh stop
 
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
-    runs-on: [self-hosted, macOS, X64]
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v1
+      - uses: ./.github/actions/setup-flutter
         with:
-          channel: 'stable'
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies

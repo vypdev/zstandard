@@ -47,7 +47,7 @@ final decompressed = await compressed?.decompress();
 
 ## Architecture
 
-This package uses Dart FFI with the zstandard_ios framework (native zstd C library). The framework is built as part of your iOS app when you build or run from Xcode or Flutter.
+This package uses Dart FFI with the native zstd C library. Swift Package Manager is the primary integration for Flutter 3.44 and newer and statically links the shared target into the app; CocoaPods remains supported for compatibility and embeds the plugin framework. Both paths use the same canonical C implementation from `zstandard_native`.
 
 ## Testing
 
@@ -61,8 +61,9 @@ Unit tests run only on iOS (skipped on other platforms). For integration tests, 
 
 ## Troubleshooting
 
-- **Symbol or framework not found**: Ensure the iOS target is built (e.g. `flutter run -d ios`) and that you are targeting a supported architecture (arm64 device, x86_64/arm64 simulator).
-- **CocoaPods**: Run `pod install` in your app’s `ios/` directory if needed.
+- **Symbol or framework not found**: Ensure the iOS target is built (e.g. `flutter run -d ios`) and that you are targeting a supported architecture (arm64 device, x86_64/arm64 simulator). SwiftPM loads the statically linked symbols from the process; CocoaPods loads the embedded framework.
+- **Swift Package Manager**: Flutter 3.44 and newer enables this path by default.
+- **CocoaPods**: For older Flutter projects or explicit compatibility testing, run `flutter config --no-enable-swift-package-manager` and then `pod install` in your app’s `ios/` directory if needed.
 
 See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
 

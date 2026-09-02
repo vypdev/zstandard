@@ -14,19 +14,28 @@ export 'zstandard_ext.dart';
 const String _libName = 'zstandard_ios';
 
 final DynamicLibrary _dylib = () {
-  if (Platform.isIOS) {
-    return DynamicLibrary.open('$_libName.framework/$_libName');
+  if (!Platform.isIOS) {
+    throw UnsupportedError('Platform not supported: ${Platform.operatingSystem}');
   }
-  throw UnsupportedError('Platform not supported: ${Platform.operatingSystem}');
+
+  // CocoaPods embeds a dynamic framework. Flutter's SwiftPM integration
+  // links the same C target statically into the application, so those symbols
+  // are exposed through the process instead of a standalone framework.
+  try {
+    return DynamicLibrary.open('$_libName.framework/$_libName');
+  } on ArgumentError {
+    return DynamicLibrary.process();
+  }
 }();
 
 final ZstandardNativeBindings _bindings = ZstandardNativeBindings(_dylib);
 
 /// iOS implementation of [ZstandardPlatform] using FFI and the native zstd library.
 ///
-/// Loads the zstandard_ios framework and uses ZSTD_compress, ZSTD_decompress,
-/// ZSTD_compressBound, and ZSTD_getFrameContentSize. The main [zstandard]
-/// plugin registers this implementation automatically on iOS.
+/// Resolves ZSTD_compress, ZSTD_decompress, ZSTD_compressBound, and
+/// ZSTD_getFrameContentSize from the CocoaPods framework or the statically
+/// linked SwiftPM application. The main [zstandard] plugin registers this
+/// implementation automatically on iOS.
 class ZstandardIOS extends ZstandardPlatform {
   /// Creates the iOS platform implementation.
   ZstandardIOS();

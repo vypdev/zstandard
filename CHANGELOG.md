@@ -2,7 +2,7 @@
 
 - Fixed intermittent iOS and macOS build failures caused by deleting synced zstd sources during compilation.
 - Updated the minimum supported SDK version to Flutter 3.44/Dart 3.12 and migrated Android builds to Built-in Kotlin on AGP 9+.
-- Deferred Swift Package Manager integration for Apple platforms; CocoaPods remains the supported dependency manager until CI can validate the alternative toolchain.
+- Added Swift Package Manager support for iOS and macOS while retaining CocoaPods compatibility.
 
 ## 1.5.0 - Dependencies Updated
 

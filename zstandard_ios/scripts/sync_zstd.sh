@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Sync zstd C source from zstandard_native into this plugin's ios/Classes/zstd/
-# so CocoaPods can see the sources. Works in repo and when published (pub cache).
+# Sync the canonical zstd C source into the ignored CocoaPods compatibility
+# tree. Swift Package Manager consumes the repository-level native product and
+# does not use this generated directory. Works in repo and in the pub cache.
 #
 # Usage: ./scripts/sync_zstd.sh
 # Resolves zstd from: 1) sibling zstandard_native (repo), 2) pub-cache sibling zstandard_native-*, 3) package_config.json (pub or repo).

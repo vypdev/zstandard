@@ -13,7 +13,7 @@ From the repository root, you can run sync, bindings, all macOS-runnable builds,
 ./scripts/run_all_macos.sh
 ```
 
-This runs: sync zstd (iOS + macOS) → regenerate bindings → build Android → build CLI (dylibs) → build iOS → build web → build macOS → test Android → test CLI → test iOS → test web → test macOS. Requires macOS, Flutter, Xcode, CocoaPods, Android SDK/NDK (for Android), and CMake. All platforms use the single canonical source at `zstandard_native/src/zstd/` (see workflow below). Stops on first failure.
+This runs: sync zstd (iOS + macOS) → regenerate bindings → build Android → build CLI (dylibs) → build iOS → build web → build macOS → test Android → test CLI → test iOS → test web → test macOS. Requires macOS, Flutter 3.44+, Xcode, CocoaPods (for compatibility-mode checks), Android SDK/NDK (for Android), and CMake. All platforms use the single canonical source at `zstandard_native/src/zstd/` (see workflow below). Stops on first failure.
 
 ## Flutter Plugin (All Platforms)
 
@@ -45,7 +45,7 @@ The native libraries (e.g. Android .so, iOS framework, Windows DLL, Linux .so) a
 
 ## Native Libraries (Platform Packages)
 
-All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). iOS and macOS copy it into the plugin’s `Classes/zstd/` at pod install or build time (see below); those generated copies should not be edited.
+All platforms use a **single source of truth** for the zstd C library: **`zstandard_native/src/zstd/`**. Android, Linux, and Windows compile directly from that path via CMake (`zstd_build/`). Swift Package Manager exposes the same path through the repository-level `Package.swift` for iOS and macOS. CocoaPods uses an ignored generated compatibility copy under each plugin’s `Classes/zstd/` (see below); those generated copies should not be edited.
 
 If you are developing or modifying a platform package’s native code:
 
@@ -58,10 +58,11 @@ If you are developing or modifying a platform package’s native code:
 
 ### iOS / macOS
 
-- The canonical source is **`zstandard_native/src/zstd/`**. CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
+- The canonical source is **`zstandard_native/src/zstd/`**. Swift Package Manager consumes it through the repository-level `Package.swift`; the Apple plugin manifests link the shared `zstandard-native` product and do not carry a second C source tree.
+- CocoaPods only sees files inside the pod, so each podspec uses a **`prepare_command`** (at pod install) and a **script phase** (before headers at build time) to copy that directory into `zstandard_ios/ios/Classes/zstd/` and `zstandard_macos/macos/Classes/zstd/` respectively. No `pre_install` in the app Podfile is required.
 - The iOS and macOS generated copies are retained after the build and ignored by Git; this prevents cleanup phases from deleting files while Xcode is compiling them.
-- Ensure `zstandard_native/src/zstd/` is present (e.g. run `./scripts/update_zstd.sh` if needed, then `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` from repo root). Then build the example app for iOS or macOS; the podspec sync and Xcode/CocoaPods will build the native target.
-- The product is a framework that the Dart code loads via FFI.
+- To build with Swift Package Manager, use Flutter 3.44 or newer and enable it with `flutter config --enable-swift-package-manager`. To build with CocoaPods, use `flutter config --no-enable-swift-package-manager`, run `pod install`, and then build the example app.
+- In SwiftPM mode the native target is statically linked into the app and Dart FFI resolves its symbols from the process. In CocoaPods mode the plugin framework is embedded and loaded by path.
 
 ### Linux
 
@@ -118,14 +119,14 @@ The compiled executable will still need the native library (e.g. .dylib, .dll, .
    ```
    This fetches from the [official repo](https://github.com/facebook/zstd) and updates `zstandard_native/src/zstd/`.
 
-2. **Sync zstd into iOS and macOS** (so CocoaPods can see the C sources):
+2. **Refresh the CocoaPods compatibility trees when needed**:
    ```bash
    bash zstandard_ios/scripts/sync_zstd.sh
    bash zstandard_macos/scripts/sync_zstd.sh
    ```
-   These copy `zstandard_native/src/zstd/` into each plugin’s `Classes/zstd/`. The **podspecs** also run the same scripts: `prepare_command` at pod install and a script phase before headers at build time. You only need to run the scripts by hand in special cases (e.g. fresh clone before the first `pod install`, or right after `update_zstd.sh` if you want the copy in place before building).
+   These copy `zstandard_native/src/zstd/` into each plugin’s ignored `Classes/zstd/` tree. The **podspecs** also run the same scripts: `prepare_command` at pod install and a script phase before headers at build time. Swift Package Manager does not use these generated trees.
 
-   The iOS and macOS podspecs keep their generated `Classes/zstd` directories after the build.
+   The iOS and macOS podspecs keep their generated `Classes/zstd` directories after the build. Never commit or edit them.
 
 3. **Regenerate FFI bindings** (from repo root):
    ```bash
@@ -149,6 +150,6 @@ If you only need to regenerate bindings for one package:
 
 - **Native library not found at runtime**: Ensure you built for the correct platform/architecture and that the library is in the path or next to the executable as the plugin expects.
 - **CMake errors**: Install the required build tools (CMake, C compiler) and ensure the zstd source path in CMake matches the package layout.
-- **CocoaPods errors**: Run `pod install` in the example’s `ios/` or `macos/` and ensure the plugin’s podspec is correct.
+- **Apple dependency errors**: For Swift Package Manager, run `flutter clean`, reset package caches in Xcode, and retry with Flutter 3.44+. For CocoaPods, run `flutter config --no-enable-swift-package-manager` followed by `pod install` in the example’s `ios/` or `macos/` directory.
 
 See [Troubleshooting](../troubleshooting/common-issues.md) for more.

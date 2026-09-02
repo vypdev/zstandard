@@ -47,7 +47,7 @@ final decompressed = await compressed?.decompress();
 
 ## Architecture
 
-This package uses Dart FFI with the zstandard_macos framework (native zstd C library). Supports x64 and arm64 (Apple Silicon).
+This package uses Dart FFI with the native zstd C library. Swift Package Manager is the primary integration for Flutter 3.44 and newer and statically links the shared target into the app; CocoaPods remains supported for compatibility and embeds the plugin framework. Both paths use the same canonical C implementation from `zstandard_native`. Supports x64 and arm64 (Apple Silicon).
 
 ## Testing
 
@@ -61,7 +61,9 @@ Unit tests that use the native library require the framework to be built (e.g. b
 
 ## Troubleshooting
 
-- **Library not loaded**: Build your app with `flutter build macos` or run from the macOS runner so the framework is built and linked.
+- **Swift Package Manager**: Flutter 3.44 and newer enables this path by default.
+- **CocoaPods**: For older Flutter projects or explicit compatibility testing, run `flutter config --no-enable-swift-package-manager` and then `pod install` in your app’s `macos/` directory.
+- **Library not loaded**: Build your app with `flutter build macos` or run from the macOS runner so the native target is linked. SwiftPM exposes it through the process; CocoaPods embeds the plugin framework.
 - **Wrong architecture**: Ensure you are building for the correct target (x64 vs arm64).
 
 See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.

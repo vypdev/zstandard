@@ -8,6 +8,8 @@ void main() {
 
     expect(podspec, contains('s.script_phases = ['));
     expect(podspec, contains(":name => 'Sync zstd'"));
+    expect(podspec, contains('zstandard_ios/Sources/zstandard_ios/*.swift'));
+    expect(podspec, contains('-DZSTD_DISABLE_ASM'));
     expect(podspec, contains(r'$(PODS_TARGET_SRCROOT)/Classes/zstd/zstd.h'));
     expect(podspec, isNot(contains('Remove synced zstd')));
     expect(podspec, isNot(contains('rm -rf')));

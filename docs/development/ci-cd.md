@@ -20,8 +20,8 @@ Each package has a dedicated workflow that runs on pull requests (open or new co
 |---------------|---------|--------|--------|
 | `pr_check_zstandard.yml` | zstandard | self-hosted Linux | Analyze, Test (with coverage), Publish dry run |
 | `pr_check_android.yml` | zstandard_android | self-hosted Linux | Analyze, Build APK, Android emulator integration tests, Publish dry run |
-| `pr_check_ios.yml` | zstandard_ios | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
-| `pr_check_macos.yml` | zstandard_macos | self-hosted macOS | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_ios.yml` | zstandard_ios | self-hosted macOS ARM64 | Analyze, SwiftPM and CocoaPods simulator tests from checkout and Pub cache, Publish dry run |
+| `pr_check_macos.yml` | zstandard_macos | self-hosted macOS ARM64 | Analyze, SwiftPM and CocoaPods integration tests from checkout and Pub cache, Publish dry run |
 | `pr_check_linux.yml` | zstandard_linux | self-hosted Linux | Analyze, Build Linux app, Linux integration tests, Publish dry run |
 | `pr_check_windows.yml` | zstandard_windows | self-hosted Windows | Analyze, Test (with coverage), Publish dry run |
 | `pr_check_web.yml` | zstandard_web | self-hosted Linux | Analyze, Build Web app, ChromeDriver integration tests, Publish dry run |
@@ -56,7 +56,7 @@ The Android job builds the example APK before booting the emulator. The Linux jo
 
 PR checks pin Flutter 3.47.2. This is intentional: the organisation-level `FLUTTER_VERSION` variable previously selected Flutter 3.41.4, which is below the minimum required by the current root and Android packages.
 
-Apple and Windows workflows remain separate platform workflows. They are not replaced by the Linux gates and require their corresponding hardware/toolchain to be useful.
+Apple workflows use the self-hosted ARM64 Mac runner and validate both native dependency managers. Windows remains a separate platform workflow and requires its corresponding hardware/toolchain to be useful.
 
 ## Release workflow
 
@@ -98,7 +98,7 @@ Scripts under [**scripts/**](https://github.com/vypdev/zstandard/tree/master/scr
 
 - `build_macos.sh`, `build_linux.sh`, `build_windows.bat`: Build precompiled zstd libraries for the CLI.
 - `build_android.sh`, `build_ios.sh`: Build or prepare the Android/iOS plugin.
-- Each of `zstandard_ios/scripts/sync_zstd.sh` and `zstandard_macos/scripts/sync_zstd.sh` syncs the canonical zstd C source (`zstandard_native/src/zstd/`) into that plugin’s `Classes/zstd/` tree.
+- Swift Package Manager consumes the canonical zstd C source through the repository-level `Package.swift`; the sync scripts refresh only the ignored `Classes/zstd/` compatibility trees used by CocoaPods.
 - `regenerate_bindings.sh`: Regenerate FFI bindings (ffigen) for all platform packages after zstd source updates.
 - `test_all.sh` / `test_all.bat`: Run tests in all packages.
 - `coverage_report.sh` / `coverage_report.bat`: Generate coverage reports.

@@ -5,13 +5,13 @@ This guide describes how to set up your machine to develop and contribute to the
 ## Prerequisites
 
 - **Dart SDK**: ^3.6.0 (see each package’s `pubspec.yaml` for the exact constraint).
-- **Flutter SDK**: >=3.3.0 (for plugin and example apps).
+- **Flutter SDK**: >=3.3.0 for the package API; Flutter 3.44 or newer is required to exercise the default Swift Package Manager integration.
 - **Git**: To clone and work with the repository.
 
 Optional, for native work:
 
 - **Android**: Android Studio / SDK and NDK if you modify Android native code.
-- **iOS/macOS**: Xcode and CocoaPods if you modify iOS/macOS native code.
+- **iOS/macOS**: Xcode for native work. CocoaPods is required to validate the compatibility path; Swift Package Manager is built into Xcode.
 - **Linux**: CMake and a C compiler (gcc/clang) for building the Linux plugin.
 - **Windows**: CMake and Visual Studio Build Tools (or equivalent) for building the Windows plugin.
 - **Web**: Node/npm optional; Emscripten is needed only if you rebuild zstd.js/zstd.wasm.
@@ -85,7 +85,7 @@ Or use a script if the project provides one to run `pub get` in all packages.
 ## Platform-Specific Notes
 
 - **Android**: Ensure `ANDROID_HOME` is set and that an emulator or device is available.
-- **iOS/macOS**: Ensure Xcode and CocoaPods are installed. Run `pod install` in the example’s `ios/` or `macos/` if needed.
+- **iOS/macOS**: Swift Package Manager is enabled by default with Flutter 3.44+. To validate CocoaPods explicitly, run `flutter config --no-enable-swift-package-manager` and then `pod install` in the example’s `ios/` or `macos/` directory.
 - **Linux**: Install CMake and the build essentials; the Linux plugin’s CMake will build the native library.
 - **Windows**: Ensure CMake and a C++ toolchain are available; the Windows plugin’s CMake will build the DLL.
 - **Web**: No native build required for running the app; ensure `zstd.js` and `zstd.wasm` are in the example’s `web/` if you run the web example.

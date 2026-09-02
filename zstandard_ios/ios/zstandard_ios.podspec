@@ -17,7 +17,8 @@ A new Flutter FFI plugin project.
   # Zstd C sources: synced from zstandard_native/src/zstd/ into Classes/zstd/ by
   # scripts/sync_zstd.sh (in this plugin). Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
-  s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h', 'Classes/*.swift'
+  s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h',
+                       'zstandard_ios/Sources/zstandard_ios/*.swift'
   # zstd.h includes zstd_errors.h; both must be public so the module build finds them.
   s.public_header_files = 'Classes/zstd/zstd.h', 'Classes/zstd/zstd_errors.h'
 
