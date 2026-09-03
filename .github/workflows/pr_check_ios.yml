@@ -55,9 +55,6 @@ jobs:
     name: Test iOS (${{ matrix.dependency_manager }}, ${{ matrix.source }})
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 90
-    concurrency:
-      group: zstandard-apple-native-runner
-      cancel-in-progress: false
     strategy:
       fail-fast: false
       max-parallel: 1
