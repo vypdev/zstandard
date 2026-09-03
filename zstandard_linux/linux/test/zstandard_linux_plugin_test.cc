@@ -1,8 +1,10 @@
 #include <cstring>
+#include <vector>
 
 #include <flutter_linux/flutter_linux.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <zstd.h>
 
 #include "include/zstandard_linux/zstandard_linux_plugin.h"
 #include "zstandard_linux_plugin_private.h"
@@ -35,6 +37,26 @@ TEST(ZstandardLinuxPlugin, GetPlatformVersionReturnsNonEmpty) {
   const gchar* str = fl_value_get_string(result);
   ASSERT_NE(str, nullptr);
   EXPECT_GT(strlen(str), 0u);
+}
+
+TEST(ZstandardNative, CompressesAndDecompressesContent) {
+  const std::vector<unsigned char> input = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+  ASSERT_FALSE(input.empty());
+
+  const size_t compressed_capacity = ZSTD_compressBound(input.size());
+  std::vector<unsigned char> compressed(compressed_capacity);
+  const size_t compressed_size = ZSTD_compress(
+      compressed.data(), compressed.size(), input.data(), input.size(), 3);
+  ASSERT_FALSE(ZSTD_isError(compressed_size));
+  ASSERT_GT(compressed_size, 0u);
+
+  std::vector<unsigned char> decompressed(input.size());
+  const size_t decompressed_size = ZSTD_decompress(
+      decompressed.data(), decompressed.size(), compressed.data(),
+      compressed_size);
+  ASSERT_FALSE(ZSTD_isError(decompressed_size));
+  ASSERT_EQ(decompressed_size, input.size());
+  EXPECT_EQ(0, std::memcmp(decompressed.data(), input.data(), input.size()));
 }
 
 }  // namespace test

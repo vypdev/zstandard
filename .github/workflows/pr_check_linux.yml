@@ -68,6 +68,16 @@ jobs:
         working-directory: zstandard_linux/example
         run: flutter build linux --debug
 
+      - name: Build and run Linux native tests
+        working-directory: zstandard_linux/example
+        run: |
+          set -euo pipefail
+          cmake_build_dir=$(find build/linux -type f -name CMakeCache.txt -print \
+            | sed 's#/CMakeCache.txt$##' | sort | tail -n 1)
+          test -n "$cmake_build_dir"
+          cmake --build "$cmake_build_dir" --target zstandard_linux_test --parallel
+          ctest --test-dir "$cmake_build_dir" --output-on-failure
+
       - name: Run integration tests
         working-directory: zstandard_linux/example
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' flutter test integration_test/ -d linux
@@ -105,6 +115,16 @@ jobs:
       - name: Build Linux example from pub cache
         working-directory: zstandard_linux/example
         run: flutter build linux --debug
+
+      - name: Build and run Linux native tests from pub cache
+        working-directory: zstandard_linux/example
+        run: |
+          set -euo pipefail
+          cmake_build_dir=$(find build/linux -type f -name CMakeCache.txt -print \
+            | sed 's#/CMakeCache.txt$##' | sort | tail -n 1)
+          test -n "$cmake_build_dir"
+          cmake --build "$cmake_build_dir" --target zstandard_linux_test --parallel
+          ctest --test-dir "$cmake_build_dir" --output-on-failure
 
       - name: Run integration tests (C sources from pub cache)
         working-directory: zstandard_linux/example

@@ -40,7 +40,7 @@ jobs:
   check_web_test:
     name: Test Web
     runs-on: [self-hosted, Linux]
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
 
@@ -73,6 +73,27 @@ jobs:
           set -euo pipefail
           "${{ steps.chrome.outputs.chrome-path }}" --version
           "${{ steps.chrome.outputs.chromedriver-path }}" --version
+
+      - name: Regenerate WebAssembly from canonical C source
+        env:
+          # Keep generated artifacts reproducible and reviewable. The script
+          # clones this exact official emsdk revision and installs Emscripten
+          # 3.1.69 before compiling zstandard_native/src/zstd.
+          EMSDK_REF: a36df02dc438e8b02f91122a4c62eeecb6784272
+          EMSCRIPTEN_VERSION: '3.1.69'
+        run: bash scripts/build_web_wasm.sh
+
+      - name: Verify generated WebAssembly is committed and synchronized
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --exit-code -- \
+            zstandard_web/blob/zstd.js \
+            zstandard_web/blob/zstd.wasm \
+            zstandard_web/example/web/zstd.js \
+            zstandard_web/example/web/zstd.wasm \
+            zstandard/example/web/zstd.js \
+            zstandard/example/web/zstd.wasm
 
       - name: Build Web example
         working-directory: zstandard_web/example

@@ -11,7 +11,7 @@
 #
 # See zstandard_web/README.md for usage of the generated files.
 
-set -e
+set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ZSTD_ROOT="$ROOT/zstandard_native/src/zstd"
 OUT_BLOB="$ROOT/zstandard_web/blob"
@@ -25,26 +25,45 @@ if [[ ! -d "$ZSTD_ROOT" || ! -f "$ZSTD_ROOT/zstd.h" ]]; then
   exit 1
 fi
 
-BUILD_DIR=$(mktemp -d)
-trap 'rm -rf "$BUILD_DIR"' EXIT
+EMSDK_REF="${EMSDK_REF:-a36df02dc438e8b02f91122a4c62eeecb6784272}"
+EMSCRIPTEN_VERSION="${EMSCRIPTEN_VERSION:-3.1.69}"
+EMSDK_DIR="${EMSDK_DIR:-}"
 
-echo "Cloning emsdk into $BUILD_DIR ..."
-git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$BUILD_DIR/emsdk"
+if [[ -z "$EMSDK_DIR" ]]; then
+  BUILD_DIR=$(mktemp -d)
+  trap 'rm -rf "$BUILD_DIR"' EXIT
 
-echo "Installing and activating Emscripten (latest) ..."
-cd "$BUILD_DIR/emsdk"
-./emsdk install latest
-./emsdk activate latest
+  echo "Cloning emsdk at $EMSDK_REF into $BUILD_DIR ..."
+  git init -q "$BUILD_DIR/emsdk"
+  git -C "$BUILD_DIR/emsdk" remote add origin https://github.com/emscripten-core/emsdk.git
+  git -C "$BUILD_DIR/emsdk" fetch --depth 1 origin "$EMSDK_REF"
+  git -C "$BUILD_DIR/emsdk" checkout --detach FETCH_HEAD
+  EMSDK_DIR="$BUILD_DIR/emsdk"
+
+  echo "Installing and activating Emscripten $EMSCRIPTEN_VERSION ..."
+  cd "$EMSDK_DIR"
+  ./emsdk install "$EMSCRIPTEN_VERSION"
+  ./emsdk activate "$EMSCRIPTEN_VERSION"
+else
+  if [[ ! -f "$EMSDK_DIR/emsdk_env.sh" ]]; then
+    echo "Error: EMSDK_DIR does not contain emsdk_env.sh: $EMSDK_DIR" >&2
+    exit 1
+  fi
+  echo "Using Emscripten SDK from $EMSDK_DIR ..."
+fi
+
 # shellcheck source=/dev/null
-source ./emsdk_env.sh
+source "$EMSDK_DIR/emsdk_env.sh"
+
+emcc --version
 
 echo "Building zstd with emcc from $ZSTD_ROOT ..."
 cd "$ZSTD_ROOT"
 
 # Same exports as documented in zstandard_web/README.md; only common/compress/decompress (no legacy/dictBuilder).
-COMMON_SRC=$(find common -name "*.c" 2>/dev/null | tr '\n' ' ')
-COMPRESS_SRC=$(find compress -name "*.c" 2>/dev/null | tr '\n' ' ')
-DECOMPRESS_SRC=$(find decompress -name "*.c" 2>/dev/null | tr '\n' ' ')
+COMMON_SRC=$(find common -name "*.c" 2>/dev/null | sort | tr '\n' ' ')
+COMPRESS_SRC=$(find compress -name "*.c" 2>/dev/null | sort | tr '\n' ' ')
+DECOMPRESS_SRC=$(find decompress -name "*.c" 2>/dev/null | sort | tr '\n' ' ')
 
 emcc -O3 \
   $COMMON_SRC $COMPRESS_SRC $DECOMPRESS_SRC \

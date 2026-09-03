@@ -2,6 +2,10 @@
 
 - Updated the minimum supported SDK version to Flutter 3.44/Dart 3.12.
 - Migrated Android builds to Built-in Kotlin on AGP 9+.
+- Added an AGP 8.11.1/Gradle 8.14 legacy example alongside the AGP 9.1.0
+  example.
+- Test debug and release APKs for armeabi-v7a, arm64-v8a, and x86_64, and run
+  both Dart integration and native JNI instrumentation round-trip tests in CI.
 
 ## 1.5.0 - Dependencies Updated
 

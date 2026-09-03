@@ -1,3 +1,9 @@
+## Unreleased
+
+- Build and run the native Linux CMake test target in CI.
+- Extend Linux integration coverage to assert non-empty compression output and
+  exact byte-for-byte decompression round-trips.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

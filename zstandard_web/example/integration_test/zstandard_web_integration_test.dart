@@ -38,29 +38,33 @@ void main() {
     test('compress and decompress roundtrip for data shorter than 9 bytes',
         () async {
       final data = Uint8List.fromList([1, 2, 3, 4, 5]);
+      expect(data, isNotEmpty);
       final compressed = await zstandardWeb.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed =
-          await zstandardWeb.decompress(compressed ?? Uint8List(0));
+      expect(compressed!.isNotEmpty, isTrue);
+      expect(compressed, isNot(equals(data)));
+      final decompressed = await zstandardWeb.decompress(compressed);
       expect(decompressed, equals(data));
     });
 
     test('compress and decompress small data', () async {
       final data = Uint8List.fromList(List.generate(10, (int i) => i));
+      expect(data, isNotEmpty);
       final compressed = await zstandardWeb.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed =
-          await zstandardWeb.decompress(compressed ?? Uint8List(0));
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandardWeb.decompress(compressed);
       expect(decompressed, equals(data));
     });
 
     test('compress and decompress large data', () async {
       final data =
           Uint8List.fromList(List<int>.generate(100000, (int i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await zstandardWeb.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed =
-          await zstandardWeb.decompress(compressed ?? Uint8List(0));
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandardWeb.decompress(compressed);
       expect(decompressed, equals(data));
     });
 
@@ -68,25 +72,25 @@ void main() {
       final data = Uint8List(0);
       final compressed = await zstandardWeb.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed =
-          await zstandardWeb.decompress(compressed ?? Uint8List(0));
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandardWeb.decompress(compressed);
       expect(decompressed, equals(data));
     });
 
     test('compress with levels 1, 3, 10, 22', () async {
       final data = Uint8List.fromList(List.filled(1000, 42));
+      expect(data, isNotEmpty);
       for (final level in [1, 3, 10, 22]) {
         final compressed = await zstandardWeb.compress(data, level);
         expect(compressed, isNotNull);
-        final decompressed =
-            await zstandardWeb.decompress(compressed ?? Uint8List(0));
+        expect(compressed!.isNotEmpty, isTrue);
+        final decompressed = await zstandardWeb.decompress(compressed);
         expect(decompressed, equals(data));
       }
     });
 
     test('decompress corrupted data throws', () async {
-      final corrupted =
-          Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      final corrupted = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
       expect(
         () async => await zstandardWeb.decompress(corrupted),
         throwsException,
@@ -104,17 +108,17 @@ void main() {
 
     test('compress and decompress do not leak', () async {
       final data = Uint8List.fromList(List.generate(10, (int i) => i));
+      expect(data, isNotEmpty);
       final compressed = await zstandardWeb.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed =
-          await zstandardWeb.decompress(compressed ?? Uint8List(0));
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandardWeb.decompress(compressed);
       expect(decompressed, equals(data));
       if (LeakTracking.isStarted) {
         final leaks = await LeakTracking.collectLeaks();
         expect(leaks, isLeakFree);
       }
     });
-
   });
 
   group('Property-based tests', () {
@@ -122,12 +126,14 @@ void main() {
       'roundtrip: decompress(compress(x)) == x',
       () {
         forAll(
-          binary(minLength: 0, maxLength: 1000),
+          binary(minLength: 1, maxLength: 1000),
           (List<int> data) async {
             final input = Uint8List.fromList(data);
+            expect(input, isNotEmpty);
             final z = ZstandardWeb();
             final compressed = await z.compress(input, 3);
-            if (compressed == null) return;
+            expect(compressed, isNotNull);
+            expect(compressed!.isNotEmpty, isTrue);
             final decompressed = await z.decompress(compressed);
             expect(decompressed, isNotNull);
             expect(List<int>.from(decompressed!), data);

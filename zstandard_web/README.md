@@ -43,7 +43,7 @@ The repo builds `zstd.js` and `zstd.wasm` from the **same** `zstandard_native/sr
 ./scripts/build_web_wasm.sh
 ```
 
-This script temporarily clones [Emscripten SDK (emsdk)](https://github.com/emscripten-core/emsdk), installs and activates the latest toolchain, compiles `zstandard_native/src/zstd/` with `emcc`, appends the `compressData`/`decompressData` wrappers, and writes `zstd.js` and `zstd.wasm` to both `zstandard_web/blob/` and `zstandard_web/example/web/`. Requires `git` and a shell; the emsdk directory is removed after the build.
+This script temporarily clones [Emscripten SDK (emsdk)](https://github.com/emscripten-core/emsdk) at the pinned SDK revision used by CI, installs and activates Emscripten 3.1.69, compiles `zstandard_native/src/zstd/` with `emcc`, appends the `compressData`/`decompressData` wrappers, and writes `zstd.js` and `zstd.wasm` to the web package and examples. Requires `git` and a shell; the temporary emsdk directory is removed after the build. Set `EMSDK_DIR` to reuse an existing local SDK, or override `EMSDK_REF`/`EMSCRIPTEN_VERSION` when intentionally updating the toolchain.
 
 ### Manual generation (optional)
 

@@ -90,6 +90,7 @@ target_include_directories(${TEST_RUNNER} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(${TEST_RUNNER} PRIVATE flutter)
 target_link_libraries(${TEST_RUNNER} PRIVATE PkgConfig::GTK)
 target_link_libraries(${TEST_RUNNER} PRIVATE gtest_main gmock)
+target_link_libraries(${TEST_RUNNER} PRIVATE zstandard_linux)
 
 # Enable automatic test discovery.
 include(GoogleTest)

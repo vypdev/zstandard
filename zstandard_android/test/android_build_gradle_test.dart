@@ -3,14 +3,31 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Android plugin uses Built-in Kotlin without applying KGP', () {
+  test('Android plugin does not pin the consuming app AGP', () {
     final buildGradle = File('android/build.gradle').readAsStringSync();
 
-    expect(buildGradle,
-        contains('classpath("com.android.tools.build:gradle:9.1.0")'));
-    expect(buildGradle, isNot(contains('kotlin-android')));
-    expect(buildGradle, isNot(contains('kotlin-gradle-plugin')));
-    expect(buildGradle, isNot(contains('android.kotlinOptions')));
-    expect(buildGradle, isNot(contains('main.java.srcDirs +=')));
+    // The application owns the AGP version. Pinning it from this library
+    // would make it impossible to consume the plugin from legacy projects.
+    expect(buildGradle, isNot(contains('com.android.tools.build:gradle:')));
+    expect(buildGradle, contains('apply plugin: "com.android.library"'));
+    expect(buildGradle, contains('JvmTarget.JVM_1_8'));
+  });
+
+  test('CI examples cover AGP 9 and the supported legacy AGP line', () {
+    final modernSettings = File(
+      'example/android/settings.gradle',
+    ).readAsStringSync();
+    final legacySettings = File(
+      'example_legacy/android/settings.gradle',
+    ).readAsStringSync();
+
+    expect(modernSettings, contains('version "9.1.0"'));
+    expect(legacySettings, contains('version "8.11.1"'));
+    expect(legacySettings, contains('version "2.2.20"'));
+
+    final legacyGradleProperties = File(
+      'example_legacy/android/gradle.properties',
+    ).readAsStringSync();
+    expect(legacyGradleProperties, contains('android.builtInKotlin=false'));
   });
 }

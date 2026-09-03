@@ -10,8 +10,8 @@ import org.junit.runner.RunWith
 
 /**
  * Additional instrumented tests for the zstandard_android plugin.
- * Verifies plugin type, instantiation, and that the native library can be loaded
- * in an Android context (actual compression is tested from Dart/FFI).
+ * Verifies plugin type and instantiation in an Android context. Native loading
+ * and compression round-trips are covered by ZstandardAndroidNativeRoundTripTest.
  */
 @RunWith(AndroidJUnit4::class)
 class ZstandardAndroidComprehensiveTest {

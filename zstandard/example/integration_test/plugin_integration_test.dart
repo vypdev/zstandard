@@ -29,26 +29,36 @@ void main() {
   group('Compression roundtrip', () {
     test('roundtrip small data level 3', () async {
       final data = Uint8List.fromList(List.generate(100, (i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await plugin.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed = await plugin.decompress(compressed!);
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      expect(compressedData, isNot(equals(data)));
+      final decompressed = await plugin.decompress(compressedData);
       expect(decompressed, isNotNull);
       expect(decompressed, data);
     });
 
     test('roundtrip with level 1', () async {
       final data = Uint8List.fromList(List.generate(500, (i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await plugin.compress(data, 1);
       expect(compressed, isNotNull);
-      final decompressed = await plugin.decompress(compressed!);
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      final decompressed = await plugin.decompress(compressedData);
       expect(decompressed, data);
     });
 
     test('roundtrip with level 22', () async {
       final data = Uint8List.fromList(List.generate(500, (i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await plugin.compress(data, 22);
       expect(compressed, isNotNull);
-      final decompressed = await plugin.decompress(compressed!);
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      final decompressed = await plugin.decompress(compressedData);
       expect(decompressed, data);
     });
 
@@ -56,25 +66,33 @@ void main() {
       final data = Uint8List(0);
       final compressed = await plugin.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed = await plugin.decompress(compressed!);
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      final decompressed = await plugin.decompress(compressedData);
       expect(decompressed, isNotNull);
       expect(decompressed!.length, 0);
     });
 
     test('roundtrip medium data (10KB)', () async {
       final data = Uint8List.fromList(List.generate(10000, (i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await plugin.compress(data, 3);
       expect(compressed, isNotNull);
-      expect(compressed!.length, lessThanOrEqualTo(data.length + 256));
-      final decompressed = await plugin.decompress(compressed);
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      expect(compressedData.length, lessThanOrEqualTo(data.length + 256));
+      final decompressed = await plugin.decompress(compressedData);
       expect(decompressed, data);
     });
 
     test('roundtrip repeated pattern', () async {
       final data = Uint8List.fromList(List.filled(1000, 0x42));
+      expect(data, isNotEmpty);
       final compressed = await plugin.compress(data, 10);
       expect(compressed, isNotNull);
-      final decompressed = await plugin.decompress(compressed!);
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      final decompressed = await plugin.decompress(compressedData);
       expect(decompressed, data);
     });
   });
@@ -87,7 +105,9 @@ void main() {
     });
 
     test('random bytes return null', () async {
-      final random = Uint8List.fromList(List.generate(50, (i) => (i * 7) % 256));
+      final random = Uint8List.fromList(
+        List.generate(50, (i) => (i * 7) % 256),
+      );
       final result = await plugin.decompress(random);
       expect(result, isNull);
     });
@@ -96,9 +116,12 @@ void main() {
   group('Extension methods', () {
     test('compress extension roundtrip', () async {
       final data = Uint8List.fromList(List.generate(200, (i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await data.compress(compressionLevel: 3);
       expect(compressed, isNotNull);
-      final decompressed = await compressed!.decompress();
+      final compressedData = compressed!;
+      expect(compressedData.isNotEmpty, isTrue);
+      final decompressed = await compressedData.decompress();
       expect(decompressed, data);
     });
 

@@ -49,6 +49,19 @@ final decompressed = await compressed?.decompress();
 
 This package uses Dart FFI to load `libzstandard_android.so` and call the Zstandard C API (`ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, `ZSTD_getFrameContentSize`). Heavy work may run in a background isolate to keep the UI responsive.
 
+The plugin does not pin an Android Gradle Plugin version. The consuming app
+owns that choice. The repository contains two Android consumers for CI:
+
+- `example/` uses AGP 9.1.0 with built-in Kotlin.
+- `example_legacy/` uses AGP 8.11.1, Gradle 8.14, and Kotlin Gradle Plugin
+  2.2.20.
+
+Both consumers compile the same native library for `armeabi-v7a`, `arm64-v8a`,
+and `x86_64`. CI runs the Flutter integration tests and Android native
+instrumentation tests on a headless `x86_64` emulator. The native tests assert
+that the shared library loads, compression produces non-empty output, and
+decompression returns the original byte array.
+
 ## Testing
 
 From the package directory:
@@ -57,7 +70,11 @@ From the package directory:
 flutter test
 ```
 
-Unit tests run only on Android (they are skipped on other platforms). For full integration tests, run the main [zstandard](https://pub.dev/packages/zstandard) example app on an Android device or emulator.
+Unit tests run only on Android (they are skipped on other platforms). The
+repository CI also builds debug and release APKs for the three supported
+Flutter Android ABIs, runs the Flutter integration tests on an emulator, and
+executes the native `androidTest` suite. For local end-to-end testing, run one
+of the example apps on an Android device or emulator.
 
 ## Troubleshooting
 

@@ -42,57 +42,16 @@ jobs:
         run: flutter test
 
   check_android_test:
-    name: Test Android
+    name: Test Android (${{ matrix.example }}, ${{ matrix.source }})
     runs-on: [self-hosted, Linux]
     timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup-linux-dependencies
-        with:
-          android: 'true'
-
-      - uses: ./.github/actions/setup-flutter
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Get dependencies
-        working-directory: zstandard_android/example
-        run: flutter pub get
-
-      - name: Set up JDK 17 (required by Android SDK tools and Gradle)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Set up Android SDK tools
-        uses: android-actions/setup-android@v4
-
-      - name: Verify Android SDK prerequisites
-        run: bash scripts/check_android_ci_prerequisites.sh
-
-      - name: Build Android example APK
-        working-directory: zstandard_android/example
-        run: flutter build apk --debug
-
-      - name: Run integration tests on emulator
-        run: |
-          # Launch the emulator directly so a slow software boot cannot fail
-          # on the action's unconditional input-keyevent helper.
-          bash scripts/run_android_emulator_ci.sh \
-            bash -c 'cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}'
-
-  check_android_test_from_pub_cache:
-    name: Test Android (from pub cache)
-    # A self-hosted runner has one shared ADB daemon. Keep the two software
-    # emulators from racing over it when both test jobs target the same host.
-    needs: check_android_test
-    # Keep this coverage after a real failure, but do not start it after the
-    # upstream job was cancelled (for example, by a newer push).
-    if: ${{ always() && needs.check_android_test.result != 'cancelled' }}
-    runs-on: [self-hosted, Linux]
-    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      # The self-hosted runner shares one ADB daemon and one emulator port.
+      max-parallel: 1
+      matrix:
+        example: [example, example_legacy]
+        source: [workspace, pub-cache]
     steps:
       - uses: actions/checkout@v6
 
@@ -105,16 +64,25 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Remove zstandard_native to force resolution from pub cache
-        run: rm -rf zstandard_native
+        if: matrix.source == 'pub-cache'
+        run: mv zstandard_native "$RUNNER_TEMP/zstandard_native"
 
-      - name: Clean and get dependencies (force pub cache)
+      - name: Get dependencies
+        working-directory: zstandard_android/${{ matrix.example }}
+        run: flutter pub get
+
+      - name: Clean and get plugin dependencies
         working-directory: zstandard_android
         run: |
           flutter clean
+          # The plugin CMake cache is kept outside Flutter's build directory
+          # on persistent self-hosted runners. Remove it so workspace and
+          # pub-cache matrix entries cannot reuse a previous native source.
+          rm -rf android/.cxx
           flutter pub get
 
-      - name: Get dependencies in example (force pub cache)
-        working-directory: zstandard_android/example
+      - name: Clean and get example dependencies
+        working-directory: zstandard_android/${{ matrix.example }}
         run: |
           flutter clean
           flutter pub get
@@ -131,14 +99,59 @@ jobs:
       - name: Verify Android SDK prerequisites
         run: bash scripts/check_android_ci_prerequisites.sh
 
-      - name: Build Android example APK from pub cache
-        working-directory: zstandard_android/example
-        run: flutter build apk --debug
-
-      - name: Run integration tests on emulator (from pub cache)
+      - name: Verify Android Gradle consumer configuration
+        working-directory: zstandard_android/${{ matrix.example }}
         run: |
+          set -euo pipefail
+          if [[ "${{ matrix.example }}" == 'example' ]]; then
+            grep -F 'id "com.android.application" version "9.1.0" apply false' android/settings.gradle
+            grep -F 'distributionUrl=https\\://services.gradle.org/distributions/gradle-9.3.1-all.zip' android/gradle/wrapper/gradle-wrapper.properties
+          else
+            grep -F 'id "com.android.application" version "8.11.1" apply false' android/settings.gradle
+            grep -F 'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14-all.zip' android/gradle/wrapper/gradle-wrapper.properties
+          fi
+
+      - name: Build Android debug APKs for all supported Flutter ABIs
+        working-directory: zstandard_android/${{ matrix.example }}
+        run: flutter build apk --debug --split-per-abi --target-platform android-arm,android-arm64,android-x64
+
+      - name: Verify selected Gradle runtime
+        working-directory: zstandard_android/${{ matrix.example }}/android
+        run: bash ./gradlew --no-daemon --version
+
+      - name: Verify debug APK native libraries
+        working-directory: zstandard_android/${{ matrix.example }}
+        run: bash ../../scripts/check_android_apk_abis.sh build/app/outputs/flutter-apk debug
+
+      - name: Build Android release APKs for all supported Flutter ABIs
+        if: matrix.source == 'workspace'
+        working-directory: zstandard_android/${{ matrix.example }}
+        run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64,android-x64
+
+      - name: Verify release APK native libraries
+        if: matrix.source == 'workspace'
+        working-directory: zstandard_android/${{ matrix.example }}
+        run: bash ../../scripts/check_android_apk_abis.sh build/app/outputs/flutter-apk release
+
+      - name: Run Flutter integration and native instrumentation tests on emulator
+        run: |
+          # Launch the emulator directly so a slow software boot cannot fail
+          # on the action's unconditional input-keyevent helper.
           bash scripts/run_android_emulator_ci.sh \
-            bash -c 'cd zstandard_android/example && flutter test integration_test/ -d emulator-${EMULATOR_PORT}'
+            bash -c '
+              set -euo pipefail
+              cd zstandard_android/${{ matrix.example }}
+              flutter test integration_test/ -d emulator-${EMULATOR_PORT}
+              cd android
+              bash ./gradlew --no-daemon connectedDebugAndroidTest
+            '
+
+      - name: Restore workspace native package
+        if: always() && matrix.source == 'pub-cache'
+        run: |
+          if [[ -d "$RUNNER_TEMP/zstandard_native" ]]; then
+            mv "$RUNNER_TEMP/zstandard_native" zstandard_native
+          fi
 
   check_android_publish_dry_run:
     name: Dry Run Publish Android

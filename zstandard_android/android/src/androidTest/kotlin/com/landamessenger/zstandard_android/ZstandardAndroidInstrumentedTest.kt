@@ -7,9 +7,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Instrumented tests for the zstandard_android plugin.
- * Compression and decompression are exercised by Dart code via FFI; these tests
- * verify the native library and plugin are loadable in an Android context.
+ * Basic instrumented tests for the zstandard_android plugin. Native loading and
+ * compression/decompression are covered by the native round-trip test class.
  */
 @RunWith(AndroidJUnit4::class)
 class ZstandardAndroidInstrumentedTest {

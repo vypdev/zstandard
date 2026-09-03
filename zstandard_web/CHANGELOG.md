@@ -1,3 +1,10 @@
+## Unreleased
+
+- Pin the Emscripten toolchain used to regenerate the checked-in WebAssembly
+  artifacts from the canonical `zstandard_native` C source.
+- Verify WebAssembly regeneration is reproducible in CI before building and
+  testing the web example.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

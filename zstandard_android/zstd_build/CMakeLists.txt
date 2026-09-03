@@ -5,15 +5,17 @@ cmake_minimum_required(VERSION 3.10)
 
 project(zstandard_android_library VERSION 0.0.1 LANGUAGES C)
 
-# Resolve parent of plugin (repo root or pub-cache hosted dir) for consistent paths
+# Resolve the parent containing the plugin (repo root or pub-cache hosted dir)
+# for consistent paths.
 get_filename_component(_PLUGIN_PARENT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
-# 1. Prefer repo local zstandard_native/src/zstd
+# 1. Prefer repo local zstandard_native/src/zstd.
 set(_LOCAL_ZSTD "${_PLUGIN_PARENT}/zstandard_native/src/zstd")
 if(EXISTS "${_LOCAL_ZSTD}/common")
   set(ZSTD_ROOT "${_LOCAL_ZSTD}")
   message(STATUS "Using local zstandard_native: ${ZSTD_ROOT}")
 else()
-  # 2. Look for zstandard_native in pub-cache (versioned dirs only, e.g. zstandard_native-1.4.0; do not match zstandard_native2 etc.)
+  # 2. Look for zstandard_native in pub-cache (versioned dirs only, e.g.
+  # zstandard_native-1.4.0; do not match zstandard_native2 etc.).
   file(GLOB NATIVE_PARENT_DIRS "${_PLUGIN_PARENT}/zstandard_native-*")
   if(NATIVE_PARENT_DIRS)
     list(GET NATIVE_PARENT_DIRS 0 NATIVE_PKG_DIR)
@@ -64,6 +66,14 @@ file(GLOB ZSTD_SRC
     "${ZSTD_ROOT}/compress/*.c"
     "${ZSTD_ROOT}/decompress/*.c"
 )
+
+# JNI entry points are compiled into the same Android shared object so
+# instrumentation tests can exercise the exact library that Dart FFI loads.
+# They are not part of the Dart-facing API.
+if(ANDROID)
+  list(APPEND ZSTD_SRC
+      "${CMAKE_CURRENT_SOURCE_DIR}/../android/src/main/cpp/zstandard_android_test_bridge.c")
+endif()
 
 add_library(zstandard_android SHARED ${ZSTD_SRC})
 
