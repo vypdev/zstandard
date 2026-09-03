@@ -1,6 +1,6 @@
 # Self-hosted CI contract
 
-The repository uses self-hosted runners for platform checks that cannot run reliably on a generic hosted image. The current automated scope is Android, Linux, and Web. Apple and Windows remain separate platform workflows and require their corresponding hardware and toolchain.
+The repository uses self-hosted runners for platform checks that cannot run reliably on a generic hosted image. The automated scope covers Android, Linux, Web, Apple Silicon macOS/iOS, and Windows X64. Apple and Windows require their corresponding hardware and toolchain.
 
 ## Linux runner labels
 
@@ -37,6 +37,12 @@ The two Android instrumentation variants run sequentially. They share the runner
 ## Linux job requirements
 
 The workflow builds `zstandard_linux/example` with `flutter build linux --debug`. It then runs the single desktop integration-test file under Xvfb. The same sequence is repeated after removing the repository copy of `zstandard_native`, which verifies resolution from the published package cache.
+
+## Windows job requirements
+
+Windows jobs target `[self-hosted, Windows, X64]`. The runner must expose the pinned Flutter SDK through the service `PATH`, have Windows desktop support enabled, and provide CMake plus a Visual Studio C++ desktop toolchain. Integration tests launch a real Windows Flutter application, so the runner must have an interactive desktop session; a headless service session is not sufficient for this job.
+
+The workflow builds `zstandard_windows/example` in Debug mode, runs the generated CTest target (including a native zstd compression/decompression round trip), runs the Windows package tests with the built DLL on `PATH`, and launches the example for Flutter integration tests. The same sequence is repeated after removing the repository copy of `zstandard_native`, proving that the native C source can be resolved from the Pub cache. A separate federated-example job builds `zstandard/example` and runs its integration suite.
 
 ## Web job requirements
 

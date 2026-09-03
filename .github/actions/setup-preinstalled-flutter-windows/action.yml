@@ -1,0 +1,38 @@
+name: Use preinstalled Flutter on Windows
+description: Validate and expose the Flutter SDK installed on the Windows runner.
+
+inputs:
+  flutter-version:
+    description: Required Flutter stable version.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Verify preinstalled Flutter and Windows toolchain
+      shell: powershell
+      env:
+        REQUIRED_FLUTTER_VERSION: ${{ inputs.flutter-version }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+
+        $flutterCommand = Get-Command flutter -ErrorAction Stop
+        $versionLine = flutter --version | Select-String '^Flutter '
+        if ($null -eq $versionLine) {
+          throw 'Unable to determine the installed Flutter version.'
+        }
+        $actualVersion = ($versionLine.ToString() -split '\s+')[1]
+        if ($actualVersion -ne $env:REQUIRED_FLUTTER_VERSION) {
+          throw "Expected Flutter $env:REQUIRED_FLUTTER_VERSION, got $actualVersion at $($flutterCommand.Source)."
+        }
+
+        flutter config --enable-windows-desktop
+        Get-Command cmake -ErrorAction Stop | Out-Null
+        Get-Command ctest -ErrorAction Stop | Out-Null
+        flutter --version
+        cmake --version
+
+        $flutterRoot = Split-Path (Split-Path $flutterCommand.Source -Parent) -Parent
+        "FLUTTER_ROOT=$flutterRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "$flutterRoot\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        "$flutterRoot\bin\cache\dart-sdk\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append

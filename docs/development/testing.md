@@ -9,16 +9,18 @@ Platform-specific packages use **integration tests** that run on real devices, e
 - **Android**: Tests run in `zstandard_android/example/integration_test/` on an Android emulator.
 - **iOS**: Tests run in `zstandard_ios/example/integration_test/` on an iOS simulator.
 - **macOS**: Tests run in `zstandard_macos/example/integration_test/` after the native framework is built.
+- **Windows**: Tests run in `zstandard_windows/example/integration_test/` after the native DLL is built.
 - **Web**: The example integration tests run through `flutter drive` with ChromeDriver. Direct `flutter test -d chrome` is suitable for web unit tests, but Flutter 3.47.2 does not support `integration_test` directly on the Chrome device.
 
-Linux and Windows tests still run only on their native OS in CI.
+Linux and Windows tests run only on their native OS in CI.
 
-### Prerequisites (macOS)
+### Prerequisites
 
 1. **Android**: Android SDK with emulator (API 28+). Set `ANDROID_HOME` or `ANDROID_SDK_ROOT`; Linux CI uses software emulation.
 2. **iOS**: Xcode with simulators installed.
 3. **macOS**: Xcode command-line tools.
-4. **Web**: Chrome browser.
+4. **Windows**: Visual Studio C++ desktop workload, CMake, and an interactive desktop session for launching the Flutter app.
+5. **Web**: Chrome browser.
 
 See [Emulator and simulator setup](emulator-setup.md) for details.
 
@@ -61,6 +63,12 @@ flutter test integration_test/ -d macos
 ./scripts/test_web_integration.sh
 ```
 
+**Windows** (native desktop app):
+
+```bat
+scripts\test_windows_integration.bat
+```
+
 ## Running Tests
 
 ### Main plugin (zstandard)
@@ -80,7 +88,8 @@ flutter test
 ### Platform implementations
 
 - **Android, iOS, macOS**: Platform tests live in each package’s `example/integration_test/`. Use the scripts above (e.g. `./scripts/test_android_integration.sh`). The package `test/` directory only contains a pointer test.
-- **Linux, Windows**: From the package directory, `flutter test` (run on the corresponding OS).
+- **Linux**: From the package directory, `flutter test` (run on Linux).
+- **Windows**: From the package directory, `flutter test` (run on Windows with the built DLL on `PATH`); the example build also runs the native C++ CTest target.
 - **Web**: Run `./scripts/test_web_integration.sh`; it runs package web tests when present and the example integration suite through ChromeDriver. The package currently keeps its web coverage in `example/integration_test/`.
 
 ### CLI package
@@ -172,6 +181,7 @@ CI runs platform-specific tests as follows:
 - **iOS**: Boots a simulator, runs `zstandard_ios/example` integration tests.
 - **macOS**: Builds the native framework (if needed), then runs `zstandard_macos/example` integration tests.
 - **Web**: Builds the example with `flutter build web --release` and runs the integration suite through ChromeDriver under Xvfb.
-- **Linux / Windows**: Run on their respective native runners; Linux builds the example with `flutter build linux --debug` before running under Xvfb.
+- **Linux**: Runs on the native Linux runner and builds the example with `flutter build linux --debug` before running under Xvfb.
+- **Windows**: Builds the example with `flutter build windows --debug`, runs the native CTest target, runs package tests, and launches the example for integration tests.
 
 Ensure your changes do not break these jobs. Add new tests for new behavior and fix any failing tests before submitting a PR.

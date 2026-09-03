@@ -19,18 +19,22 @@ void main() {
     test('compress and decompress small data', () async {
       if (skipPlatform) return;
       final data = Uint8List.fromList([1, 2, 3, 4, 5]);
+      expect(data, isNotEmpty);
       final compressed = await zstandard.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed = await zstandard.decompress(compressed!);
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandard.decompress(compressed);
       expect(decompressed, equals(data));
     }, skip: skipPlatform ? 'Only runs on Windows' : false);
 
     test('compress and decompress large data', () async {
       if (skipPlatform) return;
       final data = Uint8List.fromList(List<int>.generate(100000, (i) => i % 256));
+      expect(data, isNotEmpty);
       final compressed = await zstandard.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed = await zstandard.decompress(compressed!);
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandard.decompress(compressed);
       expect(decompressed, equals(data));
     }, skip: skipPlatform ? 'Only runs on Windows' : false);
 
@@ -39,17 +43,20 @@ void main() {
       final data = Uint8List(0);
       final compressed = await zstandard.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed = await zstandard.decompress(compressed!);
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandard.decompress(compressed);
       expect(decompressed, equals(data));
     }, skip: skipPlatform ? 'Only runs on Windows' : false);
 
     test('compress with levels 1, 3, 10, 22', () async {
       if (skipPlatform) return;
       final data = Uint8List.fromList(List.filled(1000, 42));
+      expect(data, isNotEmpty);
       for (final level in [1, 3, 10, 22]) {
         final compressed = await zstandard.compress(data, level);
         expect(compressed, isNotNull);
-        final decompressed = await zstandard.decompress(compressed!);
+        expect(compressed!.isNotEmpty, isTrue);
+        final decompressed = await zstandard.decompress(compressed);
         expect(decompressed, equals(data));
       }
     }, skip: skipPlatform ? 'Only runs on Windows' : false);
@@ -71,9 +78,11 @@ void main() {
     test('compress and decompress do not leak', () async {
       if (skipPlatform) return;
       final data = Uint8List.fromList([1, 2, 3, 4, 5]);
+      expect(data, isNotEmpty);
       final compressed = await zstandard.compress(data, 3);
       expect(compressed, isNotNull);
-      final decompressed = await zstandard.decompress(compressed!);
+      expect(compressed!.isNotEmpty, isTrue);
+      final decompressed = await zstandard.decompress(compressed);
       expect(decompressed, equals(data));
       if (LeakTracking.isStarted) {
         final leaks = await LeakTracking.collectLeaks();

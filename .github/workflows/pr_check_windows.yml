@@ -13,87 +13,224 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Keep Windows aligned with the Flutter SDK used by the other platform jobs.
+  FLUTTER_VERSION: '3.47.2'
+
 
 jobs:
   check_windows_analyze:
     name: Analyze Windows
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-preinstalled-flutter-windows
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_windows
-        shell: cmd
+        shell: powershell
         run: flutter pub get
 
       - name: Analyze check
         working-directory: zstandard_windows
-        shell: cmd
+        shell: powershell
         run: flutter analyze
 
   check_windows_test:
     name: Test Windows
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-preinstalled-flutter-windows
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_windows
-        shell: cmd
+        shell: powershell
         run: flutter pub get
 
       - name: Clean example
         working-directory: zstandard_windows/example
-        shell: cmd
+        shell: powershell
         run: flutter clean
 
       - name: Get example dependencies
         working-directory: zstandard_windows/example
-        shell: cmd
+        shell: powershell
         run: flutter pub get
 
-      - name: Run integration tests
+      - name: Build Windows example
         working-directory: zstandard_windows/example
-        shell: cmd
-        run: flutter test integration_test/ -d windows
+        shell: powershell
+        run: flutter build windows --debug
+
+      - name: Run Windows native C++ tests
+        working-directory: zstandard_windows/example
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cache = Get-ChildItem -Path build/windows -Filter CMakeCache.txt -Recurse -File |
+            Where-Object { $_.FullName -notmatch '[\\/]_deps[\\/]' } |
+            Sort-Object FullName |
+            Select-Object -Last 1
+          if ($null -eq $cache) {
+            throw 'Flutter did not generate a Windows CMake build directory.'
+          }
+          $buildDir = $cache.Directory.FullName
+          cmake --build $buildDir --config Debug --target zstandard_windows_test --parallel
+          ctest --test-dir $buildDir -C Debug --output-on-failure
+
+      - name: Run Windows package tests against the built DLL
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dll = Get-ChildItem -Path zstandard_windows/example/build/windows -Filter zstandard_windows.dll -Recurse -File |
+            Sort-Object LastWriteTime |
+            Select-Object -Last 1
+          if ($null -eq $dll) {
+            throw 'The Windows zstandard DLL was not produced by the build.'
+          }
+          $env:PATH = "$($dll.DirectoryName);$env:PATH"
+          Push-Location zstandard_windows
+          try {
+            flutter test test --coverage
+          } finally {
+            Pop-Location
+          }
+
+      - name: Launch Windows example and run integration tests
+        working-directory: zstandard_windows/example
+        shell: powershell
+        run: flutter test integration_test/windows_integration_test.dart -d windows
 
   check_windows_test_from_pub_cache:
     name: Test Windows (from pub cache)
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-preinstalled-flutter-windows
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Remove zstandard_native to force resolution from pub cache
-        shell: cmd
-        run: rmdir /s /q zstandard_native
+        shell: powershell
+        run: |
+          if (Test-Path zstandard_native) {
+            Remove-Item -Recurse -Force zstandard_native
+          }
 
       - name: Clean and get dependencies (force pub cache)
         working-directory: zstandard_windows
-        shell: cmd
-        run: flutter clean && flutter pub get
+        shell: powershell
+        run: |
+          flutter clean
+          flutter pub get
 
       - name: Get dependencies in example (force pub cache)
         working-directory: zstandard_windows/example
-        shell: cmd
-        run: flutter clean && flutter pub get
+        shell: powershell
+        run: |
+          flutter clean
+          flutter pub get
 
-      - name: Run integration tests (C sources from pub cache)
+      - name: Build Windows example from pub cache
         working-directory: zstandard_windows/example
-        shell: cmd
+        shell: powershell
+        run: flutter build windows --debug
+
+      - name: Run Windows native C++ tests from pub cache
+        working-directory: zstandard_windows/example
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cache = Get-ChildItem -Path build/windows -Filter CMakeCache.txt -Recurse -File |
+            Where-Object { $_.FullName -notmatch '[\\/]_deps[\\/]' } |
+            Sort-Object FullName |
+            Select-Object -Last 1
+          if ($null -eq $cache) {
+            throw 'Flutter did not generate a Windows CMake build directory.'
+          }
+          $buildDir = $cache.Directory.FullName
+          cmake --build $buildDir --config Debug --target zstandard_windows_test --parallel
+          ctest --test-dir $buildDir -C Debug --output-on-failure
+
+      - name: Run Windows package tests against the pub-cache DLL
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dll = Get-ChildItem -Path zstandard_windows/example/build/windows -Filter zstandard_windows.dll -Recurse -File |
+            Sort-Object LastWriteTime |
+            Select-Object -Last 1
+          if ($null -eq $dll) {
+            throw 'The Windows zstandard DLL was not produced by the build.'
+          }
+          $env:PATH = "$($dll.DirectoryName);$env:PATH"
+          Push-Location zstandard_windows
+          try {
+            flutter test test --coverage
+          } finally {
+            Pop-Location
+          }
+
+      - name: Launch Windows example and run integration tests from pub cache
+        working-directory: zstandard_windows/example
+        shell: powershell
+        run: flutter test integration_test/windows_integration_test.dart -d windows
+
+  check_windows_federated_example:
+    name: Test federated Windows example
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-preinstalled-flutter-windows
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Clean and get federated example dependencies
+        working-directory: zstandard/example
+        shell: powershell
+        run: |
+          flutter clean
+          flutter pub get
+
+      - name: Build federated Windows example
+        working-directory: zstandard/example
+        shell: powershell
+        run: flutter build windows --debug
+
+      - name: Launch federated Windows example and run integration tests
+        working-directory: zstandard/example
+        shell: powershell
         run: flutter test integration_test/ -d windows
 
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows
-    runs-on: [self-hosted, Windows]
+    runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-preinstalled-flutter-windows
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Get dependencies
         working-directory: zstandard_windows
-        shell: cmd
+        shell: powershell
         run: flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_windows
-        shell: cmd
+        shell: powershell
         run: dart pub publish --dry-run

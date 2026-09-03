@@ -13,13 +13,15 @@ void main() {
       'roundtrip: decompress(compress(x)) == x',
       () {
         forAll(
-          binary(minLength: 0, maxLength: 1000),
+          binary(minLength: 1, maxLength: 1000),
           (List<int> data) async {
             if (skipPlatform) return;
             final input = Uint8List.fromList(data);
+            expect(input, isNotEmpty);
             final z = ZstandardWindows();
             final compressed = await z.compress(input, 3);
-            if (compressed == null) return;
+            expect(compressed, isNotNull);
+            expect(compressed!.isNotEmpty, isTrue);
             final decompressed = await z.decompress(compressed);
             expect(decompressed, isNotNull);
             expect(List<int>.from(decompressed!), data);

@@ -23,7 +23,7 @@ Each package has a dedicated workflow that runs on pull requests (open or new co
 | `pr_check_ios.yml` | zstandard_ios | self-hosted macOS ARM64 | Analyze, build, headless simulator launch, SwiftPM and CocoaPods integration tests from checkout and Pub cache, Publish dry run |
 | `pr_check_macos.yml` | zstandard_macos | self-hosted macOS ARM64 | Analyze, build, launch, SwiftPM and CocoaPods integration tests from checkout and Pub cache, Publish dry run |
 | `pr_check_linux.yml` | zstandard_linux | self-hosted Linux | Analyze, Build Linux app, Linux integration tests, Publish dry run |
-| `pr_check_windows.yml` | zstandard_windows | self-hosted Windows | Analyze, Test (with coverage), Publish dry run |
+| `pr_check_windows.yml` | zstandard_windows | self-hosted Windows X64 | Analyze, build, native C++ tests, Dart tests, Windows integration tests, Publish dry run |
 | `pr_check_web.yml` | zstandard_web | self-hosted Linux | Analyze, Build Web app, ChromeDriver integration tests, Publish dry run |
 | `pr_check_cli.yml` | zstandard_cli | self-hosted Linux | Analyze, Test (with coverage), Publish dry run |
 | `pr_check_platform_interface.yml` | zstandard_platform_interface | self-hosted Linux | Analyze, Test (with coverage), Publish dry run |
@@ -56,7 +56,13 @@ The Android job builds the example APK before booting the emulator. The Linux jo
 
 PR checks pin Flutter 3.47.2. This is intentional: the organisation-level `FLUTTER_VERSION` variable previously selected Flutter 3.41.4, which is below the minimum required by the current root and Android packages.
 
-Apple workflows use the self-hosted ARM64 Mac runner and validate both native dependency managers. iOS simulators are booted through `simctl` without opening the Simulator UI; macOS tests run the built app in the runner's logged-in graphical session. Windows remains a separate platform workflow and requires its corresponding hardware/toolchain to be useful.
+Apple workflows use the self-hosted ARM64 Mac runner and validate both native dependency managers. iOS simulators are booted through `simctl` without opening the Simulator UI; macOS tests run the built app in the runner's logged-in graphical session. Windows uses self-hosted X64 runners and requires a Windows desktop session plus Visual Studio/CMake for native builds and launched integration tests.
+
+### Self-hosted Windows runner contract
+
+Windows jobs target `[self-hosted, Windows, X64]`. Each runner must provide the pinned Flutter SDK in its service `PATH`, Windows desktop support enabled, CMake, and a Visual Studio C++ desktop toolchain. The runner must have an interactive desktop session because Flutter's Windows integration tests launch the compiled example application.
+
+The Windows workflow builds and tests the implementation package from the repository and from the published `zstandard_native` package in the Pub cache. Each path runs the native C++ zstd round-trip tests, Dart package tests, and launched Flutter integration tests. A separate job runs the federated `zstandard/example` application to verify the public plugin entry point on Windows.
 
 ## Release workflow
 
