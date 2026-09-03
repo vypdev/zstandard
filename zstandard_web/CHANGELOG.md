@@ -2,6 +2,8 @@
 
 - Pin the Emscripten toolchain used to regenerate the checked-in WebAssembly
   artifacts from the canonical `zstandard_native` C source.
+- Normalize WebAssembly with the matching `wasm-opt` tool so generated binaries
+  remain comparable across Linux x64 and macOS arm64.
 - Verify WebAssembly regeneration is reproducible in CI before building and
   testing the web example.
 

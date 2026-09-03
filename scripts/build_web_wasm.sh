@@ -40,17 +40,21 @@ if [[ -z "$EMSDK_DIR" ]]; then
   # repositories. Use the ephemeral Actions token when CI provides one, while
   # keeping local development fully anonymous. Disable prompting so a runner
   # cannot hang forever waiting for credentials, and retry transient failures.
-  EMSDK_FETCH_AUTH=()
-  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    # GitHub's checkout action configures its token as Basic auth; use the
-    # same format because some self-hosted network proxies reject Bearer.
-    EMSDK_AUTH=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\r\n')
-    EMSDK_FETCH_AUTH=(-c "http.extraHeader=Authorization: basic ${EMSDK_AUTH}")
-  fi
+  fetch_emsdk() {
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+      # GitHub's checkout action configures its token as Basic auth; use the
+      # same format because some self-hosted network proxies reject Bearer.
+      EMSDK_AUTH=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\r\n')
+      GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 \
+        -c "http.extraHeader=Authorization: basic ${EMSDK_AUTH}" \
+        -C "$BUILD_DIR/emsdk" fetch --depth 1 origin "$EMSDK_REF"
+    else
+      GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 \
+        -C "$BUILD_DIR/emsdk" fetch --depth 1 origin "$EMSDK_REF"
+    fi
+  }
   for attempt in 1 2 3; do
-    if GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 \
-      "${EMSDK_FETCH_AUTH[@]}" \
-      -C "$BUILD_DIR/emsdk" fetch --depth 1 origin "$EMSDK_REF"; then
+    if fetch_emsdk; then
       break
     fi
     if [[ "$attempt" -eq 3 ]]; then
@@ -74,6 +78,8 @@ else
   fi
   echo "Using Emscripten SDK from $EMSDK_DIR ..."
 fi
+
+EMSDK_ROOT="$EMSDK_DIR"
 
 # shellcheck source=/dev/null
 source "$EMSDK_DIR/emsdk_env.sh"
@@ -104,6 +110,23 @@ if [[ ! -f zstd_generated.js || ! -f zstd_generated.wasm ]]; then
   echo "Error: emcc did not produce zstd_generated.js / zstd_generated.wasm"
   exit 1
 fi
+
+# wasm-ld can emit host-dependent metadata even when the Emscripten version is
+# pinned. Strip that metadata with the wasm-opt shipped by the same SDK so the
+# committed binary is reproducible on Linux x64 and macOS arm64 alike.
+WASM_OPT="$EMSDK_ROOT/upstream/bin/wasm-opt"
+if [[ ! -x "$WASM_OPT" ]]; then
+  echo "Error: wasm-opt not found in the selected Emscripten SDK: $WASM_OPT" >&2
+  exit 1
+fi
+"$WASM_OPT" \
+  --strip-debug \
+  --strip-producers \
+  --strip-target-features \
+  --remove-unused-names \
+  zstd_generated.wasm \
+  -o zstd_normalized.wasm
+mv zstd_normalized.wasm zstd_generated.wasm
 
 # Append the compressData/decompressData wrappers required by the web plugin (see zstandard_web/README.md).
 cat >> zstd_generated.js << 'WRAPPER_JS'
