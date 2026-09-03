@@ -57,8 +57,9 @@ set(zstandard_linux_bundled_libraries
 # These unit tests can be run from a terminal after building the example.
 
 # Only enable test builds when building the example (which sets this variable)
-# so that plugin clients aren't building the tests.
-if (${include_${PROJECT_NAME}_tests})
+# so that plugin clients aren't building the tests. CI can explicitly opt in
+# while reconfiguring the example with ZSTANDARD_LINUX_ENABLE_TESTS=1.
+if (include_${PROJECT_NAME}_tests OR "$ENV{ZSTANDARD_LINUX_ENABLE_TESTS}" STREQUAL "1")
 if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
 message("Unit tests require CMake 3.11.0 or later")
 else()
