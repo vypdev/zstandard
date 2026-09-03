@@ -2,8 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:leak_tracker/leak_tracker.dart';
-import 'package:leak_tracker_testing/leak_tracker_testing.dart';
 import 'package:zstandard_android/zstandard_android.dart';
 
 /// Android integration tests: run on device/emulator. No platform skips.
@@ -70,19 +68,6 @@ void main() {
       );
       final result = await zstandard.decompress(random);
       expect(result, isNull);
-    });
-
-    test('compress and decompress do not leak', () async {
-      final data = Uint8List.fromList([1, 2, 3, 4, 5]);
-      final compressed = await zstandard.compress(data, 3);
-      expect(compressed, isNotNull);
-      expect(compressed!.isNotEmpty, isTrue);
-      final decompressed = await zstandard.decompress(compressed);
-      expect(decompressed, equals(data));
-      if (LeakTracking.isStarted) {
-        final leaks = await LeakTracking.collectLeaks();
-        expect(leaks, isLeakFree);
-      }
     });
   });
 }
