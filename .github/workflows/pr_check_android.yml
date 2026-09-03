@@ -180,7 +180,7 @@ jobs:
           bash scripts/run_android_emulator_ci.sh \
             bash -c '
               set -euo pipefail
-              cd android
+              cd zstandard_android/${{ matrix.example }}/android
               timeout --foreground 15m \
                 bash ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace
             '
