@@ -98,6 +98,20 @@ jobs:
             zstandard/example/web/zstd.js \
             zstandard/example/web/zstd.wasm
 
+      - name: Upload regenerated artifacts when verification fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-regenerated-artifacts-${{ github.run_id }}
+          if-no-files-found: error
+          path: |
+            zstandard_web/blob/zstd.js
+            zstandard_web/blob/zstd.wasm
+            zstandard_web/example/web/zstd.js
+            zstandard_web/example/web/zstd.wasm
+            zstandard/example/web/zstd.js
+            zstandard/example/web/zstd.wasm
+
       - name: Build Web example
         working-directory: zstandard_web/example
         run: flutter build web --release
