@@ -99,7 +99,7 @@ emcc -O3 \
   -I. -Icommon -Icompress -Idecompress \
   -s WASM=1 \
   -s EXPORT_NAME="zstdWasmModule" \
-  -s EXPORTED_FUNCTIONS="['_ZSTD_compress','_ZSTD_decompress','_malloc','_free','_ZSTD_getFrameContentSize','_ZSTD_compressBound']" \
+  -s EXPORTED_FUNCTIONS="['_ZSTD_compress','_ZSTD_decompress','_ZSTD_isError','_malloc','_free','_ZSTD_getFrameContentSize','_ZSTD_compressBound']" \
   -s EXPORTED_RUNTIME_METHODS="['HEAPU8']" \
   -s INITIAL_MEMORY=134217728 \
   -s ALLOW_MEMORY_GROWTH=1 \
@@ -163,7 +163,7 @@ async function compressData(inputData, compressionLevel) {
         compressionLevel
     ));
 
-    if (compressedSize < 0) {
+    if (Module._ZSTD_isError(compressedSize) !== 0 || compressedSize <= 0) {
         console.error('Compression error, error code: ', compressedSize);
         Module._free(inputPtr);
         Module._free(outputPtr);
@@ -183,23 +183,30 @@ async function decompressData(compressedData) {
     let compressedPtr = Module._malloc(compressedData.length);
     Module.HEAPU8.set(compressedData, compressedPtr);
 
+    // ZSTD_getFrameContentSize returns these unsigned 64-bit sentinel values.
+    // JavaScript rounds them to the same Number values returned by Emscripten.
+    const ZSTD_CONTENTSIZE_UNKNOWN = 0xffffffffffffffff;
+    const ZSTD_CONTENTSIZE_ERROR = 0xfffffffffffffffe;
     let decompressedSize = Number(Module._ZSTD_getFrameContentSize(compressedPtr, compressedData.length));
-    if (decompressedSize === -1 || decompressedSize === -2) {
+    if (decompressedSize === ZSTD_CONTENTSIZE_ERROR) {
         console.error('Error in obtaining the original size of the data');
         Module._free(compressedPtr);
         return null;
     }
 
-    let decompressedPtr = Module._malloc(decompressedSize);
+    const outputBufferSize = decompressedSize === ZSTD_CONTENTSIZE_UNKNOWN
+        ? compressedData.length * 20
+        : decompressedSize;
+    let decompressedPtr = Module._malloc(outputBufferSize);
 
     let resultSize = Number(Module._ZSTD_decompress(
         decompressedPtr,
-        decompressedSize,
+        outputBufferSize,
         compressedPtr,
         compressedData.length
     ));
 
-    if (resultSize < 0) {
+    if (Module._ZSTD_isError(resultSize) !== 0 || resultSize < 0) {
         console.error('Decompression error, error code: ', resultSize);
         Module._free(compressedPtr);
         Module._free(decompressedPtr);

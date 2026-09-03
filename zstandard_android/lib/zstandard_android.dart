@@ -65,7 +65,7 @@ class ZstandardAndroid extends ZstandardPlatform {
         compressionLevel,
       );
 
-      if (compressedSize > 0) {
+      if (_bindings.ZSTD_isError(compressedSize) == 0 && compressedSize > 0) {
         return Uint8List.fromList(dst.asTypedList(compressedSize));
       } else {
         return null;
@@ -78,8 +78,8 @@ class ZstandardAndroid extends ZstandardPlatform {
 
   @override
   Future<Uint8List?> decompress(Uint8List data) async {
-    const int contentSizeUnknown = -1;
-    const int contentSizeError = -2;
+    const int contentSizeUnknown = 0xffffffffffffffff;
+    const int contentSizeError = 0xfffffffffffffffe;
 
     final int compressedSize = data.lengthInBytes;
     final Pointer<Uint8> src = malloc.allocate<Uint8>(compressedSize);
@@ -87,9 +87,12 @@ class ZstandardAndroid extends ZstandardPlatform {
 
     final int decompressedSizeExpected =
         _bindings.ZSTD_getFrameContentSize(src.cast(), compressedSize);
+    if (decompressedSizeExpected == contentSizeError) {
+      malloc.free(src);
+      return null;
+    }
     final int dstCapacity =
         (decompressedSizeExpected != contentSizeUnknown &&
-                decompressedSizeExpected != contentSizeError &&
                 decompressedSizeExpected > 0)
             ? decompressedSizeExpected
             : compressedSize * 20;
@@ -103,7 +106,7 @@ class ZstandardAndroid extends ZstandardPlatform {
         compressedSize,
       );
 
-      if (decompressedSize < 0) {
+      if (_bindings.ZSTD_isError(decompressedSize) != 0) {
         return null;
       }
       return Uint8List.fromList(dst.asTypedList(decompressedSize));
