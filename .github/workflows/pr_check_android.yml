@@ -35,6 +35,22 @@ jobs:
 
       - name: Analyze check
         working-directory: zstandard_android
+        run: flutter analyze lib test
+
+      - name: Get modern example dependencies
+        working-directory: zstandard_android/example
+        run: flutter pub get
+
+      - name: Analyze modern example
+        working-directory: zstandard_android/example
+        run: flutter analyze
+
+      - name: Get legacy example dependencies
+        working-directory: zstandard_android/example_legacy
+        run: flutter pub get
+
+      - name: Analyze legacy example
+        working-directory: zstandard_android/example_legacy
         run: flutter analyze
 
       - name: Run package tests
@@ -105,10 +121,10 @@ jobs:
           set -euo pipefail
           if [[ "${{ matrix.example }}" == 'example' ]]; then
             grep -F 'id "com.android.application" version "9.1.0" apply false' android/settings.gradle
-            grep -F 'distributionUrl=https\\://services.gradle.org/distributions/gradle-9.3.1-all.zip' android/gradle/wrapper/gradle-wrapper.properties
+            grep -F 'gradle-9.3.1-all.zip' android/gradle/wrapper/gradle-wrapper.properties
           else
             grep -F 'id "com.android.application" version "8.11.1" apply false' android/settings.gradle
-            grep -F 'distributionUrl=https\\://services.gradle.org/distributions/gradle-8.14-all.zip' android/gradle/wrapper/gradle-wrapper.properties
+            grep -F 'gradle-8.14-all.zip' android/gradle/wrapper/gradle-wrapper.properties
           fi
 
       - name: Build Android debug APKs for all supported Flutter ABIs
