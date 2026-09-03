@@ -26,7 +26,7 @@ static jbyteArray copy_to_byte_array(JNIEnv *env, const void *data,
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_dev_vyp_zstandard_android_ZstandardAndroidNativeTestBridge_nativeCompress(
+Java_dev_vyp_zstandard_1android_ZstandardAndroidNativeTestBridge_nativeCompress(
     JNIEnv *env, jclass clazz, jbyteArray input, jint compression_level) {
   (void)clazz;
   if (input == NULL) {
@@ -64,7 +64,7 @@ Java_dev_vyp_zstandard_android_ZstandardAndroidNativeTestBridge_nativeCompress(
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_dev_vyp_zstandard_android_ZstandardAndroidNativeTestBridge_nativeDecompress(
+Java_dev_vyp_zstandard_1android_ZstandardAndroidNativeTestBridge_nativeDecompress(
     JNIEnv *env, jclass clazz, jbyteArray input) {
   (void)clazz;
   if (input == NULL) {
