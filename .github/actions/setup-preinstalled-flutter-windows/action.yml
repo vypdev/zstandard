@@ -10,7 +10,7 @@ runs:
   using: composite
   steps:
     - name: Verify preinstalled Flutter and Windows toolchain
-      shell: powershell
+      shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
       env:
         REQUIRED_FLUTTER_VERSION: ${{ inputs.flutter-version }}
       run: |
