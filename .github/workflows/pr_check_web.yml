@@ -110,7 +110,7 @@ jobs:
 
       - name: Upload regenerated artifacts when verification fails
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: web-regenerated-artifacts-${{ github.run_id }}
           if-no-files-found: error
