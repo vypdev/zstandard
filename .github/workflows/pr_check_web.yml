@@ -76,6 +76,9 @@ jobs:
 
       - name: Regenerate WebAssembly from canonical C source
         env:
+          # Used only to authenticate the read-only fetch of the public emsdk
+          # repository on self-hosted networks that reject anonymous Git.
+          GITHUB_TOKEN: ${{ github.token }}
           # Keep generated artifacts reproducible and reviewable. The script
           # clones this exact official emsdk revision and installs Emscripten
           # 3.1.69 before compiling zstandard_native/src/zstd.

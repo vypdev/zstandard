@@ -36,7 +36,27 @@ if [[ -z "$EMSDK_DIR" ]]; then
   echo "Cloning emsdk at $EMSDK_REF into $BUILD_DIR ..."
   git init -q "$BUILD_DIR/emsdk"
   git -C "$BUILD_DIR/emsdk" remote add origin https://github.com/emscripten-core/emsdk.git
-  git -C "$BUILD_DIR/emsdk" fetch --depth 1 origin "$EMSDK_REF"
+  # Some self-hosted networks reject anonymous GitHub fetches even for public
+  # repositories. Use the ephemeral Actions token when CI provides one, while
+  # keeping local development fully anonymous. Disable prompting so a runner
+  # cannot hang forever waiting for credentials, and retry transient failures.
+  EMSDK_FETCH_AUTH=()
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    EMSDK_FETCH_AUTH=(-c "http.extraHeader=Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+  for attempt in 1 2 3; do
+    if GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 \
+      "${EMSDK_FETCH_AUTH[@]}" \
+      -C "$BUILD_DIR/emsdk" fetch --depth 1 origin "$EMSDK_REF"; then
+      break
+    fi
+    if [[ "$attempt" -eq 3 ]]; then
+      echo "Error: unable to fetch emsdk commit $EMSDK_REF after $attempt attempts." >&2
+      exit 1
+    fi
+    echo "emsdk fetch failed; retrying ($((attempt + 1))/3) ..." >&2
+    sleep 5
+  done
   git -C "$BUILD_DIR/emsdk" checkout --detach FETCH_HEAD
   EMSDK_DIR="$BUILD_DIR/emsdk"
 
