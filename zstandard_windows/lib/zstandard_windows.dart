@@ -152,7 +152,7 @@ Future<int> compressAsync(
   int srcSize,
   int compressionLevel,
 ) async {
-  final SendPort helperIsolateSendPort = await _helperIsolateSendPort;
+  final SendPort helperIsolateSendPort = await _getHelperIsolateSendPort();
   final int requestId = _nextCompressRequestId++;
   final _CompressRequest request = _CompressRequest(
       requestId, dst, dstCapacity, src, srcSize, compressionLevel);
@@ -168,7 +168,7 @@ Future<int> decompressAsync(
   Pointer<Void> src,
   int compressedSize,
 ) async {
-  final SendPort helperIsolateSendPort = await _helperIsolateSendPort;
+  final SendPort helperIsolateSendPort = await _getHelperIsolateSendPort();
   final int requestId = _nextDecompressRequestId++;
   final _DecompressRequest request =
       _DecompressRequest(requestId, dst, dstCapacity, src, compressedSize);
@@ -230,7 +230,12 @@ final Map<int, Completer<int>> _compressRequests = <int, Completer<int>>{};
 final Map<int, Completer<int>> _decompressRequests = <int, Completer<int>>{};
 
 /// Port for sending requests to the auxiliary isolate.
-Future<SendPort> _helperIsolateSendPort = () async {
+// Start the worker lazily so importing the plugin cannot keep test processes
+// alive when the async helper API is not used.
+Future<SendPort>? _helperIsolateSendPort;
+
+Future<SendPort> _getHelperIsolateSendPort() =>
+    _helperIsolateSendPort ??= () async {
   final Completer<SendPort> completer = Completer<SendPort>();
   final ReceivePort receivePort = ReceivePort()
     ..listen((dynamic data) {
