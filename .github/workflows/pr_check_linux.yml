@@ -72,7 +72,8 @@ jobs:
         working-directory: zstandard_linux/example
         run: |
           set -euo pipefail
-          cmake_build_dir=$(find build/linux -type f -name CMakeCache.txt -print \
+          cmake_build_dir=$(find build/linux -type f -name CMakeCache.txt \
+            -not -path '*/_deps/*' -print \
             | sed 's#/CMakeCache.txt$##' | sort | tail -n 1)
           test -n "$cmake_build_dir"
           ZSTANDARD_LINUX_ENABLE_TESTS=1 cmake -S linux -B "$cmake_build_dir"
@@ -121,7 +122,8 @@ jobs:
         working-directory: zstandard_linux/example
         run: |
           set -euo pipefail
-          cmake_build_dir=$(find build/linux -type f -name CMakeCache.txt -print \
+          cmake_build_dir=$(find build/linux -type f -name CMakeCache.txt \
+            -not -path '*/_deps/*' -print \
             | sed 's#/CMakeCache.txt$##' | sort | tail -n 1)
           test -n "$cmake_build_dir"
           ZSTANDARD_LINUX_ENABLE_TESTS=1 cmake -S linux -B "$cmake_build_dir"

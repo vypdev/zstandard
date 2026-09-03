@@ -42,7 +42,10 @@ if [[ -z "$EMSDK_DIR" ]]; then
   # cannot hang forever waiting for credentials, and retry transient failures.
   EMSDK_FETCH_AUTH=()
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    EMSDK_FETCH_AUTH=(-c "http.extraHeader=Authorization: Bearer ${GITHUB_TOKEN}")
+    # GitHub's checkout action configures its token as Basic auth; use the
+    # same format because some self-hosted network proxies reject Bearer.
+    EMSDK_AUTH=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 | tr -d '\r\n')
+    EMSDK_FETCH_AUTH=(-c "http.extraHeader=Authorization: basic ${EMSDK_AUTH}")
   fi
   for attempt in 1 2 3; do
     if GIT_TERMINAL_PROMPT=0 git -c http.version=HTTP/1.1 \
