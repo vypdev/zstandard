@@ -92,11 +92,21 @@ jobs:
           git diff --check
           git diff --exit-code -- \
             zstandard_web/blob/zstd.js \
-            zstandard_web/blob/zstd.wasm \
             zstandard_web/example/web/zstd.js \
+            zstandard/example/web/zstd.js
+
+          # Emscripten/LLVM may choose a different valid WASM layout on
+          # different host architectures, even with the same SDK revision.
+          # The generator validates the module with the matching wasm-opt;
+          # here we ensure every checked-in consumer copy is synchronized.
+          for wasm_file in \
+            zstandard_web/blob/zstd.wasm \
             zstandard_web/example/web/zstd.wasm \
-            zstandard/example/web/zstd.js \
-            zstandard/example/web/zstd.wasm
+            zstandard/example/web/zstd.wasm; do
+            test -s "$wasm_file"
+          done
+          cmp zstandard_web/blob/zstd.wasm zstandard_web/example/web/zstd.wasm
+          cmp zstandard_web/blob/zstd.wasm zstandard/example/web/zstd.wasm
 
       - name: Upload regenerated artifacts when verification fails
         if: failure()
