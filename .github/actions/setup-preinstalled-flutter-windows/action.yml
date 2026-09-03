@@ -10,29 +10,30 @@ runs:
   using: composite
   steps:
     - name: Verify preinstalled Flutter and Windows toolchain
-      shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+      # Some self-hosted machines enforce a restrictive PowerShell execution
+      # policy. Use cmd for this bootstrap so CI does not need to change the
+      # machine-wide policy or execute a PowerShell script.
+      shell: cmd
       env:
         REQUIRED_FLUTTER_VERSION: ${{ inputs.flutter-version }}
       run: |
-        $ErrorActionPreference = 'Stop'
-
-        $flutterCommand = Get-Command flutter -ErrorAction Stop
-        $versionLine = flutter --version | Select-String '^Flutter '
-        if ($null -eq $versionLine) {
-          throw 'Unable to determine the installed Flutter version.'
-        }
-        $actualVersion = ($versionLine.ToString() -split '\s+')[1]
-        if ($actualVersion -ne $env:REQUIRED_FLUTTER_VERSION) {
-          throw "Expected Flutter $env:REQUIRED_FLUTTER_VERSION, got $actualVersion at $($flutterCommand.Source)."
-        }
-
-        flutter config --enable-windows-desktop
-        Get-Command cmake -ErrorAction Stop | Out-Null
-        Get-Command ctest -ErrorAction Stop | Out-Null
-        flutter --version
+        @echo off
+        set "FLUTTER_COMMAND="
+        where flutter >nul 2>&1 || (echo Flutter is not available on PATH. & exit /b 1)
+        for /f "delims=" %%F in ('where flutter') do if not defined FLUTTER_COMMAND set "FLUTTER_COMMAND=%%F"
+        for /f "tokens=2" %%V in ('call flutter --version ^| findstr /b "Flutter "') do set "ACTUAL_VERSION=%%V"
+        if not defined ACTUAL_VERSION (echo Unable to determine the installed Flutter version. & exit /b 1)
+        if not "%ACTUAL_VERSION%" == "%REQUIRED_FLUTTER_VERSION%" (
+          echo Expected Flutter %REQUIRED_FLUTTER_VERSION%, got %ACTUAL_VERSION% at %FLUTTER_COMMAND%.
+          exit /b 1
+        )
+        call flutter config --enable-windows-desktop
+        where cmake >nul 2>&1 || (echo CMake is not available on PATH. & exit /b 1)
+        where ctest >nul 2>&1 || (echo CTest is not available on PATH. & exit /b 1)
+        call flutter --version
         cmake --version
-
-        $flutterRoot = Split-Path (Split-Path $flutterCommand.Source -Parent) -Parent
-        "FLUTTER_ROOT=$flutterRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-        "$flutterRoot\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        "$flutterRoot\bin\cache\dart-sdk\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        for %%F in ("%FLUTTER_COMMAND%") do set "FLUTTER_BIN=%%~dpF"
+        for %%F in ("%FLUTTER_BIN%..") do set "FLUTTER_ROOT=%%~fF"
+        >> "%GITHUB_ENV%" echo FLUTTER_ROOT=%FLUTTER_ROOT%
+        >> "%GITHUB_PATH%" echo %FLUTTER_ROOT%\bin
+        >> "%GITHUB_PATH%" echo %FLUTTER_ROOT%\bin\cache\dart-sdk\bin

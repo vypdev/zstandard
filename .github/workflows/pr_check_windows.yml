@@ -32,13 +32,13 @@ jobs:
 
       - name: Get dependencies
         working-directory: zstandard_windows
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter pub get
+        shell: cmd
+        run: call flutter pub get
 
       - name: Analyze check
         working-directory: zstandard_windows
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter analyze
+        shell: cmd
+        run: call flutter analyze
 
   check_windows_test:
     name: Test Windows
@@ -53,62 +53,57 @@ jobs:
 
       - name: Get dependencies
         working-directory: zstandard_windows
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter pub get
+        shell: cmd
+        run: call flutter pub get
 
       - name: Clean example
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter clean
+        shell: cmd
+        run: call flutter clean
 
       - name: Get example dependencies
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter pub get
+        shell: cmd
+        run: call flutter pub get
 
       - name: Build Windows example
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter build windows --debug
+        shell: cmd
+        run: call flutter build windows --debug
 
       - name: Run Windows native C++ tests
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $cache = Get-ChildItem -Path build/windows -Filter CMakeCache.txt -Recurse -File |
-            Where-Object { $_.FullName -notmatch '[\\/]_deps[\\/]' } |
-            Sort-Object FullName |
-            Select-Object -Last 1
-          if ($null -eq $cache) {
-            throw 'Flutter did not generate a Windows CMake build directory.'
-          }
-          $buildDir = $cache.Directory.FullName
-          cmake --build $buildDir --config Debug --target zstandard_windows_test --parallel
-          ctest --test-dir $buildDir -C Debug --output-on-failure
+          @echo off
+          set "BUILD_DIR=build\windows\x64"
+          if not exist "%BUILD_DIR%\CMakeCache.txt" (
+            echo Flutter did not generate a Windows CMake build directory.
+            exit /b 1
+          )
+          cmake --build "%BUILD_DIR%" --config Debug --target zstandard_windows_test --parallel
+          ctest --test-dir "%BUILD_DIR%" -C Debug --output-on-failure
 
       - name: Run Windows package tests against the built DLL
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $dll = Get-ChildItem -Path zstandard_windows/example/build/windows -Filter zstandard_windows.dll -Recurse -File |
-            Sort-Object LastWriteTime |
-            Select-Object -Last 1
-          if ($null -eq $dll) {
-            throw 'The Windows zstandard DLL was not produced by the build.'
-          }
-          $env:PATH = "$($dll.DirectoryName);$env:PATH"
-          Push-Location zstandard_windows
-          try {
-            flutter test test --coverage
-          } finally {
-            Pop-Location
-          }
+          @echo off
+          set "DLL_DIR=%CD%\zstandard_windows\example\build\windows\x64\runner\Debug"
+          if not exist "%DLL_DIR%\zstandard_windows.dll" (
+            echo The Windows zstandard DLL was not produced by the build.
+            exit /b 1
+          )
+          set "PATH=%DLL_DIR%;%PATH%"
+          pushd zstandard_windows
+          call flutter test test --coverage
+          set "EXIT_CODE=%ERRORLEVEL%"
+          popd
+          exit /b %EXIT_CODE%
 
       - name: Launch Windows example and run integration tests
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter test integration_test/windows_integration_test.dart -d windows
+        shell: cmd
+        run: call flutter test integration_test/windows_integration_test.dart -d windows
 
   check_windows_test_from_pub_cache:
     name: Test Windows (from pub cache)
@@ -122,69 +117,63 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Remove zstandard_native to force resolution from pub cache
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          if (Test-Path zstandard_native) {
-            Remove-Item -Recurse -Force zstandard_native
-          }
+          @echo off
+          if exist zstandard_native rmdir /s /q zstandard_native
 
       - name: Clean and get dependencies (force pub cache)
         working-directory: zstandard_windows
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          flutter clean
-          flutter pub get
+          call flutter clean
+          call flutter pub get
 
       - name: Get dependencies in example (force pub cache)
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          flutter clean
-          flutter pub get
+          call flutter clean
+          call flutter pub get
 
       - name: Build Windows example from pub cache
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter build windows --debug
+        shell: cmd
+        run: call flutter build windows --debug
 
       - name: Run Windows native C++ tests from pub cache
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $cache = Get-ChildItem -Path build/windows -Filter CMakeCache.txt -Recurse -File |
-            Where-Object { $_.FullName -notmatch '[\\/]_deps[\\/]' } |
-            Sort-Object FullName |
-            Select-Object -Last 1
-          if ($null -eq $cache) {
-            throw 'Flutter did not generate a Windows CMake build directory.'
-          }
-          $buildDir = $cache.Directory.FullName
-          cmake --build $buildDir --config Debug --target zstandard_windows_test --parallel
-          ctest --test-dir $buildDir -C Debug --output-on-failure
+          @echo off
+          set "BUILD_DIR=build\windows\x64"
+          if not exist "%BUILD_DIR%\CMakeCache.txt" (
+            echo Flutter did not generate a Windows CMake build directory.
+            exit /b 1
+          )
+          cmake --build "%BUILD_DIR%" --config Debug --target zstandard_windows_test --parallel
+          ctest --test-dir "%BUILD_DIR%" -C Debug --output-on-failure
 
       - name: Run Windows package tests against the pub-cache DLL
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $dll = Get-ChildItem -Path zstandard_windows/example/build/windows -Filter zstandard_windows.dll -Recurse -File |
-            Sort-Object LastWriteTime |
-            Select-Object -Last 1
-          if ($null -eq $dll) {
-            throw 'The Windows zstandard DLL was not produced by the build.'
-          }
-          $env:PATH = "$($dll.DirectoryName);$env:PATH"
-          Push-Location zstandard_windows
-          try {
-            flutter test test --coverage
-          } finally {
-            Pop-Location
-          }
+          @echo off
+          set "DLL_DIR=%CD%\zstandard_windows\example\build\windows\x64\runner\Debug"
+          if not exist "%DLL_DIR%\zstandard_windows.dll" (
+            echo The Windows zstandard DLL was not produced by the build.
+            exit /b 1
+          )
+          set "PATH=%DLL_DIR%;%PATH%"
+          pushd zstandard_windows
+          call flutter test test --coverage
+          set "EXIT_CODE=%ERRORLEVEL%"
+          popd
+          exit /b %EXIT_CODE%
 
       - name: Launch Windows example and run integration tests from pub cache
         working-directory: zstandard_windows/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter test integration_test/windows_integration_test.dart -d windows
+        shell: cmd
+        run: call flutter test integration_test/windows_integration_test.dart -d windows
 
   check_windows_federated_example:
     name: Test federated Windows example
@@ -199,20 +188,20 @@ jobs:
 
       - name: Clean and get federated example dependencies
         working-directory: zstandard/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
+        shell: cmd
         run: |
-          flutter clean
-          flutter pub get
+          call flutter clean
+          call flutter pub get
 
       - name: Build federated Windows example
         working-directory: zstandard/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter build windows --debug
+        shell: cmd
+        run: call flutter build windows --debug
 
       - name: Launch federated Windows example and run integration tests
         working-directory: zstandard/example
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter test integration_test/ -d windows
+        shell: cmd
+        run: call flutter test integration_test/ -d windows
 
   check_windows_publish_dry_run:
     name: Dry Run Publish Windows
@@ -227,10 +216,10 @@ jobs:
 
       - name: Get dependencies
         working-directory: zstandard_windows
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: flutter pub get
+        shell: cmd
+        run: call flutter pub get
 
       - name: Publish Dry Run
         working-directory: zstandard_windows
-        shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File {0}
-        run: dart pub publish --dry-run
+        shell: cmd
+        run: call dart pub publish --dry-run
