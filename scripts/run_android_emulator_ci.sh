@@ -107,6 +107,13 @@ emulator_pid=$!
 cleanup() {
   local exit_code=$?
 
+  if (( exit_code != 0 )); then
+    local logcat_file="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}.txt"
+    timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" logcat -d -t 500 > "$logcat_file" 2>&1 || true
+    echo "Android logcat (${logcat_file}):" >&2
+    tail -n 250 "$logcat_file" >&2 || true
+  fi
+
   timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
   if kill -0 "$emulator_pid" >/dev/null 2>&1; then
     kill "$emulator_pid" >/dev/null 2>&1 || true

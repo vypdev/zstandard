@@ -149,12 +149,11 @@ jobs:
         working-directory: zstandard_android/${{ matrix.example }}
         run: bash ../../scripts/check_android_apk_abis.sh build/app/outputs/flutter-apk release
 
-      - name: Run Flutter compression integration tests on emulator
+      - name: Run Flutter and native Android tests on emulator
         run: |
-          # Launch the emulator directly so a slow software boot cannot fail
-          # on the action's unconditional input-keyevent helper. Keep each
-          # suite bounded and separate so a hung integration test cannot hide
-          # the native instrumentation result for the whole 60-minute job.
+          # Boot the software emulator once per matrix entry. Rebooting it
+          # between suites makes Flutter's test-app handshake flaky on the
+          # shared Linux runner. Each individual command remains bounded.
           bash scripts/run_android_emulator_ci.sh \
             bash -c '
               set -euo pipefail
@@ -162,25 +161,10 @@ jobs:
               timeout --foreground 10m \
                 flutter test integration_test/android_compression_integration_test.dart \
                 -d emulator-${EMULATOR_PORT} --reporter expanded
-            '
-
-      - name: Run Flutter property integration tests on emulator
-        run: |
-          bash scripts/run_android_emulator_ci.sh \
-            bash -c '
-              set -euo pipefail
-              cd zstandard_android/${{ matrix.example }}
               timeout --foreground 10m \
                 flutter test integration_test/android_properties_integration_test.dart \
                 -d emulator-${EMULATOR_PORT} --reporter expanded
-            '
-
-      - name: Run native instrumentation tests on emulator
-        run: |
-          bash scripts/run_android_emulator_ci.sh \
-            bash -c '
-              set -euo pipefail
-              cd zstandard_android/${{ matrix.example }}/android
+              cd android
               timeout --foreground 15m \
                 bash ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace
             '
