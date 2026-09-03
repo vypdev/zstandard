@@ -126,7 +126,8 @@ jobs:
         run: |
           DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
           cd zstandard_ios/example
-          flutter test integration_test/ -d "$DEVICE_ID"
+          bash ../../scripts/run_with_timeout.sh 900 \
+            flutter test integration_test/ -d "$DEVICE_ID"
 
       - name: Stop iOS simulator
         if: always()

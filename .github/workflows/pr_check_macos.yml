@@ -119,7 +119,7 @@ jobs:
 
       - name: Launch macOS example and run integration tests
         working-directory: zstandard_macos/example
-        run: flutter test integration_test/ -d macos
+        run: bash ../../scripts/run_with_timeout.sh 900 flutter test integration_test/ -d macos
 
       - name: Restore workspace native package
         if: always() && matrix.source == 'pub-cache'
