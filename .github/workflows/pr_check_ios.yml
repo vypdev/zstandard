@@ -117,6 +117,18 @@ jobs:
         working-directory: zstandard_ios/example
         run: flutter build ios --simulator --debug --no-codesign
 
+      - name: Link generated Flutter framework for SwiftPM integration tests
+        if: matrix.dependency_manager == 'swiftpm' && matrix.source == 'pub-cache'
+        run: |
+          framework_package="$GITHUB_WORKSPACE/zstandard_ios/example/ios/Flutter/ephemeral/Packages/.packages/FlutterFramework"
+          framework_link="$GITHUB_WORKSPACE/zstandard_ios/ios/FlutterFramework"
+          test -f "$framework_package/Package.swift"
+          if [[ -e "$framework_link" || -L "$framework_link" ]]; then
+            echo "Unexpected existing FlutterFramework path: $framework_link"
+            exit 1
+          fi
+          ln -s "$framework_package" "$framework_link"
+
       - name: Boot iOS simulator headlessly
         run: |
           chmod +x scripts/manage_ios_simulator.sh
@@ -155,6 +167,14 @@ jobs:
       - name: Stop iOS simulator
         if: always()
         run: ./scripts/manage_ios_simulator.sh stop
+
+      - name: Remove temporary SwiftPM framework link
+        if: always() && matrix.dependency_manager == 'swiftpm' && matrix.source == 'pub-cache'
+        run: |
+          framework_link="$GITHUB_WORKSPACE/zstandard_ios/ios/FlutterFramework"
+          if [[ -L "$framework_link" ]]; then
+            unlink "$framework_link"
+          fi
 
       - name: Restore workspace native package
         if: always() && matrix.source == 'pub-cache'

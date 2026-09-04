@@ -30,3 +30,6 @@ build/
 
 # Generated zstd sources copied from zstandard_native by the podspec sync step.
 /macos/Classes/zstd/
+
+# Temporary link used by the SwiftPM pub-cache integration test.
+/macos/FlutterFramework
