@@ -36,7 +36,7 @@ final decompressed = await compressed?.decompress(); // null if compressed is nu
 ## Invalid input
 
 - **Decompression**: Passing data that is not a valid Zstandard frame (e.g. random bytes, truncated data) typically results in a **null** return. The plugin does not throw in this case.
-- **Compression**: Invalid compression level (e.g. out of range) may or may not be validated by the implementation; behavior can differ by platform. Use levels 1–22 for portability.
+- **Compression**: Native platform implementations return `null` for compression levels outside the documented 1–22 range. Use levels 1–22 for portability.
 
 ## Exceptions
 

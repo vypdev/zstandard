@@ -127,7 +127,30 @@ jobs:
           DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
           cd zstandard_ios/example
           bash ../../scripts/run_with_timeout.sh 900 \
-            flutter test integration_test/ -d "$DEVICE_ID"
+            flutter test integration_test/ios_integration_test.dart \
+              -d "$DEVICE_ID" --reporter expanded
+
+      - name: Capture iOS simulator diagnostics
+        if: failure()
+        run: |
+          DEVICE_ID=$(./scripts/manage_ios_simulator.sh device-id)
+          {
+            echo '--- installed applications ---'
+            xcrun simctl listapps "$DEVICE_ID" || true
+            echo '--- recent Runner logs ---'
+            xcrun simctl spawn "$DEVICE_ID" log show --last 10m --style compact \
+              --predicate 'process == "Runner"' || true
+            echo '--- simulator state ---'
+            xcrun simctl list devices | grep "$DEVICE_ID" || true
+          } > "$RUNNER_TEMP/ios-simulator-diagnostics.txt" 2>&1
+
+      - name: Upload iOS simulator diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-simulator-diagnostics-${{ matrix.dependency_manager }}-${{ matrix.source }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/ios-simulator-diagnostics.txt
+          if-no-files-found: ignore
 
       - name: Stop iOS simulator
         if: always()

@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,5 +53,32 @@ class ZstandardAndroidNativeRoundTripTest {
             ZstandardAndroidNativeTestBridge.nativeDecompress(compressed)
         assertNotNull(decompressed)
         assertArrayEquals(input, decompressed)
+    }
+
+    @Test
+    fun nativeLibrarySupportsAllDocumentedCompressionLevels() {
+        val input = ByteArray(128) { 42 }
+        assertTrue("test input must contain content", input.isNotEmpty())
+
+        for (level in intArrayOf(1, 3, 10, 22)) {
+            val compressed =
+                ZstandardAndroidNativeTestBridge.nativeCompress(input, level)
+            assertNotNull("native compression failed at level $level", compressed)
+            assertTrue(compressed!!.isNotEmpty())
+
+            val decompressed =
+                ZstandardAndroidNativeTestBridge.nativeDecompress(compressed)
+            assertNotNull("native decompression failed at level $level", decompressed)
+            assertArrayEquals(input, decompressed)
+        }
+    }
+
+    @Test
+    fun nativeLibraryRejectsInvalidFrames() {
+        val invalid = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8)
+        assertNull(
+            "invalid input must not produce decompressed content",
+            ZstandardAndroidNativeTestBridge.nativeDecompress(invalid),
+        )
     }
 }

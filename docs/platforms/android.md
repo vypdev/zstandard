@@ -63,7 +63,7 @@ See the package’s `android/` and `src/` directories and the main repo’s [Bui
 ## Testing
 
 - **Unit tests**: Run from the package directory: `flutter test`
-- **Integration tests**: Use the example app: run the app on an Android device or emulator and execute `integration_test` (e.g. `flutter test integration_test/` from the example).
+- **Integration tests**: Use the example app: run the app on an Android device or emulator and execute the integration files explicitly (e.g. `flutter test integration_test/android_compression_integration_test.dart` from the example).
 
 ## Performance characteristics
 

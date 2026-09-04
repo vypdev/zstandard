@@ -46,6 +46,14 @@ The Linux workflows target the repository labels `[self-hosted, Linux]`. The run
 
 The action installs the common native toolchain (`build-essential`, Clang, CMake, Ninja, `pkg-config`, and `curl`). Desktop jobs additionally install GTK and Xvfb; coverage jobs install `lcov` and `bc`.
 
+Before installing anything, the action repairs an interrupted Debian package
+transaction with `dpkg --configure -a` and `apt-get -f install`, then runs the
+installation under a host-local lock and verifies the result with
+`apt-get check`. This is required because self-hosted runners preserve their
+package database between jobs; a cancelled job must not make the next check
+fail before the project is even built. If recovery itself fails on a runner,
+inspect `dpkg --audit` and the package-manager logs on that host.
+
 Android runners must also provide:
 
 - Android SDK with `platform-tools` and the emulator on the SDK path.
@@ -54,9 +62,17 @@ Android runners must also provide:
 
 The Android job builds the example APK before booting the emulator. The Linux job builds the example application before running its integration tests. The Web job installs a matching Chrome/ChromeDriver pair, builds the example, and runs the `flutter drive` integration suite under Xvfb. A missing dependency or failed build is an explicit failure; platform integration tests are not silently skipped in CI.
 
+Android integration tests verify non-empty payloads, exact
+`decompress(compress(input))` round-trips, empty input, corruption handling,
+all documented compression levels, and deterministic property-based cases.
+The Android instrumentation suite repeats the round-trip and invalid-frame
+checks directly through JNI against the same shared library loaded by Dart
+FFI. The level-22 test uses a small payload because the CI emulator is
+software-only; large-content behavior is covered separately.
+
 PR checks pin Flutter 3.47.2. This is intentional: the organisation-level `FLUTTER_VERSION` variable previously selected Flutter 3.41.4, which is below the minimum required by the current root and Android packages.
 
-Apple workflows use the self-hosted ARM64 Mac runner and validate both native dependency managers. iOS simulators are booted through `simctl` without opening the Simulator UI; macOS tests run the built app in the runner's logged-in graphical session. Windows uses self-hosted X64 runners and requires a Windows desktop session plus Visual Studio/CMake for native builds and launched integration tests.
+Apple workflows use the self-hosted ARM64 Mac runner and validate both native dependency managers. iOS simulators are booted through `simctl` without opening the Simulator UI; the iOS job invokes the single integration file explicitly because the example intentionally keeps all iOS checks in one test process. macOS tests run the built app in the runner's logged-in graphical session. Windows uses self-hosted X64 runners and requires a Windows desktop session plus Visual Studio/CMake for native builds and launched integration tests.
 
 ### Self-hosted Windows runner contract
 

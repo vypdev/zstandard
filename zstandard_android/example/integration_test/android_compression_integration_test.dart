@@ -46,7 +46,10 @@ void main() {
     });
 
     test('compress with levels 1, 3, 10, 22', () async {
-      final data = Uint8List.fromList(List.filled(1000, 42));
+      // Keep this a small behavioral check. Level 22 is intentionally costly
+      // on the software-only CI emulator, while round-trip size is covered by
+      // the large-content test above.
+      final data = Uint8List.fromList(List.filled(128, 42));
       for (final level in [1, 3, 10, 22]) {
         final compressed = await zstandard.compress(data, level);
         expect(compressed, isNotNull);

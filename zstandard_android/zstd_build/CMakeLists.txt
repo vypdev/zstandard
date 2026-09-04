@@ -77,6 +77,13 @@ endif()
 
 add_library(zstandard_android SHARED ${ZSTD_SRC})
 
+# The CI instrumentation suite also exercises the maximum compression level
+# on a software-only emulator. Keep debug native builds optimized enough that
+# this behavioral check does not spend minutes in the high-compression search.
+target_compile_options(zstandard_android PRIVATE
+    "$<$<CONFIG:Debug>:-O2>"
+)
+
 target_include_directories(zstandard_android PUBLIC
     "${ZSTD_ROOT}"
     "${ZSTD_ROOT}/common"

@@ -42,7 +42,7 @@ Compression and decompression follow the same pattern across native implementati
 1. **Allocate** input buffer with `malloc.allocate<Uint8>(size)` and copy `Uint8List` into it.
 2. **Allocate** output buffer:
    - Compression: size = `ZSTD_compressBound(srcSize)`
-   - Decompression: size = from `ZSTD_getFrameContentSize` or a fallback (e.g. `compressedSize * 20`) when size is unknown.
+   - Decompression: size = from `ZSTD_getFrameContentSize`; frames with an unknown or invalid advertised size are rejected by the one-shot API instead of guessing an allocation.
 3. **Call** `ZSTD_compress` or `ZSTD_decompress`.
 4. **Copy** result into a new `Uint8List` (only the written length).
 5. **Free** both buffers in a `finally` block so memory is always released.
@@ -61,7 +61,7 @@ Each platform’s README and `docs/platforms/` guide should describe how to buil
 ## Error Handling
 
 - `ZSTD_compress` and `ZSTD_decompress` return negative values on error. The Dart code checks for `result > 0` and returns `null` otherwise (or throws, depending on the package’s public API contract).
-- `ZSTD_getFrameContentSize` returns -1 (unknown) or -2 (error). Implementations use a fallback destination size when the frame size is unknown.
+- `ZSTD_getFrameContentSize` returns -1 (unknown) or -2 (error). Implementations use the generated Dart constants, reject unknown/error sizes, and validate the Zstandard frame magic before allocating native buffers.
 
 ## Related Documentation
 

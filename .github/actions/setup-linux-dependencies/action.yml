@@ -41,6 +41,23 @@ runs:
           exit 1
         fi
 
+        # A cancelled or disconnected self-hosted job can leave dpkg between
+        # package installation phases. apt-get refuses to continue in that
+        # state, so repair it before refreshing package indexes. Serialize
+        # this repair when multiple jobs share the same Linux host.
+        if command -v flock >/dev/null 2>&1; then
+          exec 9>/tmp/zstandard-ci-apt.lock
+          flock 9
+        fi
+
+        echo 'Repairing any interrupted dpkg transaction...'
+        if ! DEBIAN_FRONTEND=noninteractive "${SUDO[@]}" dpkg --configure -a; then
+          echo 'dpkg configuration needs dependency repair; continuing with apt-get -f install.'
+        fi
+        DEBIAN_FRONTEND=noninteractive "${SUDO[@]}" apt-get -f install -y \
+          -o Dpkg::Use-Pty=0
+        DEBIAN_FRONTEND=noninteractive "${SUDO[@]}" dpkg --configure -a
+
         packages=(build-essential clang cmake coreutils ninja-build pkg-config curl unzip)
         if [[ "$ANDROID" == 'true' ]]; then
           packages+=(
@@ -68,8 +85,10 @@ runs:
           packages+=(bc lcov)
         fi
 
-        "${SUDO[@]}" apt-get update
-        DEBIAN_FRONTEND=noninteractive "${SUDO[@]}" apt-get install -y --no-install-recommends "${packages[@]}"
+        "${SUDO[@]}" apt-get update -o Dpkg::Use-Pty=0
+        DEBIAN_FRONTEND=noninteractive "${SUDO[@]}" apt-get install -y \
+          --no-install-recommends -o Dpkg::Use-Pty=0 "${packages[@]}"
+        "${SUDO[@]}" apt-get check
 
         cmake --version
         clang --version

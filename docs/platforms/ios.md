@@ -62,7 +62,7 @@ See also the [Apple Dependency Strategy](../development/apple-dependencies.md).
 ## Testing
 
 - **Unit tests**: From the package directory: `flutter test`
-- **Integration tests**: Run the example app on an iOS device or simulator and run `integration_test` (e.g. `flutter test integration_test/` from the example).
+- **Integration tests**: Run the example app on an iOS device or simulator and invoke `flutter test integration_test/ios_integration_test.dart` from the example. The repository keeps the iOS checks in one process to avoid the known multi-file integration-test startup issue.
 
 ## Performance characteristics
 

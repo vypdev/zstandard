@@ -7,7 +7,7 @@ This guide covers security considerations when using the Zstandard plugin and CL
 ### Compression
 
 - **Input data**: The plugin accepts `Uint8List` for compression. No inherent size limit is enforced by the API; very large inputs may cause high memory usage or platform-specific limits. Validate or cap input size in your application when processing user-controlled data.
-- **Compression level**: Valid levels are **1–22**. Levels outside this range may be accepted by some implementations but can produce non-portable or unexpected behaviour. Always validate the level (e.g. clamp to 1–22) before calling `compress`.
+- **Compression level**: Valid levels are **1–22**. Native platform implementations reject levels outside this range with `null`; validate the level (e.g. clamp to 1–22) before calling `compress`.
 
 ```dart
 int safeLevel(int level) {
@@ -21,7 +21,7 @@ final compressed = await zstandard.compress(data, safeLevel(userLevel));
 ### Decompression
 
 - **Untrusted compressed data**: Data that is not a valid Zstandard frame (random bytes, truncated data, or crafted payloads) will typically result in a **null** return from `decompress`, not an exception. The native zstd library is designed to fail safely on invalid input.
-- **Bomb resistance**: Zstandard frames contain size information; the library uses bounded memory during decompression. Very large stored sizes in a malicious frame could still lead to large allocations. Prefer validating or limiting input size when decompressing data from untrusted sources.
+- **Bomb resistance**: Zstandard frames contain size information; native one-shot decompression allocates the advertised output size and rejects frames without a usable size instead of guessing a multiplier. Very large stored sizes in a malicious frame could still lead to large allocations. Prefer validating or limiting input size when decompressing data from untrusted sources.
 
 ## Handling untrusted data
 

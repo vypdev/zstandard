@@ -9,7 +9,7 @@ import 'package:zstandard_macos/zstandard_macos.dart';
 
 /// macOS integration tests: single file to avoid Flutter bug with multiple
 /// integration test files on desktop (second file fails to start app).
-/// Run: flutter test integration_test/ -d macos
+/// Run: flutter test integration_test/macos_integration_test.dart -d macos
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
