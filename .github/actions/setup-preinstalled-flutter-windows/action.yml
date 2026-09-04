@@ -1,5 +1,5 @@
 name: Set up Flutter on Windows
-description: Install, cache, and validate the pinned Flutter SDK on Windows.
+description: Download, cache, and validate the pinned Flutter SDK on Windows.
 
 inputs:
   flutter-version:
@@ -9,44 +9,60 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install pinned Flutter SDK
-      uses: subosito/flutter-action@v2
+    - name: Restore Flutter SDK cache
+      uses: actions/cache@v5
       with:
-        channel: stable
-        flutter-version: ${{ inputs.flutter-version }}
-        cache: true
-        pub-cache: false
+        path: ${{ runner.tool_cache }}/flutter/${{ inputs.flutter-version }}/x64
+        key: ${{ runner.os }}-flutter-${{ inputs.flutter-version }}-x64-v1
 
-    - name: Verify Flutter and Windows toolchain
-      # Some self-hosted machines enforce a restrictive PowerShell execution
-      # policy. Use cmd so CI does not need to change the machine-wide policy
-      # or execute a PowerShell script.
+    - name: Install and verify Flutter and Windows toolchain
+      # Some self-hosted machines do not have Bash and enforce a restrictive
+      # PowerShell execution policy. Use native Windows commands so CI does not
+      # depend on either shell or change a machine-wide policy.
       shell: cmd
       env:
         REQUIRED_FLUTTER_VERSION: ${{ inputs.flutter-version }}
       run: |
         @echo off
-        if not defined FLUTTER_ROOT (
-          echo Flutter action did not expose FLUTTER_ROOT.
+        setlocal EnableExtensions EnableDelayedExpansion
+        if not defined RUNNER_TOOL_CACHE (
+          echo RUNNER_TOOL_CACHE is not available on this self-hosted runner.
           exit /b 1
         )
+        set "FLUTTER_ROOT=%RUNNER_TOOL_CACHE%\flutter\%REQUIRED_FLUTTER_VERSION%\x64"
+        if not exist "%FLUTTER_ROOT%\bin\flutter.bat" (
+          where curl.exe >nul 2>&1 || (echo curl.exe is not available on PATH. & exit /b 1)
+          where tar.exe >nul 2>&1 || (echo tar.exe is not available on PATH. & exit /b 1)
+          set "FLUTTER_ARCHIVE=%RUNNER_TEMP%\flutter_windows_%REQUIRED_FLUTTER_VERSION%.zip"
+          if exist "!FLUTTER_ARCHIVE!" del /f /q "!FLUTTER_ARCHIVE!"
+          if exist "%RUNNER_TEMP%\flutter" rmdir /s /q "%RUNNER_TEMP%\flutter"
+          echo Downloading Flutter %REQUIRED_FLUTTER_VERSION% from the official archive...
+          curl.exe -fL --retry 3 --connect-timeout 15 --max-time 1800 -o "!FLUTTER_ARCHIVE!" "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_%REQUIRED_FLUTTER_VERSION%-stable.zip"
+          if errorlevel 1 exit /b 1
+          tar.exe -xf "!FLUTTER_ARCHIVE!" -C "%RUNNER_TEMP%"
+          if errorlevel 1 exit /b 1
+          if not exist "%RUNNER_TEMP%\flutter\bin\flutter.bat" (
+            echo The Flutter archive did not contain the expected SDK layout.
+            exit /b 1
+          )
+          if exist "%FLUTTER_ROOT%" rmdir /s /q "%FLUTTER_ROOT%"
+          if not exist "%RUNNER_TOOL_CACHE%\flutter\%REQUIRED_FLUTTER_VERSION%" mkdir "%RUNNER_TOOL_CACHE%\flutter\%REQUIRED_FLUTTER_VERSION%"
+          move "%RUNNER_TEMP%\flutter" "%FLUTTER_ROOT%" >nul
+          if errorlevel 1 exit /b 1
+        )
+        set "PATH=%FLUTTER_ROOT%\bin;%FLUTTER_ROOT%\bin\cache\dart-sdk\bin;%PATH%"
         git config --global --add safe.directory "%FLUTTER_ROOT%"
-        set "FLUTTER_COMMAND="
-        where flutter >nul 2>&1 || (echo Flutter is not available on PATH. & exit /b 1)
-        for /f "delims=" %%F in ('where flutter') do if not defined FLUTTER_COMMAND set "FLUTTER_COMMAND=%%F"
-        for /f "tokens=2" %%V in ('call flutter --version ^| findstr /b "Flutter "') do set "ACTUAL_VERSION=%%V"
+        for /f "tokens=2" %%V in ('call "%FLUTTER_ROOT%\bin\flutter.bat" --version ^| findstr /b "Flutter "') do set "ACTUAL_VERSION=%%V"
         if not defined ACTUAL_VERSION (echo Unable to determine the installed Flutter version. & exit /b 1)
         if not "%ACTUAL_VERSION%" == "%REQUIRED_FLUTTER_VERSION%" (
-          echo Expected Flutter %REQUIRED_FLUTTER_VERSION%, got %ACTUAL_VERSION% at %FLUTTER_COMMAND%.
+          echo Expected Flutter %REQUIRED_FLUTTER_VERSION%, got %ACTUAL_VERSION% at %FLUTTER_ROOT%.
           exit /b 1
         )
-        call flutter config --enable-windows-desktop
+        call "%FLUTTER_ROOT%\bin\flutter.bat" config --enable-windows-desktop
         where cmake >nul 2>&1 || (echo CMake is not available on PATH. & exit /b 1)
         where ctest >nul 2>&1 || (echo CTest is not available on PATH. & exit /b 1)
-        call flutter --version
+        call "%FLUTTER_ROOT%\bin\flutter.bat" --version
         cmake --version
-        for %%F in ("%FLUTTER_COMMAND%") do set "FLUTTER_BIN=%%~dpF"
-        for %%F in ("%FLUTTER_BIN%..") do set "FLUTTER_ROOT=%%~fF"
         >> "%GITHUB_ENV%" echo FLUTTER_ROOT=%FLUTTER_ROOT%
         >> "%GITHUB_PATH%" echo %FLUTTER_ROOT%\bin
         >> "%GITHUB_PATH%" echo %FLUTTER_ROOT%\bin\cache\dart-sdk\bin
