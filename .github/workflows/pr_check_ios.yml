@@ -124,8 +124,12 @@ jobs:
           framework_copy="$GITHUB_WORKSPACE/zstandard_ios/ios/FlutterFramework"
           test -f "$framework_package/Package.swift"
           if [[ -e "$framework_copy" || -L "$framework_copy" ]]; then
-            echo "Unexpected existing FlutterFramework path: $framework_copy"
-            exit 1
+            echo "Removing stale FlutterFramework path: $framework_copy"
+            if [[ -L "$framework_copy" ]]; then
+              rm "$framework_copy"
+            else
+              rm -R "$framework_copy"
+            fi
           fi
           cp -R "$framework_package" "$framework_copy"
 
@@ -172,8 +176,12 @@ jobs:
         if: always() && matrix.dependency_manager == 'swiftpm' && matrix.source == 'pub-cache'
         run: |
           framework_copy="$GITHUB_WORKSPACE/zstandard_ios/ios/FlutterFramework"
-          if [[ -d "$framework_copy" && ! -L "$framework_copy" ]]; then
+          if [[ -L "$framework_copy" ]]; then
+            rm "$framework_copy"
+          elif [[ -d "$framework_copy" ]]; then
             rm -R "$framework_copy"
+          elif [[ -e "$framework_copy" ]]; then
+            rm "$framework_copy"
           fi
 
       - name: Restore workspace native package
