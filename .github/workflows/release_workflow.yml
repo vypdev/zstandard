@@ -99,6 +99,9 @@ jobs:
       - name: Update versions in all pubspec.yaml
         run: dart run .github/scripts/update_versions.dart "${{ github.event.inputs.version }}"
 
+      - name: Verify publication metadata
+        run: dart scripts/check_pub_metadata.dart
+
       - name: Commit and Push version updates
         uses: EndBug/add-and-commit@v9
         with:

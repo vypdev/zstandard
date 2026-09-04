@@ -17,6 +17,9 @@ This document outlines how releases of the Zstandard plugin and CLI are prepared
 - [ ] CHANGELOG.md is updated with user-facing changes for the release.
 - [ ] Version in root and in each package’s `pubspec.yaml` is updated to the new version.
 - [ ] Inter-package dependencies use the new version (e.g. `zstandard_android` depends on `zstandard_platform_interface: ^x.y.z` and `zstandard_native: ^x.y.z`).
+- [ ] Every published package description is between 50 and 180 characters and uses HTTPS metadata URLs.
+- [ ] `dart pub publish --dry-run` is clean for every package; verify that the iOS and macOS archives contain their `Package.swift` manifests.
+- [ ] Run `pana` against a copy of the main package and review its report before publishing.
 
 ## Release Workflow (CI)
 

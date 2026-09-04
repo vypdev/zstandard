@@ -54,6 +54,5 @@ class Zstandard {
   ///
   /// Returns the decompressed bytes, or null if decompression failed
   /// (e.g. invalid or corrupted input).
-  Future<Uint8List?> decompress(Uint8List data) =>
-      instance.decompress(data);
+  Future<Uint8List?> decompress(Uint8List data) => instance.decompress(data);
 }

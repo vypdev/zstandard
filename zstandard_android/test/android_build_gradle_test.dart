@@ -3,14 +3,18 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Android plugin does not pin the consuming app AGP', () {
+  test('Android plugin leaves Kotlin configuration to the consuming app', () {
     final buildGradle = File('android/build.gradle').readAsStringSync();
 
     // The application owns the AGP version. Pinning it from this library
     // would make it impossible to consume the plugin from legacy projects.
     expect(buildGradle, isNot(contains('com.android.tools.build:gradle:')));
     expect(buildGradle, contains('apply plugin: "com.android.library"'));
-    expect(buildGradle, contains('JvmTarget.JVM_1_8'));
+    expect(buildGradle, isNot(contains('kotlin-android')));
+    expect(buildGradle, isNot(contains('kotlin-gradle-plugin')));
+    expect(buildGradle, isNot(contains('android.kotlinOptions')));
+    expect(buildGradle, isNot(contains('KotlinCompile')));
+    expect(buildGradle, isNot(contains('compilerOptions')));
   });
 
   test('CI examples cover AGP 9 and the supported legacy AGP line', () {

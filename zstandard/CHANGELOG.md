@@ -1,3 +1,8 @@
+## Unreleased
+
+- Improved pub.dev package metadata and added regression checks for publication
+  requirements, including Apple Swift Package Manager manifests.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

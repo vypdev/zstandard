@@ -29,6 +29,9 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
+      - name: Verify publication metadata
+        run: dart scripts/check_pub_metadata.dart
+
       - name: Get dependencies
         working-directory: zstandard
         run: flutter pub get

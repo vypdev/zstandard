@@ -1,5 +1,5 @@
 name: zstandard_linux
-description: Linux platform implementation of zstandard
+description: Linux implementation of the Zstandard compression plugin for Flutter applications.
 version: 1.5.0
 
 homepage: https://vyp.dev
