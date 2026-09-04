@@ -61,6 +61,15 @@ android {
     }
 }
 
+// Keep the Kotlin bytecode target aligned with this plugin's Java bytecode
+// target. This is required by recent Kotlin Gradle Plugin versions when the
+// plugin is consumed by an application that still supports AGP 8.x.
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+    }
+}
+
 dependencies {
     androidTestImplementation "androidx.test:runner:1.5.2"
     androidTestImplementation "androidx.test.ext:junit:1.1.5"
