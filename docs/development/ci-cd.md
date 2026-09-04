@@ -58,7 +58,7 @@ Android runners must also provide:
 
 - Android SDK with `platform-tools` and the emulator on the SDK path.
 - Java 17. `/dev/kvm` is optional because the current workflow explicitly uses software emulation.
-- Network access for the API 31 `google_atd` x86_64 system image used by the emulator launcher.
+- Network access for the API 30 `aosp_atd` x86_64 system image used by the emulator launcher. Android ATD is intentionally used because it removes background services that are irrelevant to these tests and reduces CPU/memory pressure on the software-only runner.
 
 The Android job builds the example APK before booting the emulator. The Linux job builds the example application before running its integration tests. The Web job installs a matching Chrome/ChromeDriver pair, builds the example, and runs the `flutter drive` integration suite under Xvfb. A missing dependency or failed build is an explicit failure; platform integration tests are not silently skipped in CI.
 

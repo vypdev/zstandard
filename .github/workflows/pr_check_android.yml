@@ -17,6 +17,11 @@ env:
   # Keep CI aligned with the package constraints. The organisation-level
   # FLUTTER_VERSION variable may intentionally point to an older SDK.
   FLUTTER_VERSION: '3.47.2'
+  # AOSP ATD images are designed for automated tests and avoid the background
+  # Google services that starve this software-only self-hosted emulator.
+  ANDROID_API_LEVEL: '30'
+  ANDROID_SYSTEM_IMAGE_TARGET: 'aosp_atd'
+  ANDROID_SYSTEM_IMAGE_ARCH: 'x86_64'
 
 jobs:
   check_android_analyze:

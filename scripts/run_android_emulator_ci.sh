@@ -7,8 +7,8 @@ if [[ $# -eq 0 ]]; then
   exit 2
 fi
 
-api_level="${ANDROID_API_LEVEL:-31}"
-target="${ANDROID_SYSTEM_IMAGE_TARGET:-google_atd}"
+api_level="${ANDROID_API_LEVEL:-30}"
+target="${ANDROID_SYSTEM_IMAGE_TARGET:-aosp_atd}"
 arch="${ANDROID_SYSTEM_IMAGE_ARCH:-x86_64}"
 avd_name="${ANDROID_AVD_NAME:-zstandard_ci_test}"
 emulator_port="${EMULATOR_PORT:-5554}"
@@ -72,7 +72,7 @@ echo no | "$avdmanager_bin" create avd \
   --name "$avd_name" \
   --abi "${target}/${arch}" \
   --package "system-images;android-${api_level};${target};${arch}" \
-  --device pixel_4
+  --device pixel_2
 
 avd_config="$HOME/.android/avd/${avd_name}.avd/config.ini"
 # Location is outside the scope of these integration tests.
@@ -108,10 +108,33 @@ cleanup() {
   local exit_code=$?
 
   if (( exit_code != 0 )); then
-    local logcat_file="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}.txt"
-    timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" logcat -d -t 500 > "$logcat_file" 2>&1 || true
-    echo "Android logcat (${logcat_file}):" >&2
-    tail -n 250 "$logcat_file" >&2 || true
+    local diagnostics_file="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}-diagnostics.txt"
+    {
+      echo "Android integration diagnostics for ${device}"
+      echo "Collected at: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+      echo
+      echo "== Device state =="
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" get-state || true
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell getprop sys.boot_completed || true
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell getprop dev.bootcomplete || true
+      echo
+      echo "== Running processes =="
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell ps -A || true
+      echo
+      echo "== Resolved activities =="
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell cmd package resolve-activity --brief dev.vyp.zstandard_android_example || true
+      echo
+      echo "== Activity manager =="
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell dumpsys activity activities || true
+      echo
+      echo "== Package manager =="
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell dumpsys package dev.vyp.zstandard_android_example || true
+      echo
+      echo "== Complete logcat (all buffers) =="
+      timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" logcat -b all -d -t 2000 || true
+    } > "$diagnostics_file" 2>&1
+    echo "Android diagnostics (${diagnostics_file}):" >&2
+    tail -n 350 "$diagnostics_file" >&2 || true
   fi
 
   timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
