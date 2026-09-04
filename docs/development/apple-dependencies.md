@@ -84,10 +84,11 @@ SwiftPM integration. CocoaPods jobs explicitly disable SwiftPM so that both
 paths are tested independently.
 
 The SwiftPM pub-cache integration jobs also create a temporary, ignored
-`FlutterFramework` link next to the plugin package. Flutter's integration-test
-project inspection evaluates a plugin manifest from its resolved source path,
-while the generated framework package lives under the example application's
-ephemeral SwiftPM directory. The link makes the manifest's standard
+`FlutterFramework` package copy next to the plugin package. Flutter's
+integration-test project inspection evaluates a plugin manifest from its
+resolved source path, while the generated framework package lives under the
+example application's ephemeral SwiftPM directory and may be regenerated
+while the test starts. The copy makes the manifest's standard
 `../FlutterFramework` dependency resolvable in that test mode and is removed
 at the end of the job.
 

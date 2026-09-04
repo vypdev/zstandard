@@ -32,5 +32,5 @@ build/
 # Generated zstd sources copied from zstandard_native by the podspec sync step.
 /ios/Classes/zstd/
 
-# Temporary link used by the SwiftPM pub-cache integration test.
+# Temporary copy used by the SwiftPM pub-cache integration test.
 /ios/FlutterFramework

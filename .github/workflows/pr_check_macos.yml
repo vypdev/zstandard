@@ -117,17 +117,17 @@ jobs:
         working-directory: zstandard_macos/example
         run: flutter build macos --debug
 
-      - name: Link generated Flutter framework for SwiftPM integration tests
+      - name: Copy generated Flutter framework for SwiftPM integration tests
         if: matrix.dependency_manager == 'swiftpm' && matrix.source == 'pub-cache'
         run: |
           framework_package="$GITHUB_WORKSPACE/zstandard_macos/example/macos/Flutter/ephemeral/Packages/.packages/FlutterFramework"
-          framework_link="$GITHUB_WORKSPACE/zstandard_macos/macos/FlutterFramework"
+          framework_copy="$GITHUB_WORKSPACE/zstandard_macos/macos/FlutterFramework"
           test -f "$framework_package/Package.swift"
-          if [[ -e "$framework_link" || -L "$framework_link" ]]; then
-            echo "Unexpected existing FlutterFramework path: $framework_link"
+          if [[ -e "$framework_copy" || -L "$framework_copy" ]]; then
+            echo "Unexpected existing FlutterFramework path: $framework_copy"
             exit 1
           fi
-          ln -s "$framework_package" "$framework_link"
+          cp -R "$framework_package" "$framework_copy"
 
       - name: Launch macOS example and run integration tests
         working-directory: zstandard_macos/example
@@ -136,12 +136,12 @@ jobs:
             flutter test integration_test/macos_integration_test.dart \
             -d macos --reporter expanded
 
-      - name: Remove temporary SwiftPM framework link
+      - name: Remove temporary SwiftPM framework copy
         if: always() && matrix.dependency_manager == 'swiftpm' && matrix.source == 'pub-cache'
         run: |
-          framework_link="$GITHUB_WORKSPACE/zstandard_macos/macos/FlutterFramework"
-          if [[ -L "$framework_link" ]]; then
-            unlink "$framework_link"
+          framework_copy="$GITHUB_WORKSPACE/zstandard_macos/macos/FlutterFramework"
+          if [[ -d "$framework_copy" && ! -L "$framework_copy" ]]; then
+            rm -R "$framework_copy"
           fi
 
       - name: Restore workspace native package
