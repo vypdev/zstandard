@@ -82,7 +82,13 @@ jobs:
             exit /b 1
           )
           cmake --build "%BUILD_DIR%" --config Debug --target zstandard_windows_test --parallel
-          ctest --test-dir "%BUILD_DIR%" -C Debug --output-on-failure
+          set "TEST_EXE=%BUILD_DIR%\plugins\zstandard_windows\Debug\zstandard_windows_test.exe"
+          if not exist "%TEST_EXE%" (
+            echo The Windows native test executable was not produced by the build.
+            exit /b 1
+          )
+          "%TEST_EXE%"
+          if errorlevel 1 exit /b 1
 
       - name: Run Windows package tests against the built DLL
         shell: cmd
@@ -152,7 +158,13 @@ jobs:
             exit /b 1
           )
           cmake --build "%BUILD_DIR%" --config Debug --target zstandard_windows_test --parallel
-          ctest --test-dir "%BUILD_DIR%" -C Debug --output-on-failure
+          set "TEST_EXE=%BUILD_DIR%\plugins\zstandard_windows\Debug\zstandard_windows_test.exe"
+          if not exist "%TEST_EXE%" (
+            echo The Windows native test executable was not produced by the build.
+            exit /b 1
+          )
+          "%TEST_EXE%"
+          if errorlevel 1 exit /b 1
 
       - name: Run Windows package tests against the pub-cache DLL
         shell: cmd

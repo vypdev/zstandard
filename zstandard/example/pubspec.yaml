@@ -78,3 +78,24 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# The federated example must exercise the implementations from this checkout.
+# Published applications resolve these packages through their hosted versions;
+# this override keeps CI from accidentally testing stale platform packages.
+dependency_overrides:
+  zstandard_android:
+    path: ../../zstandard_android
+  zstandard_ios:
+    path: ../../zstandard_ios
+  zstandard_linux:
+    path: ../../zstandard_linux
+  zstandard_macos:
+    path: ../../zstandard_macos
+  zstandard_native:
+    path: ../../zstandard_native
+  zstandard_platform_interface:
+    path: ../../zstandard_platform_interface
+  zstandard_web:
+    path: ../../zstandard_web
+  zstandard_windows:
+    path: ../../zstandard_windows
