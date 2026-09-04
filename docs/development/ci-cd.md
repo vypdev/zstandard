@@ -60,7 +60,7 @@ Apple workflows use the self-hosted ARM64 Mac runner and validate both native de
 
 ### Self-hosted Windows runner contract
 
-Windows jobs target `[self-hosted, Windows, X64]`. Each runner must provide the pinned Flutter SDK in its service `PATH`, Windows desktop support enabled, CMake, and a Visual Studio C++ desktop toolchain. The runner must have an interactive desktop session because Flutter's Windows integration tests launch the compiled example application.
+Windows jobs target `[self-hosted, Windows, X64]`. The workflow installs and caches the pinned Flutter SDK on each runner, then enables Windows desktop support and verifies CMake. Each runner must provide a Visual Studio C++ desktop toolchain and an interactive desktop session because Flutter's Windows integration tests launch the compiled example application.
 
 The Windows workflow builds and tests the implementation package from the repository and from the published `zstandard_native` package in the Pub cache. Each path runs the native C++ zstd round-trip tests, Dart package tests, and launched Flutter integration tests. A separate job runs the federated `zstandard/example` application to verify the public plugin entry point on Windows.
 

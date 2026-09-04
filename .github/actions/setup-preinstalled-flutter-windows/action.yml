@@ -1,5 +1,5 @@
-name: Use preinstalled Flutter on Windows
-description: Validate and expose the Flutter SDK installed on the Windows runner.
+name: Set up Flutter on Windows
+description: Install, cache, and validate the pinned Flutter SDK on Windows.
 
 inputs:
   flutter-version:
@@ -9,15 +9,28 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Verify preinstalled Flutter and Windows toolchain
+    - name: Install pinned Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        flutter-version: ${{ inputs.flutter-version }}
+        cache: true
+        pub-cache: false
+
+    - name: Verify Flutter and Windows toolchain
       # Some self-hosted machines enforce a restrictive PowerShell execution
-      # policy. Use cmd for this bootstrap so CI does not need to change the
-      # machine-wide policy or execute a PowerShell script.
+      # policy. Use cmd so CI does not need to change the machine-wide policy
+      # or execute a PowerShell script.
       shell: cmd
       env:
         REQUIRED_FLUTTER_VERSION: ${{ inputs.flutter-version }}
       run: |
         @echo off
+        if not defined FLUTTER_ROOT (
+          echo Flutter action did not expose FLUTTER_ROOT.
+          exit /b 1
+        )
+        git config --global --add safe.directory "%FLUTTER_ROOT%"
         set "FLUTTER_COMMAND="
         where flutter >nul 2>&1 || (echo Flutter is not available on PATH. & exit /b 1)
         for /f "delims=" %%F in ('where flutter') do if not defined FLUTTER_COMMAND set "FLUTTER_COMMAND=%%F"
