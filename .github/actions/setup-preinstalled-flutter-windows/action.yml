@@ -51,6 +51,9 @@ runs:
           if errorlevel 1 exit /b 1
         )
         set "PATH=%FLUTTER_ROOT%\bin;%FLUTTER_ROOT%\bin\cache\dart-sdk\bin;%PATH%"
+        where git >nul 2>&1 || (echo Git for Windows is not available on PATH. & exit /b 1)
+        git config --global --add safe.directory "%FLUTTER_ROOT%"
+        if errorlevel 1 (echo Unable to configure the Flutter SDK as a Git safe directory. & exit /b 1)
         for /f "tokens=2" %%V in ('call "%FLUTTER_ROOT%\bin\flutter.bat" --version ^| findstr /b "Flutter "') do set "ACTUAL_VERSION=%%V"
         if not defined ACTUAL_VERSION (echo Unable to determine the installed Flutter version. & exit /b 1)
         if not "%ACTUAL_VERSION%" == "%REQUIRED_FLUTTER_VERSION%" (
