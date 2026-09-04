@@ -9,16 +9,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Restore Flutter SDK cache
-      uses: actions/cache@v5
-      with:
-        path: ${{ runner.tool_cache }}/flutter/${{ inputs.flutter-version }}/x64
-        key: ${{ runner.os }}-flutter-${{ inputs.flutter-version }}-x64-v1
-
     - name: Install and verify Flutter and Windows toolchain
       # Some self-hosted machines do not have Bash and enforce a restrictive
       # PowerShell execution policy. Use native Windows commands so CI does not
       # depend on either shell or change a machine-wide policy.
+      # The self-hosted runner tool cache is persistent between jobs, so this
+      # avoids a second archive cache layer and its dependency on Git's tar/gzip.
       shell: cmd
       env:
         REQUIRED_FLUTTER_VERSION: ${{ inputs.flutter-version }}
