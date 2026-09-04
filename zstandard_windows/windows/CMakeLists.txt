@@ -113,7 +113,11 @@ add_custom_command(TARGET ${TEST_RUNNER} POST_BUILD
   "$<TARGET_FILE:zstandard_windows>" $<TARGET_FILE_DIR:${TEST_RUNNER}>
 )
 
-# Enable automatic test discovery.
-include(GoogleTest)
-gtest_discover_tests(${TEST_RUNNER})
+# Register the complete GoogleTest executable with CTest. Running the test
+# binary during CMake's build-time discovery is fragile on Windows because
+# the Visual Studio generator may not have finished copying all DLLs yet.
+# CTest runs the executable after the build, when the post-build DLL copies
+# above are guaranteed to be present, and GoogleTest still reports every
+# assertion failure through the process exit code.
+add_test(NAME ${TEST_RUNNER} COMMAND ${TEST_RUNNER})
 endif()
