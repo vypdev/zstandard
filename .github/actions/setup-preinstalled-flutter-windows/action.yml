@@ -61,6 +61,18 @@ runs:
           exit /b 1
         )
         call "%FLUTTER_ROOT%\bin\flutter.bat" config --enable-windows-desktop
+        set "SYMLINK_CHECK_DIR=%RUNNER_TEMP%\flutter-symlink-check"
+        if exist "%SYMLINK_CHECK_DIR%" rmdir /s /q "%SYMLINK_CHECK_DIR%"
+        mkdir "%SYMLINK_CHECK_DIR%"
+        > "%SYMLINK_CHECK_DIR%\target.txt" echo symlink-check
+        mklink "%SYMLINK_CHECK_DIR%\link.txt" "%SYMLINK_CHECK_DIR%\target.txt" >nul 2>&1
+        if errorlevel 1 (
+          rmdir /s /q "%SYMLINK_CHECK_DIR%"
+          echo Windows symlink support is required. Enable Developer Mode or grant the runner service account SeCreateSymbolicLinkPrivilege.
+          exit /b 1
+        )
+        del /f /q "%SYMLINK_CHECK_DIR%\link.txt" "%SYMLINK_CHECK_DIR%\target.txt"
+        rmdir /s /q "%SYMLINK_CHECK_DIR%"
         set "CMAKE_DIR="
         for %%D in (
           "%ProgramFiles%\CMake\bin"

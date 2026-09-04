@@ -40,7 +40,7 @@ The workflow builds `zstandard_linux/example` with `flutter build linux --debug`
 
 ## Windows job requirements
 
-Windows jobs target `[self-hosted, Windows, X64]`. The workflow installs and caches the pinned Flutter SDK on each runner, enables Windows desktop support, and verifies CMake. The runner must provide a Visual Studio C++ desktop toolchain. Integration tests launch a real Windows Flutter application, so the runner must have an interactive desktop session; a headless service session is not sufficient for this job.
+Windows jobs target `[self-hosted, Windows, X64]`. The workflow installs and caches the pinned Flutter SDK on each runner, enables Windows desktop support, verifies Git and CMake, and checks that the runner can create symbolic links. The runner must provide a Visual Studio C++ desktop toolchain and Windows Developer Mode (or equivalent `SeCreateSymbolicLinkPrivilege` for the runner service account). Integration tests launch a real Windows Flutter application, so the runner must have an interactive desktop session; a headless service session is not sufficient for this job.
 
 The workflow builds `zstandard_windows/example` in Debug mode, runs the generated CTest target (including a native zstd compression/decompression round trip), runs the Windows package tests with the built DLL on `PATH`, and launches the example for Flutter integration tests. The same sequence is repeated after removing the repository copy of `zstandard_native`, proving that the native C source can be resolved from the Pub cache. A separate federated-example job builds `zstandard/example` and runs its integration suite.
 
