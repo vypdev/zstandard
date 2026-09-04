@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Android plugin leaves Kotlin configuration to the consuming app', () {
+  test('Android plugin aligns Kotlin bytecode with its Java bytecode', () {
     final buildGradle = File('android/build.gradle').readAsStringSync();
 
     // The application owns the AGP version. Pinning it from this library
@@ -13,8 +13,8 @@ void main() {
     expect(buildGradle, isNot(contains('kotlin-android')));
     expect(buildGradle, isNot(contains('kotlin-gradle-plugin')));
     expect(buildGradle, isNot(contains('android.kotlinOptions')));
-    expect(buildGradle, isNot(contains('KotlinCompile')));
-    expect(buildGradle, isNot(contains('compilerOptions')));
+    expect(buildGradle, contains('KotlinCompile'));
+    expect(buildGradle, contains('JvmTarget.JVM_1_8'));
   });
 
   test('CI examples cover AGP 9 and the supported legacy AGP line', () {
