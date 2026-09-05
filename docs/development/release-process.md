@@ -23,13 +23,16 @@ This document outlines how releases of the Zstandard plugin and CLI are prepared
 
 ## Release Workflow (CI)
 
-The project uses a **Release** workflow (e.g. GitHub Actions “Task - Release”) that:
+The project uses a **Release** workflow (GitHub Actions “Task - Release”) that runs from a `release/x.y.z` branch and:
 
-1. **Validates** that the release version and tag do not already exist.
+1. **Validates** that the branch matches the requested version and that the tag is available.
 2. **Copies** CHANGELOG.md into each package (including zstandard_native).
-3. **Updates** `version:` and dependency versions in every package’s `pubspec.yaml`.
-4. **Publishes** packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard and zstandard_cli**.
-5. **Creates** a git tag (e.g. `v1.5.0`) and possibly a GitHub release.
+3. **Updates** `version:` and dependency versions in every package’s `pubspec.yaml`, pins Apple SwiftPM to the exact release, and synchronizes CocoaPods podspec versions.
+4. **Regenerates and verifies** WebAssembly from the canonical `zstandard_native/src/zstd/` source.
+5. **Builds and verifies** CLI libraries for macOS universal, Linux x86_64/arm64, and Windows x64/ARM64.
+6. **Runs candidate builds and integration tests** for Android (AGP 9 and legacy), Linux, Web, Windows, and Apple (SwiftPM and CocoaPods on ARM64 macOS).
+7. **Creates** one immutable git tag and a draft GitHub release. All publication jobs check out that tag.
+8. **Publishes** packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard_cli → zstandard**.
 
 The workflow is typically triggered manually (workflow_dispatch) with inputs such as:
 
@@ -37,12 +40,13 @@ The workflow is typically triggered manually (workflow_dispatch) with inputs suc
 - **title**: Release title
 - **changelog**: Summary of changes
 - **issue**: Optional launcher issue reference
+- **resume**: Set to `true` only to continue a partial release whose immutable tag already exists.
 
 ## Manual Steps (if not using full automation)
 
 If you need to release without the full workflow:
 
-1. Update **CHANGELOG.md** at the repo root with the new version and list of changes.
+1. Create `release/x.y.z` and update **CHANGELOG.md** at the repo root with the new version and list of changes.
 2. Update **version** in every package’s **pubspec.yaml** to the new version.
 3. Update **dependency versions** in each package that depends on another (e.g. `zstandard_android` depends on `zstandard_platform_interface: ^X.Y.Z` — set to the new version).
 4. Copy **CHANGELOG.md** into each package’s directory if the project keeps a copy per package.
@@ -50,15 +54,17 @@ If you need to release without the full workflow:
    - `zstandard_platform_interface`
    - `zstandard_native` (platform packages and CLI depend on it)
    - Platform packages (android, ios, macos, linux, windows, web)
-   - `zstandard`
    - `zstandard_cli`
-6. **Tag** the release: `git tag vX.Y.Z` (e.g. `v1.5.0`) and push the tag.
-7. **Create** a GitHub release from the tag and paste the changelog.
+   - `zstandard`
+6. **Tag** the release only after candidate checks: `git tag vX.Y.Z` (e.g. `v1.5.0`) and push the tag.
+7. **Create** a draft GitHub release, upload checksums/package archives, and finalize it only after pub.dev verification.
+
+After publication, a separate workflow integrates the release branch into `develop` and `master`. The release workflow does not alter either branch or their rulesets.
 
 ## Publishing to pub.dev
 
 - Use `dart pub publish` (or `flutter pub publish`) from each package directory. Confirm the package name and version when prompted.
-- Ensure you are logged in (`dart pub login`) and have permissions to publish the package.
+- Ensure you are logged in (`dart pub login`) and have permissions to publish the package. Prefer pub.dev trusted publishing with GitHub OIDC once configured for all packages.
 - Publish in order so that dependencies are available: platform_interface first, then **zstandard_native**, then platform implementations, then zstandard and zstandard_cli.
 
 ## After Release

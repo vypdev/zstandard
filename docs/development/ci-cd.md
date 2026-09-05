@@ -88,13 +88,15 @@ Triggered manually (**workflow_dispatch**) with inputs such as version, title, c
 
 **Main phases**:
 
-1. **Update files**: Bump version and dependency versions in all packages; copy CHANGELOG; commit.
+1. **Prepare candidate**: Require `release/x.y.z`, bump all package versions/dependencies, pin SwiftPM to the exact version, update CocoaPods podspecs, copy CHANGELOG, and regenerate WebAssembly from `zstandard_native/src/zstd/`.
 2. **Build precompiled CLI libraries** (on platform-specific runners):
-   - **macOS**: Clone facebook/zstd, build Intel and ARM64 libs, merge with `lipo` into a universal `libzstandard_macos.dylib`; commit.
-   - **Linux**: Clone zstd, build x64 and ARM64 `.so`; commit.
-   - **Windows**: Clone zstd, build x64 and ARM64 DLLs; commit.
-3. **Tag and release**: Create git tag (e.g. `v1.5.0`) and GitHub release with changelog.
-4. **Publish**: Publish packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard_cli and zstandard**.
+   - **macOS**: Cross-compile x86_64 and ARM64 from the canonical C source, merge with `lipo` into a universal `libzstandard_macos.dylib`, and assert both slices; commit.
+   - **Linux**: Build x86_64 and ARM64 `.so` files from the canonical C source and assert ELF machine headers; commit.
+   - **Windows**: Detect the installed Visual Studio generator, build x64 and ARM64 DLLs, and assert PE machine headers; commit.
+3. **Candidate verification**: Build and execute Android (AGP 9 and legacy), Linux, Web, Windows, and both Apple dependency-manager variants. Candidate jobs use local overrides until their pub.dev versions exist.
+4. **Tag and release**: Create one immutable git tag and a draft GitHub release with changelog and checksums.
+5. **Publish**: Publish packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard_cli → zstandard**.
+6. **Verify and finalize**: Verify all ten package versions through the pub.dev API, finalize the draft release, and notify. A separate workflow integrates the release branch into `develop` and `master`.
 
 The workflow uses **self-hosted** runners for macOS, Linux, and Windows to build native binaries and run platform-specific steps.
 

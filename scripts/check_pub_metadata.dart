@@ -26,7 +26,23 @@ String? descriptionFrom(String contents) {
   return null;
 }
 
-void main() {
+void main(List<String> args) {
+  String? releaseVersion;
+  if (args.isNotEmpty) {
+    if (args.length != 2 || args[0] != '--release-version') {
+      stderr.writeln(
+        'Usage: dart scripts/check_pub_metadata.dart [--release-version X.Y.Z]',
+      );
+      exitCode = 2;
+      return;
+    }
+    releaseVersion = args[1];
+    if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(releaseVersion)) {
+      stderr.writeln('Invalid release version: $releaseVersion');
+      exitCode = 2;
+      return;
+    }
+  }
   final errors = <String>[];
 
   for (final package in packageNames) {
@@ -38,6 +54,13 @@ void main() {
     }
 
     final contents = pubspec.readAsStringSync();
+    if (releaseVersion != null &&
+        !RegExp(
+          r'^version:\s*' + RegExp.escape(releaseVersion) + r'\s*$',
+          multiLine: true,
+        ).hasMatch(contents)) {
+      errors.add('$package version is not $releaseVersion');
+    }
     final description = descriptionFrom(contents);
     if (description == null ||
         description.length < 50 ||
@@ -82,6 +105,47 @@ void main() {
   ]) {
     if (!File(manifest).existsSync()) {
       errors.add('Missing Swift Package Manager manifest: $manifest');
+    } else {
+      final contents = File(manifest).readAsStringSync();
+      if (!contents.contains('product(name: "zstandard-native"')) {
+        errors.add(
+          '$manifest does not consume the shared zstandard-native product',
+        );
+      }
+      if (releaseVersion != null &&
+          (!contents.contains('exact: "$releaseVersion"') ||
+              contents.contains('branch: "develop"'))) {
+        errors.add('$manifest must pin the native package to $releaseVersion');
+      }
+    }
+  }
+
+  for (final podspec in [
+    'zstandard_ios/ios/zstandard_ios.podspec',
+    'zstandard_macos/macos/zstandard_macos.podspec',
+  ]) {
+    if (!File(podspec).existsSync()) {
+      errors.add('Missing CocoaPods podspec: $podspec');
+    } else if (releaseVersion != null &&
+        !RegExp("s\\.version\\s*=\\s*'$releaseVersion'")
+            .hasMatch(File(podspec).readAsStringSync())) {
+      errors.add('$podspec must contain version $releaseVersion');
+    }
+  }
+
+  if (!File('zstandard_native/src/zstd/zstd.h').existsSync()) {
+    errors.add(
+      'Canonical zstd source is missing zstandard_native/src/zstd/zstd.h',
+    );
+  }
+  for (final duplicate in [
+    'zstandard_ios/ios/zstandard_ios/Sources/zstd',
+    'zstandard_macos/macos/zstandard_macos/Sources/zstd',
+  ]) {
+    if (Directory(duplicate).existsSync()) {
+      errors.add(
+        'Duplicated SwiftPM zstd source directory must not exist: $duplicate',
+      );
     }
   }
 

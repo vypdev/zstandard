@@ -15,7 +15,18 @@ void main() {
     expect(manifest, contains('path: "Sources/zstandard_macos"'));
     expect(manifest, contains('ZSTANDARD_NATIVE_PACKAGE_PATH'));
     expect(manifest, contains('https://github.com/vypdev/zstandard.git'));
-    expect(manifest, contains('branch: "develop"'));
+    // Development checkouts use develop; the release workflow rewrites this
+    // to an exact immutable version before tagging a published archive.
+    expect(
+      manifest,
+      anyOf(
+        contains('branch: "develop"'),
+        matches(RegExp(r'exact:\s*"\d+\.\d+\.\d+"')),
+      ),
+    );
+    if (manifest.contains('exact:')) {
+      expect(manifest, isNot(contains('branch: "develop"')));
+    }
     expect(manifest, contains('product(name: "zstandard-native"'));
     expect(duplicateSourceDirectory.existsSync(), isFalse);
     if (rootManifest.existsSync()) {
