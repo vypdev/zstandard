@@ -44,6 +44,10 @@ Pull request checks run for pull requests targeting any branch except `master`. 
 
 The Linux workflows target the repository labels `[self-hosted, Linux]`. The runner account must be able to use passwordless `sudo` so the local composite action at [`.github/actions/setup-linux-dependencies/action.yml`](../../.github/actions/setup-linux-dependencies/action.yml) can install the required packages.
 
+The release workflow enables the action's `arm64` option, which installs the
+`aarch64-linux-gnu` cross compiler before producing the Linux ARM64 CLI
+artifact; it does not rely on a manually prepared compiler on the runner.
+
 The action installs the common native toolchain (`build-essential`, Clang, CMake, Ninja, `pkg-config`, and `curl`). Desktop jobs additionally install GTK and Xvfb; coverage jobs install `lcov` and `bc`.
 
 Before installing anything, the action repairs an interrupted Debian package

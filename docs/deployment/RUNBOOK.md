@@ -83,7 +83,7 @@ cd zstandard && dart pub publish -f && cd ../..
 
 The canonical source is **`zstandard_native/src/zstd/`**. The release workflow builds directly from that path through each CMake builder; it does not copy or maintain a second `zstd` tree in `zstandard_cli`. The macOS job cross-compiles x86_64 and arm64 on Apple Silicon and joins them into one universal library. Linux and Windows jobs assert both architecture markers before committing artifacts.
 
-The Windows job detects the installed Visual Studio CMake generator, so it is not coupled to a specific edition or to a hard-coded Visual Studio 2022 path. The runner still needs the C++ desktop workload, CMake, and ARM64 build tools.
+The Linux release job installs the AArch64 cross compiler through the shared CI dependency action before building. The Windows job detects the installed Visual Studio CMake generator, so it is not coupled to a specific edition or to a hard-coded Visual Studio 2022 path. The runner still needs the C++ desktop workload, CMake, and ARM64 build tools.
 
 ## Updating the zstd (C library) version
 

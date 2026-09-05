@@ -280,6 +280,9 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+      - uses: ./.github/actions/setup-linux-dependencies
+        with:
+          arm64: 'true'
       - name: Build x86_64 and arm64 libraries
         run: |
           set -euo pipefail
