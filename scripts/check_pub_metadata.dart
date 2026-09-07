@@ -99,6 +99,20 @@ void main(List<String> args) {
     }
   }
 
+  final cliPubspec = File('zstandard_cli/pubspec.yaml').readAsStringSync();
+  final cliVersion = RegExp(
+    r'^version:\s*(\d+\.\d+\.\d+)\s*$',
+    multiLine: true,
+  ).firstMatch(cliPubspec)?.group(1);
+  final cliRunner = File('zstandard_cli/lib/src/cli_runner.dart');
+  if (cliVersion == null ||
+      !cliRunner.existsSync() ||
+      !cliRunner.readAsStringSync().contains(
+        "const String zstandardCliVersion = '$cliVersion';",
+      )) {
+    errors.add('zstandard_cli --version must match its pubspec version');
+  }
+
   for (final manifest in [
     'zstandard_ios/ios/zstandard_ios/Package.swift',
     'zstandard_macos/macos/zstandard_macos/Package.swift',
@@ -137,6 +151,30 @@ void main(List<String> args) {
     errors.add(
       'Canonical zstd source is missing zstandard_native/src/zstd/zstd.h',
     );
+  }
+  final provenance = File('zstandard_native/UPSTREAM_ZSTD.md');
+  if (!provenance.existsSync()) {
+    errors.add('zstandard_native is missing UPSTREAM_ZSTD.md');
+  } else {
+    final contents = provenance.readAsStringSync();
+    if (!contents.contains(RegExp(r'\b[0-9a-f]{40}\b')) ||
+        !contents.contains('1.5.7')) {
+      errors.add(
+        'UPSTREAM_ZSTD.md must record an exact upstream commit and version',
+      );
+    }
+  }
+
+  for (final generated in [
+    'zstandard_web/blob/zstd.js',
+    'zstandard_web/blob/zstd_core.js',
+    'zstandard_web/blob/zstd_worker.js',
+    'zstandard_web/blob/zstd.wasm',
+  ]) {
+    final file = File(generated);
+    if (!file.existsSync() || file.lengthSync() == 0) {
+      errors.add('Missing generated WebAssembly artifact: $generated');
+    }
   }
   for (final duplicate in [
     'zstandard_ios/ios/zstandard_ios/Sources/zstd',

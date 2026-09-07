@@ -1,13 +1,10 @@
 name: PR Check Linux
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!master'
   push:
     branches:
       - develop
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,11 +20,14 @@ jobs:
     name: Analyze Linux
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: bash scripts/create_local_overrides.sh zstandard_linux
 
       - name: Get dependencies
         working-directory: zstandard_linux
@@ -42,7 +42,7 @@ jobs:
     runs-on: [self-hosted, Linux]
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
         with:
@@ -51,6 +51,9 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: bash scripts/create_local_overrides.sh zstandard_linux
 
       - name: Get dependencies
         working-directory: zstandard_linux
@@ -84,12 +87,12 @@ jobs:
         working-directory: zstandard_linux/example
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' flutter test integration_test/ -d linux
 
-  check_linux_test_from_pub_cache:
-    name: Test Linux (from pub cache)
+  check_linux_test_from_package_config:
+    name: Test Linux (exact package-config source)
     runs-on: [self-hosted, Linux]
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
         with:
@@ -99,26 +102,30 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Remove zstandard_native to force resolution from pub cache
-        run: rm -rf zstandard_native
+      - name: Stage zstandard_native outside the repository
+        run: |
+          mkdir -p "$RUNNER_TEMP/zstandard-stage"
+          mv zstandard_native "$RUNNER_TEMP/zstandard-stage/zstandard_native"
+          bash scripts/create_local_overrides.sh zstandard_linux \
+            "$RUNNER_TEMP/zstandard-stage/zstandard_native"
 
-      - name: Clean and get dependencies (force pub cache)
+      - name: Clean and get dependencies from package_config
         working-directory: zstandard_linux
         run: |
           flutter clean
           flutter pub get
 
-      - name: Get dependencies in example (force pub cache)
+      - name: Get dependencies in example from package_config
         working-directory: zstandard_linux/example
         run: |
           flutter clean
           flutter pub get
 
-      - name: Build Linux example from pub cache
+      - name: Build Linux example from package_config
         working-directory: zstandard_linux/example
         run: flutter build linux --debug
 
-      - name: Build and run Linux native tests from pub cache
+      - name: Build and run Linux native tests from package_config
         working-directory: zstandard_linux/example
         run: |
           set -euo pipefail
@@ -130,15 +137,22 @@ jobs:
           cmake --build "$cmake_build_dir" --target zstandard_linux_test --parallel
           ctest --test-dir "$cmake_build_dir" --output-on-failure
 
-      - name: Run integration tests (C sources from pub cache)
+      - name: Run integration tests (C source from package_config)
         working-directory: zstandard_linux/example
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' flutter test integration_test/ -d linux
+
+      - name: Restore workspace native package
+        if: always()
+        run: |
+          if [[ -d "$RUNNER_TEMP/zstandard-stage/zstandard_native" ]]; then
+            mv "$RUNNER_TEMP/zstandard-stage/zstandard_native" zstandard_native
+          fi
 
   check_linux_publish_dry_run:
     name: Dry Run Publish Linux
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/preserve-flutter-project-files
         with:

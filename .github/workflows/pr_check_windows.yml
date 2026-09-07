@@ -1,13 +1,10 @@
 name: PR Check Windows
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!master'
   push:
     branches:
       - develop
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,11 +21,15 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-preinstalled-flutter-windows
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        shell: bash
+        run: bash scripts/create_local_overrides.sh zstandard_windows
 
       - name: Get dependencies
         working-directory: zstandard_windows
@@ -45,11 +46,15 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-preinstalled-flutter-windows
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        shell: bash
+        run: bash scripts/create_local_overrides.sh zstandard_windows
 
       - name: Get dependencies
         working-directory: zstandard_windows
@@ -111,43 +116,59 @@ jobs:
         shell: cmd
         run: call flutter test integration_test/windows_integration_test.dart -d windows
 
-  check_windows_test_from_pub_cache:
-    name: Test Windows (from pub cache)
+  check_windows_test_from_package_config:
+    name: Test Windows (exact package-config source)
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-preinstalled-flutter-windows
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Remove zstandard_native to force resolution from pub cache
-        shell: cmd
+      - name: Stage zstandard_native outside the repository
+        shell: pwsh
         run: |
-          @echo off
-          if exist zstandard_native rmdir /s /q zstandard_native
+          $stage = Join-Path $env:RUNNER_TEMP 'zstandard-stage'
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          Move-Item zstandard_native (Join-Path $stage 'zstandard_native')
+          $native = (Join-Path $stage 'zstandard_native').Replace('\', '/')
+          @"
+          dependency_overrides:
+            zstandard_native:
+              path: $native
+            zstandard_platform_interface:
+              path: ../zstandard_platform_interface
+          "@ | Set-Content zstandard_windows/pubspec_overrides.yaml
+          @"
+          dependency_overrides:
+            zstandard_native:
+              path: $native
+            zstandard_platform_interface:
+              path: ../../zstandard_platform_interface
+          "@ | Set-Content zstandard_windows/example/pubspec_overrides.yaml
 
-      - name: Clean and get dependencies (force pub cache)
+      - name: Clean and get dependencies from package_config
         working-directory: zstandard_windows
         shell: cmd
         run: |
           call flutter clean
           call flutter pub get
 
-      - name: Get dependencies in example (force pub cache)
+      - name: Get dependencies in example from package_config
         working-directory: zstandard_windows/example
         shell: cmd
         run: |
           call flutter clean
           call flutter pub get
 
-      - name: Build Windows example from pub cache
+      - name: Build Windows example from package_config
         working-directory: zstandard_windows/example
         shell: cmd
         run: call flutter build windows --debug
 
-      - name: Run Windows native C++ tests from pub cache
+      - name: Run Windows native C++ tests from package_config
         working-directory: zstandard_windows/example
         shell: cmd
         run: |
@@ -166,7 +187,7 @@ jobs:
           "%TEST_EXE%"
           if errorlevel 1 exit /b 1
 
-      - name: Run Windows package tests against the pub-cache DLL
+      - name: Run Windows package tests against the package-config DLL
         shell: cmd
         run: |
           @echo off
@@ -182,17 +203,24 @@ jobs:
           popd
           exit /b %EXIT_CODE%
 
-      - name: Launch Windows example and run integration tests from pub cache
+      - name: Launch Windows example and run package-config integration tests
         working-directory: zstandard_windows/example
         shell: cmd
         run: call flutter test integration_test/windows_integration_test.dart -d windows
+
+      - name: Restore workspace native package
+        if: always()
+        shell: pwsh
+        run: |
+          $native = Join-Path $env:RUNNER_TEMP 'zstandard-stage/zstandard_native'
+          if (Test-Path $native) { Move-Item $native zstandard_native }
 
   check_windows_federated_example:
     name: Test federated Windows example
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-preinstalled-flutter-windows
         with:
@@ -220,7 +248,7 @@ jobs:
     runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-preinstalled-flutter-windows
         with:

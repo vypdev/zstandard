@@ -1,0 +1,110 @@
+name: Pull Request Safety Gate
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+concurrency:
+  group: pull-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.47.2'
+
+jobs:
+  dart_packages:
+    name: Analyze and test ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - zstandard_platform_interface
+          - zstandard_native
+          - zstandard_android
+          - zstandard_ios
+          - zstandard_linux
+          - zstandard_macos
+          - zstandard_web
+          - zstandard_windows
+          - zstandard_cli
+          - zstandard
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve monorepo dependencies
+        run: bash scripts/create_local_overrides.sh "${{ matrix.package }}"
+
+      - name: Get dependencies
+        working-directory: ${{ matrix.package }}
+        run: flutter pub get
+
+      - name: Verify formatting
+        working-directory: ${{ matrix.package }}
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        working-directory: ${{ matrix.package }}
+        run: flutter analyze
+
+      - name: Test
+        if: matrix.package != 'zstandard_native'
+        working-directory: ${{ matrix.package }}
+        run: flutter test
+
+  repository_checks:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Validate metadata and generated artifacts
+        run: |
+          set -euo pipefail
+          dart scripts/check_pub_metadata.dart
+          git diff --check
+          cmp zstandard_web/blob/zstd.js zstandard_web/example/web/zstd.js
+          cmp zstandard_web/blob/zstd.js zstandard/example/web/zstd.js
+          cmp zstandard_web/blob/zstd_core.js zstandard_web/example/web/zstd_core.js
+          cmp zstandard_web/blob/zstd_core.js zstandard/example/web/zstd_core.js
+          cmp zstandard_web/blob/zstd_worker.js zstandard_web/example/web/zstd_worker.js
+          cmp zstandard_web/blob/zstd_worker.js zstandard/example/web/zstd_worker.js
+          cmp zstandard_web/blob/zstd.wasm zstandard_web/example/web/zstd.wasm
+          cmp zstandard_web/blob/zstd.wasm zstandard/example/web/zstd.wasm
+
+      - name: Validate shell scripts
+        run: bash -n scripts/*.sh zstandard_ios/scripts/*.sh zstandard_macos/scripts/*.sh
+
+  safety_gate:
+    name: Pull Request Safety Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [dart_packages, repository_checks]
+    steps:
+      - name: Require every safety-gate job
+        env:
+          PACKAGE_RESULT: ${{ needs.dart_packages.result }}
+          REPOSITORY_RESULT: ${{ needs.repository_checks.result }}
+        run: |
+          set -euo pipefail
+          [[ "$PACKAGE_RESULT" == success ]]
+          [[ "$REPOSITORY_RESULT" == success ]]

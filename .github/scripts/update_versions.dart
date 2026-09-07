@@ -4,9 +4,8 @@
 /// Example: dart run .github/scripts/update_versions.dart 1.3.30 --release
 ///
 /// The optional --release flag also pins the Apple SwiftPM manifests and
-/// updates the CocoaPods podspec versions. Development checkouts may keep
-/// using the develop branch; published archives must contain an immutable
-/// dependency declaration.
+/// updates the CocoaPods podspec versions. Apple dependencies remain pinned
+/// to the repository tag carrying the same release.
 
 import 'dart:io';
 
@@ -42,6 +41,8 @@ void main(List<String> args) {
     print('Updated $path');
   }
 
+  _updateCliVersion(repoRoot, version);
+
   if (release) {
     _updateReleaseMetadata(repoRoot, version);
   }
@@ -63,10 +64,27 @@ void main(List<String> args) {
     }
   }
 
+  _verifyCliVersion(repoRoot, version);
+
   if (release) {
     _verifyReleaseMetadata(repoRoot, version);
   }
   print('All versions updated and verified.');
+}
+
+void _updateCliVersion(String root, String version) {
+  final cliRunner = File('$root/zstandard_cli/lib/src/cli_runner.dart');
+  if (!cliRunner.existsSync()) {
+    print('Error: CLI runner not found: ${cliRunner.path}');
+    exit(1);
+  }
+  cliRunner.writeAsStringSync(
+    cliRunner.readAsStringSync().replaceFirst(
+      RegExp(r"const String zstandardCliVersion = '[^']+';"),
+      "const String zstandardCliVersion = '$version';",
+    ),
+  );
+  print('Updated CLI --version to $version');
 }
 
 void _updateReleaseMetadata(String root, String version) {
@@ -82,7 +100,7 @@ void _updateReleaseMetadata(String root, String version) {
     }
     var content = file.readAsStringSync();
     content = content.replaceFirstMapped(
-      RegExp(r'branch:\s*"develop"'),
+      RegExp(r'(?:branch:\s*"develop"|exact:\s*"\d+\.\d+\.\d+")'),
       (_) => 'exact: "$version"',
     );
     file.writeAsStringSync(content);
@@ -106,6 +124,15 @@ void _updateReleaseMetadata(String root, String version) {
     );
     file.writeAsStringSync(content);
     print('Updated $path to $version');
+  }
+}
+
+void _verifyCliVersion(String root, String version) {
+  final cliRunner = File('$root/zstandard_cli/lib/src/cli_runner.dart')
+      .readAsStringSync();
+  if (!cliRunner.contains("const String zstandardCliVersion = '$version';")) {
+    print('Error: CLI --version is not $version');
+    exit(1);
   }
 }
 
@@ -154,12 +181,12 @@ String _updateVersionInContent(
   String version,
 ) {
   content = content.replaceFirst(
-    RegExp(r'^version:\s*[\d.]+\s*$', multiLine: true),
-    'version: $version\n',
+    RegExp(r'^version:[ \t]*[\d.]+[ \t]*$', multiLine: true),
+    'version: $version',
   );
   for (final dep in spec.deps) {
     content = content.replaceFirstMapped(
-      RegExp(r'(\s*' + dep + r':\s*)\^?[\d.]+'),
+      RegExp(r'^([ \t]*' + dep + r':[ \t]*)\^?[\d.]+[ \t]*$', multiLine: true),
       (m) => '${m[1]}^$version',
     );
   }

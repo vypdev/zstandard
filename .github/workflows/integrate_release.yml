@@ -1,0 +1,126 @@
+name: Integrate Published Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Published stable version without the v prefix'
+        required: true
+        type: string
+
+concurrency:
+  group: integrate-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open_integration_pull_requests:
+    name: Open reviewed integration pull requests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+
+      - name: Validate the completed release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be stable SemVer without a v prefix: $VERSION" >&2
+            exit 1
+          fi
+          git fetch --no-tags origin \
+            "+refs/heads/release/$VERSION:refs/remotes/origin/release/$VERSION" \
+            "+refs/heads/master:refs/remotes/origin/master" \
+            "+refs/heads/develop:refs/remotes/origin/develop"
+          git fetch --no-tags origin \
+            "+refs/tags/v$VERSION:refs/tags/v$VERSION"
+
+          release_commit="$(git rev-parse "origin/release/$VERSION")"
+          tag_commit="$(git rev-list -n 1 "refs/tags/v$VERSION")"
+          if [[ "$release_commit" != "$tag_commit" ]]; then
+            echo "v$VERSION is not the tip of release/$VERSION." >&2
+            exit 1
+          fi
+
+          if [[ "$(gh api \
+            "repos/$GITHUB_REPOSITORY/releases/tags/v$VERSION" \
+            --jq '(.draft == false) and (.prerelease == false)')" != true ]]; then
+            echo "GitHub Release v$VERSION is missing, draft, or prerelease." >&2
+            exit 1
+          fi
+
+          for package in \
+            zstandard_platform_interface zstandard_native zstandard_android \
+            zstandard_ios zstandard_linux zstandard_macos zstandard_web \
+            zstandard_windows zstandard_cli zstandard; do
+            if ! curl --fail --silent --show-error --retry 3 \
+              "https://pub.dev/api/packages/$package" \
+              | jq --exit-status --arg version "$VERSION" \
+                '.versions | any(.version == $version)' >/dev/null; then
+              echo "$package $VERSION is not visible on pub.dev." >&2
+              exit 1
+            fi
+          done
+
+      - name: Open or reuse integration pull requests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          owner="$GITHUB_REPOSITORY_OWNER"
+          head="release/$VERSION"
+
+          for base in master develop; do
+            if git merge-base --is-ancestor \
+              "origin/release/$VERSION" "origin/$base"; then
+              echo "release/$VERSION is already integrated into $base."
+              continue
+            fi
+
+            existing="$(gh pr list \
+              --repo "$GITHUB_REPOSITORY" \
+              --state open \
+              --base "$base" \
+              --head "$owner:$head" \
+              --json number \
+              --jq '.[0].number // empty')"
+            if [[ -n "$existing" ]]; then
+              echo "Reusing pull request #$existing for $base."
+              continue
+            fi
+
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base "$base" \
+              --head "$head" \
+              --title "Integrate release v$VERSION into $base" \
+              --body "Release v$VERSION has been published and independently verified. Merge this pull request through the normal review and required-check policy. This workflow never merges or bypasses branch protection. Keep release/$VERSION until both integration pull requests are merged."
+          done
+
+      - name: Summarize integration state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Release v$VERSION integration"
+            echo
+            echo 'Published artifacts were verified before opening pull requests.'
+            echo
+            gh pr list \
+              --repo "$GITHUB_REPOSITORY" \
+              --state open \
+              --head "$GITHUB_REPOSITORY_OWNER:release/$VERSION" \
+              --json number,baseRefName,url \
+              --template '{{range .}}- [#{{.number}} into {{.baseRefName}}]({{.url}}){{"\n"}}{{end}}'
+          } >> "$GITHUB_STEP_SUMMARY"

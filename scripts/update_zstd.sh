@@ -1,32 +1,45 @@
 #!/usr/bin/env bash
 # Update the canonical zstd source in zstandard_native/src/zstd/ from the official repo.
 # Usage: from repo root, run: ./scripts/update_zstd.sh
-# Optional: ./scripts/update_zstd.sh v1.5.6   (tag or branch; default: dev)
+# Optional: ./scripts/update_zstd.sh <full-commit-or-tag>
 #
 # Requires: git. After this, run zstandard_ios/scripts/sync_zstd.sh and
 # zstandard_macos/scripts/sync_zstd.sh (from repo root), and optionally
 # ./scripts/regenerate_bindings.sh.
 
-set -e
+set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ZSTD_DIR="$ROOT/zstandard_native/src/zstd"
-REF="${1:-dev}"
+DEFAULT_REF="d7ee3207cc0db53f78fc6a69babc80747b1b7658"
+CALLOC_FIX="3f8f9b3f89244638f10bca664c120fd28cb14efe"
+REF="${1:-$DEFAULT_REF}"
 
 echo "Fetching zstd from https://github.com/facebook/zstd.git (ref: $REF)..."
-TMP="$ROOT/.zstd_upstream"
-rm -rf "$TMP"
-git clone --depth 1 --branch "$REF" https://github.com/facebook/zstd.git "$TMP"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+git -C "$TMP" init -q
+git -C "$TMP" remote add origin https://github.com/facebook/zstd.git
+git -C "$TMP" fetch --depth 1 origin "$REF"
+git -C "$TMP" checkout --detach FETCH_HEAD
+RESOLVED_REF="$(git -C "$TMP" rev-parse HEAD)"
+
+# Keep the known allocator null-dereference fix when updating from an older
+# revision. A revision that already contains it needs no local patch.
+if ! grep -q 'if (ptr != NULL)' "$TMP/lib/common/allocations.h"; then
+  git -C "$TMP" fetch --depth 1 origin "$CALLOC_FIX"
+  git -C "$TMP" show --format= "$CALLOC_FIX" -- lib/common/allocations.h |
+    git -C "$TMP" apply
+fi
 
 mkdir -p "$ZSTD_DIR"
 echo "Copying lib/ into $ZSTD_DIR ..."
 # `include/` contains the SwiftPM public-header bridges maintained by this
 # repository; preserve it while replacing the upstream source tree.
 rsync -a --delete --exclude='include/' "$TMP/lib/" "$ZSTD_DIR/"
-rm -rf "$TMP"
 
 if [[ ! -f "$ZSTD_DIR/zstd.h" ]]; then
   echo "Error: zstd.h not found after copy."
   exit 1
 fi
-echo "Done. zstandard_native/src/zstd/ is now in sync with facebook/zstd @ $REF."
+echo "Done. zstandard_native/src/zstd/ is based on facebook/zstd @ $RESOLVED_REF."
 echo "Next: run zstandard_ios/scripts/sync_zstd.sh and zstandard_macos/scripts/sync_zstd.sh (from repo root), and optionally ./scripts/regenerate_bindings.sh"

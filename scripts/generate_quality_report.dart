@@ -33,15 +33,23 @@ void main() {
   buffer.writeln('## Test Packages');
   buffer.writeln('');
   final packages = [
-    'zstandard', 'zstandard_platform_interface', 'zstandard_android',
-    'zstandard_ios', 'zstandard_macos', 'zstandard_linux', 'zstandard_windows',
-    'zstandard_web', 'zstandard_cli'
+    'zstandard',
+    'zstandard_platform_interface',
+    'zstandard_android',
+    'zstandard_ios',
+    'zstandard_macos',
+    'zstandard_linux',
+    'zstandard_windows',
+    'zstandard_web',
+    'zstandard_cli',
   ];
   for (final p in packages) {
     final testDir = Directory('$root/$p/test');
     final pubspec = File('$root/$p/pubspec.yaml');
     if (pubspec.existsSync()) {
-      buffer.writeln('- $p: ${testDir.existsSync() ? "has test/" : "no test/"}');
+      buffer.writeln(
+        '- $p: ${testDir.existsSync() ? "has test/" : "no test/"}',
+      );
     }
   }
 

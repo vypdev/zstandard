@@ -1,13 +1,10 @@
 name: PR Check CLI
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!master'
   push:
     branches:
       - develop
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,11 +20,14 @@ jobs:
     name: Analyze CLI
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: bash scripts/create_local_overrides.sh zstandard_cli
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -42,7 +42,7 @@ jobs:
     runs-on: [self-hosted, Linux]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
         with:
@@ -51,6 +51,9 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: bash scripts/create_local_overrides.sh zstandard_cli
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -76,7 +79,7 @@ jobs:
           if (( $(echo "$COVERAGE < 79" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 79%"; exit 1; fi
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard_cli/coverage/lcov.info
@@ -103,7 +106,7 @@ jobs:
     name: Dry Run Publish CLI
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
