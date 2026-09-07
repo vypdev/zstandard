@@ -10,10 +10,6 @@ inputs:
     description: Install GTK and Xvfb for desktop integration tests.
     required: false
     default: 'false'
-  coverage:
-    description: Install lcov and bc for coverage gates.
-    required: false
-    default: 'false'
   arm64:
     description: Install the AArch64 cross compiler used by release artifacts.
     required: false
@@ -26,7 +22,6 @@ runs:
       shell: bash
       env:
         DESKTOP: ${{ inputs.desktop }}
-        COVERAGE: ${{ inputs.coverage }}
         ANDROID: ${{ inputs.android }}
         ARM64: ${{ inputs.arm64 }}
       run: |
@@ -85,9 +80,6 @@ runs:
         fi
         if [[ "$DESKTOP" == 'true' ]]; then
           packages+=(libgtk-3-dev xvfb)
-        fi
-        if [[ "$COVERAGE" == 'true' ]]; then
-          packages+=(bc lcov)
         fi
         if [[ "$ARM64" == 'true' ]]; then
           packages+=(gcc-aarch64-linux-gnu g++-aarch64-linux-gnu)

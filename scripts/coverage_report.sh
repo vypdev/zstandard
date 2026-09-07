@@ -24,7 +24,7 @@ done
 # CLI: dart test --coverage then format to lcov
 if [[ -d "zstandard_cli" ]]; then
   echo "---- Coverage: zstandard_cli ----"
-  (cd zstandard_cli && dart test --coverage=coverage 2>/dev/null && dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json 2>/dev/null) || true
+  (cd zstandard_cli && dart test --coverage=coverage 2>/dev/null && dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib 2>/dev/null) || true
   if [[ -f "zstandard_cli/coverage/lcov.info" ]]; then
     LCOV_ARGS+=("--add-tracefile" "zstandard_cli/coverage/lcov.info")
   fi

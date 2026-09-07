@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:leak_tracker/leak_tracker.dart';
 import 'package:leak_tracker_testing/leak_tracker_testing.dart';
+import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 import 'package:zstandard_cli/src/cli_runner.dart';
 import 'package:zstandard_cli/zstandard_cli.dart';
@@ -18,6 +20,235 @@ void main() {
     if (!LeakTracking.isStarted) {
       LeakTracking.start();
     }
+  });
+
+  group('Native library resolver', () {
+    test('selects every supported platform and ABI deterministically', () {
+      expect(
+        zstdLibraryFileName(
+          operatingSystem: 'windows',
+          abi: Abi.windowsArm64,
+        ),
+        'zstandard_windows_arm64.dll',
+      );
+      expect(
+        zstdLibraryFileName(
+          operatingSystem: 'windows',
+          abi: Abi.windowsX64,
+        ),
+        'zstandard_windows_x64.dll',
+      );
+      expect(
+        zstdLibraryFileName(
+          operatingSystem: 'linux',
+          abi: Abi.linuxArm64,
+        ),
+        'libzstandard_linux_arm64.so',
+      );
+      expect(
+        zstdLibraryFileName(
+          operatingSystem: 'linux',
+          abi: Abi.linuxX64,
+        ),
+        'libzstandard_linux_x64.so',
+      );
+      expect(
+        zstdLibraryFileName(operatingSystem: 'macos', abi: Abi.macosArm64),
+        'libzstandard_macos.dylib',
+      );
+      expect(
+        () => zstdLibraryFileName(
+          operatingSystem: 'windows',
+          abi: Abi.linuxX64,
+        ),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => zstdLibraryFileName(
+          operatingSystem: 'linux',
+          abi: Abi.windowsX64,
+        ),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => zstdLibraryFileName(
+          operatingSystem: 'android',
+          abi: Abi.androidArm64,
+        ),
+        throwsUnsupportedError,
+      );
+    });
+
+    test('honors an explicit existing library and rejects a missing one',
+        () async {
+      final directory = await Directory.systemTemp.createTemp('zstd_override');
+      try {
+        final library = await File(
+          path.join(directory.path, zstdLibraryFileName()),
+        ).create();
+        expect(
+          await resolveZstdLibraryPath(
+            environment: {'ZSTANDARD_CLI_LIBRARY': library.path},
+          ),
+          path.normalize(library.path),
+        );
+        expect(
+          resolveZstdLibraryPath(
+            environment: {
+              'ZSTANDARD_CLI_LIBRARY': path.join(directory.path, 'missing'),
+            },
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      } finally {
+        await directory.delete(recursive: true);
+      }
+    });
+
+    test('resolves package-config, executable, and legacy fallbacks', () async {
+      final directory = await Directory.systemTemp.createTemp('zstd_fallback');
+      try {
+        final packageRoot = await Directory(
+          path.join(directory.path, 'package'),
+        ).create();
+        final packageLibrary = await File(
+          path.join(
+            packageRoot.path,
+            'lib',
+            'src',
+            'bin',
+            zstdLibraryFileName(),
+          ),
+        ).create(recursive: true);
+        final packageConfig = await File(
+          path.join(directory.path, '.dart_tool', 'package_config.json'),
+        ).create(recursive: true);
+        final rootWithoutTrailingSlash =
+            packageRoot.uri.toString().replaceFirst(RegExp(r'/$'), '');
+        await packageConfig.writeAsString(
+          jsonEncode({
+            'configVersion': 2,
+            'packages': [
+              {
+                'name': 'zstandard_cli',
+                'rootUri': rootWithoutTrailingSlash,
+                'packageUri': 'lib/',
+              },
+            ],
+          }),
+        );
+
+        expect(
+          await resolveZstdLibraryFromPackageConfig(packageConfig.uri),
+          path.normalize(packageLibrary.path),
+        );
+        expect(
+          await resolveZstdLibraryPath(
+            environment: const {},
+            packageConfigs: [packageConfig.uri],
+            executableDirectory: path.join(directory.path, 'empty-executable'),
+            legacyPackageRoot: path.join(directory.path, 'empty-legacy'),
+          ),
+          path.normalize(packageLibrary.path),
+        );
+
+        final executableDirectory = await Directory(
+          path.join(directory.path, 'executable'),
+        ).create();
+        final executableLibrary = await File(
+          path.join(executableDirectory.path, zstdLibraryFileName()),
+        ).create();
+        expect(
+          await resolveZstdLibraryPath(
+            environment: const {},
+            packageConfigs: const [],
+            executableDirectory: executableDirectory.path,
+            legacyPackageRoot: path.join(directory.path, 'empty-legacy'),
+          ),
+          path.normalize(executableLibrary.path),
+        );
+
+        final legacyRoot = await Directory(
+          path.join(directory.path, 'legacy'),
+        ).create();
+        final legacyLibrary = await File(
+          getZstdLibraryPath(packageRoot: legacyRoot.path),
+        ).create(recursive: true);
+        expect(
+          await resolveZstdLibraryPath(
+            environment: const {},
+            packageConfigs: const [],
+            executableDirectory: path.join(directory.path, 'empty-executable'),
+            legacyPackageRoot: legacyRoot.path,
+          ),
+          path.normalize(legacyLibrary.path),
+        );
+
+        expect(
+          await resolveZstdLibraryPath(
+            environment: const {},
+            packageConfigs: const [],
+          ),
+          path.normalize(getZstdLibraryPath()),
+        );
+
+        expect(
+          resolveZstdLibraryPath(
+            environment: const {},
+            packageConfigs: const [],
+            executableDirectory: path.join(directory.path, 'empty-executable'),
+            legacyPackageRoot: path.join(directory.path, 'empty-legacy'),
+          ),
+          throwsStateError,
+        );
+      } finally {
+        await directory.delete(recursive: true);
+      }
+    });
+
+    test('rejects malformed and invalid package configurations', () async {
+      final directory = await Directory.systemTemp.createTemp('zstd_config');
+      try {
+        final config = File(path.join(directory.path, 'package_config.json'));
+
+        await config.writeAsString('{invalid');
+        expect(await resolveZstdLibraryFromPackageConfig(config.uri), isNull);
+
+        await config.writeAsString(jsonEncode(const []));
+        expect(await resolveZstdLibraryFromPackageConfig(config.uri), isNull);
+
+        await config.writeAsString(jsonEncode({'packages': const {}}));
+        expect(await resolveZstdLibraryFromPackageConfig(config.uri), isNull);
+
+        await config.writeAsString(
+          jsonEncode({
+            'packages': [
+              {
+                'name': 'zstandard_cli',
+                'rootUri': 42,
+                'packageUri': 'lib/',
+              },
+            ],
+          }),
+        );
+        expect(await resolveZstdLibraryFromPackageConfig(config.uri), isNull);
+
+        await config.writeAsString(
+          jsonEncode({
+            'packages': [
+              {
+                'name': 'zstandard_cli',
+                'rootUri': 'https://example.invalid/package/',
+                'packageUri': 'lib/',
+              },
+            ],
+          }),
+        );
+        expect(await resolveZstdLibraryFromPackageConfig(config.uri), isNull);
+      } finally {
+        await directory.delete(recursive: true);
+      }
+    });
   });
 
   group('Zstandard CLI tests', () {
@@ -468,6 +699,117 @@ void main() {
         );
         expect(await input.readAsBytes(), equals([1, 2, 3]));
       } finally {
+        await directory.delete(recursive: true);
+      }
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
+
+    test('CLI reports every invalid argument form as a usage error', () async {
+      final directory = await Directory.systemTemp.createTemp('zstd_cli_args');
+      final errors = File(path.join(directory.path, 'stderr')).openWrite();
+      try {
+        expect(
+          await runCompressCommand(['--output'], standardError: errors),
+          2,
+        );
+        expect(
+          await runCompressCommand(
+            ['--level', 'not-an-integer', 'input'],
+            standardError: errors,
+          ),
+          2,
+        );
+        expect(
+          await runDecompressCommand(
+            ['--max-output-size', 'not-an-integer', 'input'],
+            standardError: errors,
+          ),
+          2,
+        );
+        expect(
+          await runCompressCommand(
+            ['--unknown', 'input'],
+            standardError: errors,
+          ),
+          2,
+        );
+        expect(
+          await runCompressCommand(
+            ['first', 'second'],
+            standardError: errors,
+          ),
+          2,
+        );
+        expect(
+          await runCompressCommand(
+            ['--', '--literal-missing-file'],
+            standardError: errors,
+          ),
+          1,
+        );
+      } finally {
+        await errors.close();
+        await directory.delete(recursive: true);
+      }
+    });
+
+    test('CLI converts codec, filesystem, and stream failures to exit code 1',
+        () async {
+      if (skipPlatform) return;
+      final directory = await Directory.systemTemp.createTemp('zstd_cli_error');
+      final errors = File(path.join(directory.path, 'stderr')).openWrite();
+      try {
+        final invalidInput = File(path.join(directory.path, 'invalid.zstd'));
+        await invalidInput.writeAsBytes([1, 2, 3, 4]);
+        expect(
+          await runDecompressCommand(
+            [invalidInput.path],
+            standardError: errors,
+          ),
+          1,
+        );
+        expect(
+          await runCompressCommand(
+            [path.join(directory.path, 'missing')],
+            standardError: errors,
+          ),
+          1,
+        );
+        expect(
+          await runCompressCommand(
+            ['-'],
+            standardInput: Stream<List<int>>.error(StateError('read failed')),
+            standardError: errors,
+          ),
+          1,
+        );
+      } finally {
+        await errors.close();
+        await directory.delete(recursive: true);
+      }
+    }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);
+
+    test('CLI strips the zstd extension for the default decompressed output',
+        () async {
+      if (skipPlatform) return;
+      final directory =
+          await Directory.systemTemp.createTemp('zstd_cli_suffix');
+      final errors = File(path.join(directory.path, 'stderr')).openWrite();
+      try {
+        final original = Uint8List.fromList([4, 8, 15, 16, 23, 42]);
+        final compressed = await ZstandardCLI().compress(original);
+        final input = File(path.join(directory.path, 'payload$extension'));
+        await input.writeAsBytes(compressed!);
+
+        expect(
+          await runDecompressCommand([input.path], standardError: errors),
+          0,
+        );
+        expect(
+          await File(path.join(directory.path, 'payload')).readAsBytes(),
+          original,
+        );
+      } finally {
+        await errors.close();
         await directory.delete(recursive: true);
       }
     }, skip: skipPlatform ? 'Only runs on macOS, Windows, or Linux' : false);

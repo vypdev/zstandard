@@ -5,7 +5,12 @@
 `pull_request.yml` is the untrusted-code safety gate. It runs on GitHub-hosted
 Ubuntu with read-only contents permission, resolves monorepo dependencies,
 formats and analyzes all ten packages, executes every available VM/unit test,
-and validates metadata, generated Web artifacts, and shell syntax. Its final
+and validates metadata, generated Web artifacts, and shell syntax. A required
+hosted matrix collects coverage for the CLI, platform interface, and main
+package on every pull-request head, enforces their package-specific thresholds,
+and uploads the three matching Codecov flags for trusted same-repository pull
+requests. Forks run the same coverage gates without receiving the upload token.
+Its final
 `Pull Request Safety Gate` job is the stable required-check context; repository
 rules should require that one context on both `master` and `develop` rather
 than coupling protection to individual matrix-entry names.

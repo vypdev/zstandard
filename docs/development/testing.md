@@ -167,6 +167,13 @@ flutter test --coverage
 
 View the generated `coverage/lcov.info` with a tool like `lcov` or your IDE. Aim for high coverage on the main plugin and platform interface; platform-specific code may have lower coverage when run on a single host.
 
+Pull requests collect three independent Codecov flags on every head:
+`cli` (minimum 95%), `platform_interface` (minimum 85%), and `zstandard`
+(minimum 76%). CLI reports are restricted to `zstandard_cli/lib`, so test files
+and dependency sources cannot inflate or dilute its result. The stable Safety
+Gate requires all three local thresholds even when a fork cannot access the
+Codecov upload token.
+
 ## Mutation testing
 
 Mutation testing measures test quality by mutating source code and checking whether tests detect the changes. A mutation score of 90% or above is required.

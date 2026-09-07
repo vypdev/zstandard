@@ -5,24 +5,29 @@ import 'dart:isolate';
 
 import 'package:path/path.dart' as path;
 
-String _libraryFileName() {
-  final abi = Abi.current();
-  if (Platform.isWindows) {
-    return switch (abi) {
+/// Returns the bundled library name for a platform and ABI.
+///
+/// Optional arguments keep platform selection deterministic in tests. This is
+/// an internal `src` API; production callers should omit them.
+String zstdLibraryFileName({String? operatingSystem, Abi? abi}) {
+  final selectedOperatingSystem = operatingSystem ?? Platform.operatingSystem;
+  final selectedAbi = abi ?? Abi.current();
+  if (selectedOperatingSystem == 'windows') {
+    return switch (selectedAbi) {
       Abi.windowsArm64 => 'zstandard_windows_arm64.dll',
       Abi.windowsX64 => 'zstandard_windows_x64.dll',
-      _ => throw UnsupportedError('Unsupported Windows ABI: $abi'),
+      _ => throw UnsupportedError('Unsupported Windows ABI: $selectedAbi'),
     };
   }
-  if (Platform.isMacOS) return 'libzstandard_macos.dylib';
-  if (Platform.isLinux) {
-    return switch (abi) {
+  if (selectedOperatingSystem == 'macos') return 'libzstandard_macos.dylib';
+  if (selectedOperatingSystem == 'linux') {
+    return switch (selectedAbi) {
       Abi.linuxArm64 => 'libzstandard_linux_arm64.so',
       Abi.linuxX64 => 'libzstandard_linux_x64.so',
-      _ => throw UnsupportedError('Unsupported Linux ABI: $abi'),
+      _ => throw UnsupportedError('Unsupported Linux ABI: $selectedAbi'),
     };
   }
-  throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
+  throw UnsupportedError('Unsupported platform: $selectedOperatingSystem');
 }
 
 /// Returns the legacy package-relative native library path.
@@ -34,15 +39,21 @@ String getZstdLibraryPath({String? packageRoot}) => path.join(
       'lib',
       'src',
       'bin',
-      _libraryFileName(),
+      zstdLibraryFileName(),
     );
 
 /// Resolves the shipped native library from the active package configuration.
 ///
 /// `ZSTANDARD_CLI_LIBRARY` may point to an explicitly managed library for AOT
 /// deployments that do not ship package sources next to the executable.
-Future<String> resolveZstdLibraryPath() async {
-  final override = Platform.environment['ZSTANDARD_CLI_LIBRARY'];
+Future<String> resolveZstdLibraryPath({
+  Map<String, String>? environment,
+  Iterable<Uri>? packageConfigs,
+  String? executableDirectory,
+  String? legacyPackageRoot,
+}) async {
+  final override =
+      (environment ?? Platform.environment)['ZSTANDARD_CLI_LIBRARY'];
   if (override != null && override.isNotEmpty) {
     if (File(override).existsSync()) return path.normalize(override);
     throw ArgumentError.value(
@@ -52,28 +63,29 @@ Future<String> resolveZstdLibraryPath() async {
     );
   }
 
-  for (final packageConfig in await _packageConfigCandidates()) {
-    final candidate = await _resolveFromPackageConfig(packageConfig);
+  for (final packageConfig
+      in packageConfigs ?? await _packageConfigCandidates()) {
+    final candidate = await resolveZstdLibraryFromPackageConfig(packageConfig);
     if (candidate != null && File(candidate).existsSync()) {
       return path.normalize(candidate);
     }
   }
 
   final executableCandidate = path.join(
-    File(Platform.resolvedExecutable).parent.path,
-    _libraryFileName(),
+    executableDirectory ?? File(Platform.resolvedExecutable).parent.path,
+    zstdLibraryFileName(),
   );
   if (File(executableCandidate).existsSync()) {
     return path.normalize(executableCandidate);
   }
 
-  final legacyCandidate = getZstdLibraryPath();
+  final legacyCandidate = getZstdLibraryPath(packageRoot: legacyPackageRoot);
   if (File(legacyCandidate).existsSync()) {
     return path.normalize(legacyCandidate);
   }
 
   throw StateError(
-    'Unable to locate ${_libraryFileName()}. Set ZSTANDARD_CLI_LIBRARY to '
+    'Unable to locate ${zstdLibraryFileName()}. Set ZSTANDARD_CLI_LIBRARY to '
     'an absolute native-library path for compiled deployments.',
   );
 }
@@ -146,7 +158,10 @@ void _addAncestorPackageConfigs(Directory start, void Function(Uri) add) {
   }
 }
 
-Future<String?> _resolveFromPackageConfig(Uri configUri) async {
+/// Resolves the CLI library path declared by one package configuration.
+///
+/// Exposed from this internal `src` library for deterministic parser tests.
+Future<String?> resolveZstdLibraryFromPackageConfig(Uri configUri) async {
   final configFile = File.fromUri(configUri);
   if (!configFile.existsSync()) return null;
 
@@ -176,7 +191,7 @@ Future<String?> _resolveFromPackageConfig(Uri configUri) async {
         Directory.fromUri(packageLibUri).path,
         'src',
         'bin',
-        _libraryFileName(),
+        zstdLibraryFileName(),
       );
     }
   } on FormatException {

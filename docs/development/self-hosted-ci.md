@@ -17,7 +17,8 @@ The expected baseline is:
 - Flutter 3.47.2, selected explicitly by the workflows through [`.github/actions/setup-flutter/action.yml`](../../.github/actions/setup-flutter/action.yml). The action also marks the shared Flutter checkout as a Git safe directory, which is required by the self-hosted runner image.
 - `build-essential`, Clang, CMake, Ninja, `pkg-config`, and `curl`.
 - GTK 3 development headers and Xvfb for Linux/Web desktop jobs.
-- `lcov` and `bc` for coverage jobs.
+- Dart's coverage formatter; thresholds are evaluated by
+  `scripts/check_lcov_coverage.dart` without host-specific LCOV tooling.
 
 ## Android job requirements
 

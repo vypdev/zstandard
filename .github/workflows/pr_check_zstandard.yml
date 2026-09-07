@@ -48,8 +48,6 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
-        with:
-          coverage: 'true'
 
       - uses: ./.github/actions/setup-flutter
         with:
@@ -69,18 +67,7 @@ jobs:
       # Coverage threshold: lib/ only (same pattern as CLI and platform_interface)
       - name: Check coverage threshold (76% of lib/)
         working-directory: zstandard
-        run: |
-          lcov --extract coverage/lcov.info 'lib/*' -o coverage/lcov_lib.info
-          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage (lib/ only): ${COVERAGE}%"
-          if [ -z "$COVERAGE" ]; then
-            echo "Could not parse coverage"
-            exit 1
-          fi
-          if (( $(echo "$COVERAGE < 76" | bc -l) )); then
-            echo "ERROR: Coverage ${COVERAGE}% is below 76% threshold"
-            exit 1
-          fi
+        run: dart ../scripts/check_lcov_coverage.dart coverage/lcov.info 76
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
@@ -88,6 +75,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard/coverage/lcov.info
           flags: zstandard
+          disable_search: true
           fail_ci_if_error: true
 
   check_zstandard_publish_dry_run:

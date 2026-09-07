@@ -231,6 +231,10 @@ evidence rather than historical baseline results.
   all Linux self-hosted runners were offline, an ephemeral branch changed only
   runner selection (plus isolated Android matrix parallelism) and supplied the
   equivalent GitHub-hosted evidence; it was not proposed for merge.
+- Pull-request coverage now runs as a required hosted matrix on every head. It
+  enforces CLI/platform-interface/main-package thresholds and uploads the three
+  corresponding Codecov flags for trusted same-repository branches. CLI reports
+  are scoped to its own `lib/`, excluding tests and dependency sources.
 
 ## 9. Release-process audit
 
@@ -355,6 +359,7 @@ and ordered wait logic cover the real dependency transition without publishing.
 | F-028 | P2 | Linux package tests did not load the library built by CI | `.github/workflows/pr_check_linux.yml` | Resolved | Was yes for Linux | High |
 | F-029 | P2 | Shared Apple concurrency canceled matrix rows | `.github/workflows/pr_check_ios.yml`; `pr_check_macos.yml` | Resolved | Was yes | High |
 | F-030 | P2 | Android AVD creation assumed an implicit home | `scripts/run_android_emulator_ci.sh` | Resolved | Was yes for hosted CI | High |
+| F-031 | P2 | Codecov PR data was stale and upload counts mismatched the base | `.github/workflows/pull_request.yml`; coverage workflows | Resolved | No | High |
 
 Finding records (evidence, reproduction, expectation, impact, root cause, fix,
 and regression proof):
@@ -497,6 +502,12 @@ and regression proof):
   `ANDROID_USER_HOME`/`ANDROID_AVD_HOME`, verifies `config.ini`, and emits bounded
   diagnostics on failure. All four hosted Android rows passed. Resolved, high
   confidence.
+- **F-031:** Codecov's PR comment remained pinned to an early commit with one
+  head upload versus three base uploads, while the live dashboard had advanced
+  only to another ancestor. A required PR coverage matrix now uploads all three
+  expected flags on every trusted head, applies the same thresholds without
+  secrets on forks, and scopes CLI LCOV to package sources. New resolver/error
+  tests raise CLI line coverage from 80.5% to 96.68%. Resolved, high confidence.
 
 ## 15. Platform/test matrix
 
