@@ -83,6 +83,17 @@ jobs:
           cmake --build "$cmake_build_dir" --target zstandard_linux_test --parallel
           ctest --test-dir "$cmake_build_dir" --output-on-failure
 
+      - name: Run Linux package tests against the built plugin
+        working-directory: zstandard_linux
+        run: |
+          set -euo pipefail
+          plugin_library="$(find example/build/linux -type f \
+            -name libzstandard_linux_plugin.so -print -quit)"
+          test -n "$plugin_library"
+          plugin_directory="$(cd "$(dirname "$plugin_library")" && pwd)"
+          export LD_LIBRARY_PATH="$plugin_directory${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          flutter test --coverage
+
       - name: Run integration tests
         working-directory: zstandard_linux/example
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' flutter test integration_test/ -d linux
@@ -136,6 +147,17 @@ jobs:
           ZSTANDARD_LINUX_ENABLE_TESTS=1 cmake -S linux -B "$cmake_build_dir"
           cmake --build "$cmake_build_dir" --target zstandard_linux_test --parallel
           ctest --test-dir "$cmake_build_dir" --output-on-failure
+
+      - name: Run Linux package tests against the package-config plugin
+        working-directory: zstandard_linux
+        run: |
+          set -euo pipefail
+          plugin_library="$(find example/build/linux -type f \
+            -name libzstandard_linux_plugin.so -print -quit)"
+          test -n "$plugin_library"
+          plugin_directory="$(cd "$(dirname "$plugin_library")" && pwd)"
+          export LD_LIBRARY_PATH="$plugin_directory${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          flutter test --coverage
 
       - name: Run integration tests (C source from package_config)
         working-directory: zstandard_linux/example

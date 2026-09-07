@@ -59,7 +59,8 @@ jobs:
         run: flutter analyze
 
       - name: Test
-        if: matrix.package != 'zstandard_native'
+        # Linux needs its built shared library and is covered by pr_check_linux.
+        if: matrix.package != 'zstandard_native' && matrix.package != 'zstandard_linux'
         working-directory: ${{ matrix.package }}
         run: flutter test
 
