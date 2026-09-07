@@ -5,6 +5,7 @@
 ///
 /// Use for regression detection: run before/after changes and compare
 /// throughput (MB/s) and roundtrip correctness.
+library;
 
 import 'dart:typed_data';
 
@@ -38,26 +39,37 @@ void main() async {
 
       // Timed runs
       const runs = 5;
-      int compressSumMs = 0;
-      int decompressSumMs = 0;
+      var compressSumUs = 0;
+      var decompressSumUs = 0;
       for (var i = 0; i < runs; i++) {
         final sw = Stopwatch()..start();
         final c = await cli.compress(data, compressionLevel: level);
         sw.stop();
-        compressSumMs += sw.elapsedMilliseconds;
-        if (c == null) continue;
+        compressSumUs += sw.elapsedMicroseconds == 0
+            ? 1
+            : sw.elapsedMicroseconds;
+        if (c == null) {
+          throw StateError('Compression failed for ${size}B at level $level');
+        }
         sw.reset();
         sw.start();
-        await cli.decompress(c);
+        final d = await cli.decompress(c);
         sw.stop();
-        decompressSumMs += sw.elapsedMilliseconds;
+        decompressSumUs += sw.elapsedMicroseconds == 0
+            ? 1
+            : sw.elapsedMicroseconds;
+        if (d == null || !_bytesEqual(d, data)) {
+          throw StateError('Roundtrip failed for ${size}B at level $level');
+        }
       }
 
-      final compressMs = compressSumMs / runs;
-      final decompressMs = decompressSumMs / runs;
+      final compressSeconds =
+          compressSumUs / runs / Duration.microsecondsPerSecond;
+      final decompressSeconds =
+          decompressSumUs / runs / Duration.microsecondsPerSecond;
       final sizeMb = size / (1024 * 1024);
-      final compressMbS = sizeMb / (compressMs / 1000);
-      final decompressMbS = sizeMb / (decompressMs / 1000);
+      final compressMbS = sizeMb / compressSeconds;
+      final decompressMbS = sizeMb / decompressSeconds;
       final key = '${size}B_L$level';
       results[key] =
           'compress ${compressMbS.toStringAsFixed(2)} MB/s, decompress ${decompressMbS.toStringAsFixed(2)} MB/s';
@@ -67,4 +79,12 @@ void main() async {
   }
 
   print('Done. Use these numbers as baseline for regression detection.');
+}
+
+bool _bytesEqual(Uint8List first, Uint8List second) {
+  if (first.length != second.length) return false;
+  for (var index = 0; index < first.length; index++) {
+    if (first[index] != second[index]) return false;
+  }
+  return true;
 }

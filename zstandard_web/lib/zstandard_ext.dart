@@ -9,9 +9,12 @@ extension ZstandardExt on Uint8List? {
     return ZstandardWeb().compress(data, compressionLevel);
   }
 
-  Future<Uint8List?> decompress() async {
+  Future<Uint8List?> decompress({int maxOutputSize = 256 * 1024 * 1024}) async {
     var data = this;
     if (data == null) return null;
-    return ZstandardWeb().decompress(data);
+    return ZstandardWeb().decompressWithOptions(
+      data,
+      maxOutputSize: maxOutputSize,
+    );
   }
 }

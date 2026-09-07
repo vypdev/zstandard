@@ -19,9 +19,9 @@ extension ZstandardExt on Uint8List? {
   /// Decompresses this byte list (must be Zstandard-compressed data).
   ///
   /// Returns null if the receiver is null or decompression failed.
-  Future<Uint8List?> decompress() async {
+  Future<Uint8List?> decompress({int maxOutputSize = 256 * 1024 * 1024}) async {
     var data = this;
     if (data == null) return null;
-    return ZstandardCLI().decompress(data);
+    return ZstandardCLI().decompress(data, maxOutputSize: maxOutputSize);
   }
 }

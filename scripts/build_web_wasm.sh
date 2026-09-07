@@ -99,15 +99,15 @@ emcc -O3 \
   -I. -Icommon -Icompress -Idecompress \
   -s WASM=1 \
   -s EXPORT_NAME="zstdWasmModule" \
-  -s EXPORTED_FUNCTIONS="['_ZSTD_compress','_ZSTD_decompress','_ZSTD_isError','_malloc','_free','_ZSTD_getFrameContentSize','_ZSTD_compressBound']" \
+  -s EXPORTED_FUNCTIONS="['_ZSTD_compress','_ZSTD_isError','_malloc','_free','_ZSTD_compressBound','_ZSTD_createDStream','_ZSTD_initDStream','_ZSTD_decompressStream','_ZSTD_freeDStream','_ZSTD_DStreamOutSize']" \
   -s EXPORTED_RUNTIME_METHODS="['HEAPU8']" \
   -s INITIAL_MEMORY=134217728 \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s MAXIMUM_MEMORY=2147483648 \
-  -o zstd_generated.js
+  -o zstd_core_generated.js
 
-if [[ ! -f zstd_generated.js || ! -f zstd_generated.wasm ]]; then
-  echo "Error: emcc did not produce zstd_generated.js / zstd_generated.wasm"
+if [[ ! -f zstd_core_generated.js || ! -f zstd_core_generated.wasm ]]; then
+  echo "Error: emcc did not produce zstd_core_generated.js / zstd_core_generated.wasm"
   exit 1
 fi
 
@@ -124,12 +124,12 @@ fi
   --strip-producers \
   --strip-target-features \
   --remove-unused-names \
-  zstd_generated.wasm \
+  zstd_core_generated.wasm \
   -o zstd_normalized.wasm
-mv zstd_normalized.wasm zstd_generated.wasm
+mv zstd_normalized.wasm zstd_core_generated.wasm
 
 # Append the compressData/decompressData wrappers required by the web plugin (see zstandard_web/README.md).
-cat >> zstd_generated.js << 'WRAPPER_JS'
+cat >> zstd_core_generated.js << 'WRAPPER_JS'
 
 // Promise that resolves when the module is ready
 let moduleReady = new Promise((resolve) => {
@@ -148,92 +148,263 @@ let moduleReady = new Promise((resolve) => {
 
 async function compressData(inputData, compressionLevel) {
     await moduleReady;
-    
-    let inputPtr = Module._malloc(inputData.length);
-    Module.HEAPU8.set(inputData, inputPtr);
 
-    let outputBufferSize = Number(Module._ZSTD_compressBound(inputData.length));
-    let outputPtr = Module._malloc(outputBufferSize);
-
-    let compressedSize = Number(Module._ZSTD_compress(
-        outputPtr,
-        outputBufferSize,
-        inputPtr,
-        inputData.length,
-        compressionLevel
-    ));
-
-    if (Module._ZSTD_isError(compressedSize) !== 0 || compressedSize <= 0) {
-        console.error('Compression error, error code: ', compressedSize);
-        Module._free(inputPtr);
-        Module._free(outputPtr);
+    if (!(inputData instanceof Uint8Array)
+        || !Number.isInteger(compressionLevel)
+        || compressionLevel < 1
+        || compressionLevel > 22) {
         return null;
-    } else {
-        let compressedData = new Uint8Array(Module.HEAPU8.buffer, outputPtr, compressedSize);
-        let out = compressedData.slice(0);
-        Module._free(inputPtr);
-        Module._free(outputPtr);
-        return out;
+    }
+
+    let inputPtr = 0;
+    let outputPtr = 0;
+    try {
+        inputPtr = Module._malloc(Math.max(inputData.length, 1));
+        if (!inputPtr) return null;
+        Module.HEAPU8.set(inputData, inputPtr);
+
+        const outputBufferSize = Number(Module._ZSTD_compressBound(inputData.length));
+        if (!Number.isSafeInteger(outputBufferSize) || outputBufferSize <= 0) {
+            return null;
+        }
+        outputPtr = Module._malloc(outputBufferSize);
+        if (!outputPtr) return null;
+
+        const compressedSize = Number(Module._ZSTD_compress(
+            outputPtr,
+            outputBufferSize,
+            inputPtr,
+            inputData.length,
+            compressionLevel
+        ));
+        if (Module._ZSTD_isError(compressedSize) !== 0 || compressedSize <= 0) {
+            console.error('Compression error, error code: ', compressedSize);
+            return null;
+        }
+        return new Uint8Array(
+            Module.HEAPU8.buffer,
+            outputPtr,
+            compressedSize
+        ).slice();
+    } finally {
+        if (inputPtr) Module._free(inputPtr);
+        if (outputPtr) Module._free(outputPtr);
     }
 }
 
-async function decompressData(compressedData) {
+async function decompressData(compressedData, maxOutputSize = 256 * 1024 * 1024) {
     await moduleReady;
-    
-    let compressedPtr = Module._malloc(compressedData.length);
-    Module.HEAPU8.set(compressedData, compressedPtr);
 
-    // ZSTD_getFrameContentSize returns these unsigned 64-bit sentinel values.
-    // JavaScript rounds them to the same Number values returned by Emscripten.
-    const ZSTD_CONTENTSIZE_UNKNOWN = 0xffffffffffffffff;
-    const ZSTD_CONTENTSIZE_ERROR = 0xfffffffffffffffe;
-    let decompressedSize = Number(Module._ZSTD_getFrameContentSize(compressedPtr, compressedData.length));
-    if (decompressedSize === ZSTD_CONTENTSIZE_ERROR) {
-        console.error('Error in obtaining the original size of the data');
-        Module._free(compressedPtr);
+    if (!(compressedData instanceof Uint8Array)
+        || !Number.isSafeInteger(maxOutputSize)
+        || maxOutputSize < 0
+        || compressedData.length === 0) {
         return null;
     }
 
-    const outputBufferSize = decompressedSize === ZSTD_CONTENTSIZE_UNKNOWN
-        ? compressedData.length * 20
-        : decompressedSize;
-    let decompressedPtr = Module._malloc(outputBufferSize);
+    // ZSTD_inBuffer and ZSTD_outBuffer contain three wasm32 size_t/pointer
+    // fields each. Keep their allocation and field access local to the Worker.
+    const bufferStructSize = 3 * Uint32Array.BYTES_PER_ELEMENT;
+    let compressedPtr = 0;
+    let inputBufferPtr = 0;
+    let outputBufferPtr = 0;
+    let outputChunkPtr = 0;
+    let stream = 0;
+    try {
+        compressedPtr = Module._malloc(compressedData.length);
+        inputBufferPtr = Module._malloc(bufferStructSize);
+        outputBufferPtr = Module._malloc(bufferStructSize);
+        stream = Module._ZSTD_createDStream();
+        if (!compressedPtr || !inputBufferPtr || !outputBufferPtr || !stream) {
+            return null;
+        }
+        Module.HEAPU8.set(compressedData, compressedPtr);
 
-    let resultSize = Number(Module._ZSTD_decompress(
-        decompressedPtr,
-        outputBufferSize,
-        compressedPtr,
-        compressedData.length
-    ));
+        const initialization = Number(Module._ZSTD_initDStream(stream));
+        if (Module._ZSTD_isError(initialization) !== 0) return null;
 
-    if (Module._ZSTD_isError(resultSize) !== 0 || resultSize < 0) {
-        console.error('Decompression error, error code: ', resultSize);
-        Module._free(compressedPtr);
-        Module._free(decompressedPtr);
-        return null;
-    } else {
-        let decompressedData = new Uint8Array(Module.HEAPU8.buffer, decompressedPtr, resultSize);
-        let out = decompressedData.slice(0);
-        Module._free(compressedPtr);
-        Module._free(decompressedPtr);
-        return out;
+        const recommendedChunkSize = Number(Module._ZSTD_DStreamOutSize());
+        if (!Number.isSafeInteger(recommendedChunkSize)
+            || recommendedChunkSize <= 0) {
+            return null;
+        }
+        const outputChunkSize = Math.max(
+            1,
+            Math.min(recommendedChunkSize, Math.max(maxOutputSize, 1)),
+        );
+        outputChunkPtr = Module._malloc(outputChunkSize);
+        if (!outputChunkPtr) return null;
+
+        const writeField = (structPtr, field, value) => {
+            Module.HEAPU32[(structPtr >>> 2) + field] = value;
+        };
+        const readField = (structPtr, field) =>
+            Module.HEAPU32[(structPtr >>> 2) + field];
+
+        writeField(inputBufferPtr, 0, compressedPtr);
+        writeField(inputBufferPtr, 1, compressedData.length);
+        writeField(inputBufferPtr, 2, 0);
+
+        const chunks = [];
+        let totalLength = 0;
+        let previousInputPosition = -1;
+        let previousOutputLength = -1;
+        while (true) {
+            writeField(outputBufferPtr, 0, outputChunkPtr);
+            writeField(outputBufferPtr, 1, outputChunkSize);
+            writeField(outputBufferPtr, 2, 0);
+
+            const remaining = Number(Module._ZSTD_decompressStream(
+                stream,
+                outputBufferPtr,
+                inputBufferPtr,
+            ));
+            if (Module._ZSTD_isError(remaining) !== 0) return null;
+
+            const inputPosition = readField(inputBufferPtr, 2);
+            const produced = readField(outputBufferPtr, 2);
+            if (inputPosition > compressedData.length
+                || produced > outputChunkSize
+                || totalLength + produced > maxOutputSize) {
+                return null;
+            }
+            if (produced > 0) {
+                chunks.push(new Uint8Array(
+                    Module.HEAPU8.buffer,
+                    outputChunkPtr,
+                    produced,
+                ).slice());
+                totalLength += produced;
+            }
+
+            const allInputConsumed = inputPosition === compressedData.length;
+            if (remaining === 0 && allInputConsumed) {
+                const result = new Uint8Array(totalLength);
+                let offset = 0;
+                for (const chunk of chunks) {
+                    result.set(chunk, offset);
+                    offset += chunk.length;
+                }
+                return result;
+            }
+
+            const madeProgress = inputPosition !== previousInputPosition
+                || totalLength !== previousOutputLength;
+            if (!madeProgress || (allInputConsumed && produced === 0)) {
+                return null;
+            }
+            previousInputPosition = inputPosition;
+            previousOutputLength = totalLength;
+        }
+    } finally {
+        if (stream) Module._ZSTD_freeDStream(stream);
+        if (compressedPtr) Module._free(compressedPtr);
+        if (inputBufferPtr) Module._free(inputBufferPtr);
+        if (outputBufferPtr) Module._free(outputBufferPtr);
+        if (outputChunkPtr) Module._free(outputChunkPtr);
     }
 }
 WRAPPER_JS
 
+# Keep CPU-heavy zstd calls away from the browser UI thread. The public
+# zstd.js file is only a small request broker; the worker loads the generated
+# core and transfers byte buffers without an additional structured-clone copy.
+cat > zstd_worker_generated.js << 'WORKER_JS'
+'use strict';
+
+importScripts('zstd_core.js');
+
+self.onmessage = async (event) => {
+    const { id, operation, inputBuffer, option } = event.data;
+    try {
+        const input = new Uint8Array(inputBuffer);
+        const result = operation === 'compress'
+            ? await compressData(input, option)
+            : await decompressData(input, option);
+        if (result === null) {
+            self.postMessage({ id, result: null });
+        } else {
+            self.postMessage({ id, result }, [result.buffer]);
+        }
+    } catch (_) {
+        self.postMessage({ id, result: null });
+    }
+};
+WORKER_JS
+
+cat > zstd_client_generated.js << 'CLIENT_JS'
+'use strict';
+
+(() => {
+    const scriptUrl = document.currentScript?.src
+        ?? new URL('zstd.js', document.baseURI).href;
+    const workerUrl = new URL('zstd_worker.js', scriptUrl).href;
+    let worker = null;
+    let nextRequestId = 1;
+    const pending = new Map();
+
+    function failPendingRequests() {
+        for (const resolve of pending.values()) resolve(null);
+        pending.clear();
+        worker?.terminate();
+        worker = null;
+    }
+
+    function getWorker() {
+        if (worker !== null) return worker;
+        worker = new Worker(workerUrl);
+        worker.onmessage = (event) => {
+            const resolve = pending.get(event.data.id);
+            if (resolve === undefined) return;
+            pending.delete(event.data.id);
+            resolve(event.data.result);
+        };
+        worker.onerror = failPendingRequests;
+        worker.onmessageerror = failPendingRequests;
+        return worker;
+    }
+
+    function run(operation, inputData, option) {
+        return new Promise((resolve) => {
+            const id = nextRequestId++;
+            try {
+                const inputCopy = inputData.slice();
+                pending.set(id, resolve);
+                getWorker().postMessage(
+                    { id, operation, inputBuffer: inputCopy.buffer, option },
+                    [inputCopy.buffer],
+                );
+            } catch (_) {
+                pending.delete(id);
+                resolve(null);
+            }
+        });
+    }
+
+    globalThis.compressData = (inputData, compressionLevel) =>
+        run('compress', inputData, compressionLevel);
+    globalThis.decompressData = (compressedData, maxOutputSize) =>
+        run('decompress', compressedData, maxOutputSize);
+})();
+CLIENT_JS
+
 mkdir -p "$OUT_BLOB" "$OUT_EXAMPLE_WEB" "$OUT_ZSTANDARD_EXAMPLE_WEB"
 
 # Replace the wasm filename in the generated JS to match what we'll copy
-sed -i.bak 's/zstd_generated\.wasm/zstd.wasm/g' zstd_generated.js
-rm -f zstd_generated.js.bak
+sed -i.bak 's/zstd_core_generated\.wasm/zstd.wasm/g' zstd_core_generated.js
+rm -f zstd_core_generated.js.bak
 
-cp zstd_generated.wasm "$OUT_BLOB/zstd.wasm"
-cp zstd_generated.wasm "$OUT_EXAMPLE_WEB/zstd.wasm"
-cp zstd_generated.wasm "$OUT_ZSTANDARD_EXAMPLE_WEB/zstd.wasm"
-cp zstd_generated.js "$OUT_BLOB/zstd.js"
-cp zstd_generated.js "$OUT_EXAMPLE_WEB/zstd.js"
-cp zstd_generated.js "$OUT_ZSTANDARD_EXAMPLE_WEB/zstd.js"
-rm -f "$ZSTD_ROOT/zstd_generated.js" "$ZSTD_ROOT/zstd_generated.wasm"
+for destination in "$OUT_BLOB" "$OUT_EXAMPLE_WEB" "$OUT_ZSTANDARD_EXAMPLE_WEB"; do
+  cp zstd_core_generated.wasm "$destination/zstd.wasm"
+  cp zstd_core_generated.js "$destination/zstd_core.js"
+  cp zstd_worker_generated.js "$destination/zstd_worker.js"
+  cp zstd_client_generated.js "$destination/zstd.js"
+done
+rm -f \
+  "$ZSTD_ROOT/zstd_core_generated.js" \
+  "$ZSTD_ROOT/zstd_core_generated.wasm" \
+  "$ZSTD_ROOT/zstd_worker_generated.js" \
+  "$ZSTD_ROOT/zstd_client_generated.js"
 
 echo "Done. zstd.js and zstd.wasm have been written to:"
 echo "  - $OUT_BLOB/"

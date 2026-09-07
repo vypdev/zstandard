@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 /// Reusable benchmark suite for zstandard_cli. Outputs JSON for regression detection.
 /// Run: dart run benchmark/benchmark_suite.dart [--output=path.json]
+library;
 
 import 'dart:convert';
 import 'dart:io';
@@ -26,13 +27,13 @@ class BenchmarkResult {
   });
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'compress_throughput_mbps': compressThroughputMBps,
-        'decompress_throughput_mbps': decompressThroughputMBps,
-        'iterations': iterations,
-        'data_size_bytes': dataSizeBytes,
-        'level': level,
-      };
+    'name': name,
+    'compress_throughput_mbps': compressThroughputMBps,
+    'decompress_throughput_mbps': decompressThroughputMBps,
+    'iterations': iterations,
+    'data_size_bytes': dataSizeBytes,
+    'level': level,
+  };
 }
 
 Future<List<BenchmarkResult>> runAll({int runs = 5}) async {
@@ -51,37 +52,58 @@ Future<List<BenchmarkResult>> runAll({int runs = 5}) async {
       final decompressed = await cli.decompress(compressed);
       if (decompressed == null || decompressed.length != data.length) continue;
 
-      int compressSumMs = 0;
-      int decompressSumMs = 0;
+      var compressSumUs = 0;
+      var decompressSumUs = 0;
       for (var i = 0; i < runs; i++) {
         final sw = Stopwatch()..start();
         final c = await cli.compress(data, compressionLevel: level);
         sw.stop();
-        compressSumMs += sw.elapsedMilliseconds;
-        if (c == null) continue;
+        compressSumUs += sw.elapsedMicroseconds == 0
+            ? 1
+            : sw.elapsedMicroseconds;
+        if (c == null) {
+          throw StateError('Compression failed for ${size}B at level $level');
+        }
         sw.reset();
         sw.start();
-        await cli.decompress(c);
+        final d = await cli.decompress(c);
         sw.stop();
-        decompressSumMs += sw.elapsedMilliseconds;
+        decompressSumUs += sw.elapsedMicroseconds == 0
+            ? 1
+            : sw.elapsedMicroseconds;
+        if (d == null || !_bytesEqual(d, data)) {
+          throw StateError('Roundtrip failed for ${size}B at level $level');
+        }
       }
 
-      final compressMs = compressSumMs / runs;
-      final decompressMs = decompressSumMs / runs;
+      final compressSeconds =
+          compressSumUs / runs / Duration.microsecondsPerSecond;
+      final decompressSeconds =
+          decompressSumUs / runs / Duration.microsecondsPerSecond;
       final sizeMb = size / (1024 * 1024);
-      final compressMbS = sizeMb / (compressMs / 1000);
-      final decompressMbS = sizeMb / (decompressMs / 1000);
-      results.add(BenchmarkResult(
-        name: '${size}B_L$level',
-        compressThroughputMBps: compressMbS,
-        decompressThroughputMBps: decompressMbS,
-        iterations: runs,
-        dataSizeBytes: size,
-        level: level,
-      ));
+      final compressMbS = sizeMb / compressSeconds;
+      final decompressMbS = sizeMb / decompressSeconds;
+      results.add(
+        BenchmarkResult(
+          name: '${size}B_L$level',
+          compressThroughputMBps: compressMbS,
+          decompressThroughputMBps: decompressMbS,
+          iterations: runs,
+          dataSizeBytes: size,
+          level: level,
+        ),
+      );
     }
   }
   return results;
+}
+
+bool _bytesEqual(Uint8List first, Uint8List second) {
+  if (first.length != second.length) return false;
+  for (var index = 0; index < first.length; index++) {
+    if (first[index] != second[index]) return false;
+  }
+  return true;
 }
 
 void main(List<String> args) async {

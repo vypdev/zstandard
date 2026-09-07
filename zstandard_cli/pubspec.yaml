@@ -2,6 +2,10 @@ name: zstandard_cli
 description: Command-line interface for compressing and decompressing files with Zstandard.
 version: 1.5.0
 
+executables:
+  zstandard-compress: compress
+  zstandard-decompress: decompress
+
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_cli
 

@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Moved zstd execution to a dedicated Web Worker with transferable buffers.
+- Added consistent null semantics, bounded streaming decompression,
+  unknown-size and concatenated frame support, valid empty frames, and
+  release-browser integration coverage.
 - Pin the Emscripten toolchain used to regenerate the checked-in WebAssembly
   artifacts from the canonical `zstandard_native` C source.
 - Normalize WebAssembly metadata with the matching `wasm-opt` tool and validate
