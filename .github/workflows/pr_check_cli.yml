@@ -74,7 +74,7 @@ jobs:
         run: dart ../scripts/check_lcov_coverage.dart coverage/lcov.info 95
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard_cli/coverage/lcov.info
