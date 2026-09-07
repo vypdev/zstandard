@@ -55,9 +55,6 @@ jobs:
     name: Test macOS (${{ matrix.dependency_manager }}, ${{ matrix.source }})
     runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 60
-    concurrency:
-      group: zstandard-apple-flutter-toolchain
-      cancel-in-progress: false
     strategy:
       fail-fast: false
       max-parallel: 1

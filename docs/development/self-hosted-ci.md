@@ -36,7 +36,17 @@ The Android matrix runs sequentially because all entries share the runner's ADB 
 
 ## Linux job requirements
 
-The workflow builds `zstandard_linux/example` with `flutter build linux --debug`, runs native CTest coverage, and executes the desktop integration suite under Xvfb. The sequence is repeated with the current `zstandard_native` package staged outside the checkout and selected through `package_config.json`, proving that CMake does not rely on the monorepo-relative fallback.
+The workflow builds `zstandard_linux/example` with `flutter build linux --debug`, runs native CTest coverage, executes package tests with the built plugin on `LD_LIBRARY_PATH`, and executes the desktop integration suite under Xvfb. The sequence is repeated with the current `zstandard_native` package staged outside the checkout and selected through `package_config.json`, proving that CMake does not rely on the monorepo-relative fallback.
+
+## Apple job requirements
+
+iOS and macOS jobs target `[self-hosted, macOS, ARM64]` and use the pinned,
+preinstalled Flutter SDK. Each runner process must execute one job at a time.
+Do not add a shared job-level Actions concurrency group to the iOS and macOS
+matrices: GitHub retains only one pending job per group and cancels the other
+matrix combinations instead of queuing them. Matrix `max-parallel: 1` provides
+per-workflow serialization, while the runner process serializes work across
+the two workflows.
 
 ## Windows job requirements
 
