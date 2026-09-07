@@ -1,11 +1,19 @@
 ## Unreleased
 
+- Added byte-safe worker-isolate execution and bounded streaming decompression
+  for unknown-size and concatenated frames.
 - Updated the minimum supported SDK version to Flutter 3.44/Dart 3.12.
 - Migrated Android builds to Built-in Kotlin on AGP 9+.
 - Removed legacy Kotlin task configuration so the consuming app owns Kotlin
   compiler settings.
 - Added an AGP 8.11.1/Gradle 8.14 legacy example alongside the AGP 9.1.0
   example.
+- Removed obsolete Jetifier configuration and gave the legacy example and its
+  instrumentation sources a distinct, consistent package identity.
+- Restricted the instrumentation-only JNI bridge to Debug builds so test
+  symbols are absent from production binaries.
+- Analyze the independent legacy consumer in its own package context instead
+  of treating it as part of the plugin package.
 - Test debug and release APKs for armeabi-v7a, arm64-v8a, and x86_64, and run
   both Dart integration and native JNI instrumentation round-trip tests in CI.
 

@@ -32,6 +32,8 @@ let package = Package(
             cSettings: [
                 .headerSearchPath("."),
                 .headerSearchPath("include"),
+                // Required when Xcode precompiles zstd.h as a Clang module;
+                // internal zstd translation units consume these declarations.
                 .define("ZSTD_STATIC_LINKING_ONLY"),
                 .define("ZSTD_DISABLE_ASM"),
             ],
@@ -43,7 +45,13 @@ let package = Package(
                     "-Xlinker", "-u", "-Xlinker", "_ZSTD_compress",
                     "-Xlinker", "-u", "-Xlinker", "_ZSTD_decompress",
                     "-Xlinker", "-u", "-Xlinker", "_ZSTD_compressBound",
+                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_isError",
                     "-Xlinker", "-u", "-Xlinker", "_ZSTD_getFrameContentSize",
+                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_createDStream",
+                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_initDStream",
+                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_decompressStream",
+                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_freeDStream",
+                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_DStreamOutSize",
                 ])
             ]
         ),

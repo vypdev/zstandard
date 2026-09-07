@@ -8,8 +8,15 @@ void main() {
 
     expect(podspec, contains('s.script_phases = ['));
     expect(podspec, contains(":name => 'Sync zstd'"));
-    expect(podspec, contains('zstandard_macos/Sources/zstandard_macos/*.swift'));
+    expect(
+      podspec,
+      contains('zstandard_macos/Sources/zstandard_macos/*.swift'),
+    );
     expect(podspec, contains('-DZSTD_DISABLE_ASM'));
+    expect(podspec, contains("s.platform = :osx, '10.15'"));
+    expect(podspec, isNot(contains('legacy/')));
+    expect(podspec, isNot(contains('dictBuilder/')));
+    expect(podspec, isNot(contains('*.S')));
     expect(podspec, contains(r'$(PODS_TARGET_SRCROOT)/Classes/zstd/zstd.h'));
     expect(podspec, isNot(contains('Remove synced zstd')));
     expect(podspec, isNot(contains('rm -rf')));

@@ -7,13 +7,10 @@ let nativePackageDependency: Package.Dependency = {
         return .package(name: "zstandard", path: localPath)
     }
 
-    // The repository root package exposes the canonical C implementation
-    // from zstandard_native/src/zstd without copying it into this plugin.
-    // Use the development branch until the first release containing this
-    // SwiftPM facade is tagged; release builds should pin that tag.
+    // Match the immutable repository tag carrying this plugin release.
     return .package(
         url: "https://github.com/vypdev/zstandard.git",
-        branch: "develop"
+        exact: "1.5.0"
     )
 }()
 

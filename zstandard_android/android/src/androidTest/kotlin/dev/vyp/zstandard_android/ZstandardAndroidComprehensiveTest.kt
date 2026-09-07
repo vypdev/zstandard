@@ -2,9 +2,9 @@ package dev.vyp.zstandard_android
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodChannel
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -18,14 +18,14 @@ class ZstandardAndroidComprehensiveTest {
 
     @Test
     fun pluginImplementsFlutterPlugin() {
-        val plugin = ZstandardAndroidPlugin()
-        assertTrue(plugin is io.flutter.embedding.engine.plugins.FlutterPlugin)
+        val plugin: FlutterPlugin = ZstandardAndroidPlugin()
+        assertNotNull(plugin)
     }
 
     @Test
     fun pluginImplementsMethodCallHandler() {
-        val plugin = ZstandardAndroidPlugin()
-        assertTrue(plugin is MethodChannel.MethodCallHandler)
+        val plugin: MethodChannel.MethodCallHandler = ZstandardAndroidPlugin()
+        assertNotNull(plugin)
     }
 
     @Test

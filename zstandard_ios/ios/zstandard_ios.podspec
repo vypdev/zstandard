@@ -5,20 +5,24 @@
 Pod::Spec.new do |s|
   s.cocoapods_version = '>= 1.11.0'  # for script_phase :before_headers
   s.name             = 'zstandard_ios'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter FFI plugin project.'
+  s.version          = '1.5.0'
+  s.summary          = 'iOS implementation of the Zstandard Flutter plugin.'
   s.description      = <<-DESC
-A new Flutter FFI plugin project.
+Native Zstandard compression and bounded decompression for Flutter on iOS.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/vypdev/zstandard'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'VypDev' => 'https://github.com/vypdev' }
 
   # Zstd C sources: synced from zstandard_native/src/zstd/ into Classes/zstd/ by
   # scripts/sync_zstd.sh (in this plugin). Must exist at pod install time so source_files glob finds them.
   s.source           = { :path => '.' }
-  s.source_files =    'Classes/zstd/**/*.c', 'Classes/zstd/**/*.h',
+  s.source_files =    'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
+                       'Classes/zstd/compress/*.c', 'Classes/zstd/compress/*.h',
+                       'Classes/zstd/decompress/*.c', 'Classes/zstd/decompress/*.h',
+                       'Classes/zstd/*.h',
                        'zstandard_ios/Sources/zstandard_ios/*.swift'
+  s.private_header_files = 'Classes/zstd/**/*.h'
   # zstd.h includes zstd_errors.h; both must be public so the module build finds them.
   s.public_header_files = 'Classes/zstd/zstd.h', 'Classes/zstd/zstd_errors.h'
 
@@ -34,7 +38,8 @@ A new Flutter FFI plugin project.
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
     'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/zstd',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY -DZSTD_DISABLE_ASM -fvisibility=default',
+    'OTHER_CFLAGS' => '$(inherited) -DZSTD_DISABLE_ASM -fvisibility=default',
+    'GCC_WARN_INHIBIT_ALL_WARNINGS' => 'YES',
     'DEAD_CODE_STRIPPING' => 'NO',
     'STRIP_INSTALLED_PRODUCT' => 'NO',
   }

@@ -10,6 +10,10 @@ void main() {
     expect(podspec, contains(":name => 'Sync zstd'"));
     expect(podspec, contains('zstandard_ios/Sources/zstandard_ios/*.swift'));
     expect(podspec, contains('-DZSTD_DISABLE_ASM'));
+    expect(podspec, contains("s.platform = :ios, '13.0'"));
+    expect(podspec, isNot(contains('legacy/')));
+    expect(podspec, isNot(contains('dictBuilder/')));
+    expect(podspec, isNot(contains('*.S')));
     expect(podspec, contains(r'$(PODS_TARGET_SRCROOT)/Classes/zstd/zstd.h'));
     expect(podspec, isNot(contains('Remove synced zstd')));
     expect(podspec, isNot(contains('rm -rf')));

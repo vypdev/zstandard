@@ -1,8 +1,12 @@
 ## Unreleased
 
+- Added byte-safe worker-isolate execution and bounded streaming decompression
+  for unknown-size and concatenated frames.
 - Build and run the native Linux CMake test target in CI.
 - Extend Linux integration coverage to assert non-empty compression output and
   exact byte-for-byte decompression round-trips.
+- Removed the placeholder `WIP` test so skipped macOS-hosted runs cannot be
+  mistaken for executed Linux behavior.
 
 ## 1.5.0 - Dependencies Updated
 

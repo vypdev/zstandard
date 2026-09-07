@@ -14,18 +14,8 @@ if(EXISTS "${_LOCAL_ZSTD}/common")
   set(ZSTD_ROOT "${_LOCAL_ZSTD}")
   message(STATUS "Using local zstandard_native: ${ZSTD_ROOT}")
 else()
-  # 2. Look for zstandard_native in pub-cache (versioned dirs only, e.g.
-  # zstandard_native-1.4.0; do not match zstandard_native2 etc.).
-  file(GLOB NATIVE_PARENT_DIRS "${_PLUGIN_PARENT}/zstandard_native-*")
-  if(NATIVE_PARENT_DIRS)
-    list(GET NATIVE_PARENT_DIRS 0 NATIVE_PKG_DIR)
-    set(ZSTD_CANDIDATE "${NATIVE_PKG_DIR}/src/zstd")
-    if(EXISTS "${ZSTD_CANDIDATE}/common")
-      set(ZSTD_ROOT "${ZSTD_CANDIDATE}")
-      message(STATUS "Using zstandard_native from pub-cache: ${ZSTD_ROOT}")
-    endif()
-  endif()
-  # 3. Resolve zstandard_native from package_config.json (plugin or any parent, e.g. example app)
+  # 2. Resolve the exact dependency selected by pub. Never choose the first
+  # matching cache directory, which can silently compile a stale version.
   set(_SEARCH_PKG "${CMAKE_CURRENT_SOURCE_DIR}")
   foreach(_PKG_IGNORE RANGE 10)
     get_filename_component(_PARENT "${_SEARCH_PKG}/.." ABSOLUTE)
@@ -54,7 +44,7 @@ else()
     set(_SEARCH_PKG "${_PARENT}")
   endforeach()
   if(NOT ZSTD_ROOT OR NOT EXISTS "${ZSTD_ROOT}/common")
-    message(FATAL_ERROR "zstd source not found. Ensure zstandard_native dependency is available (repo: ../../zstandard_native/src/zstd or pub-cache).")
+    message(FATAL_ERROR "zstd source not found. Set ZSTD_ROOT or run flutter pub get so package_config.json resolves zstandard_native.")
   endif()
 endif()
 
@@ -67,15 +57,15 @@ file(GLOB ZSTD_SRC
     "${ZSTD_ROOT}/decompress/*.c"
 )
 
-# JNI entry points are compiled into the same Android shared object so
-# instrumentation tests can exercise the exact library that Dart FFI loads.
-# They are not part of the Dart-facing API.
-if(ANDROID)
-  list(APPEND ZSTD_SRC
-      "${CMAKE_CURRENT_SOURCE_DIR}/../android/src/main/cpp/zstandard_android_test_bridge.c")
-endif()
-
 add_library(zstandard_android SHARED ${ZSTD_SRC})
+
+# JNI entry points are compiled into the Debug shared object so instrumentation
+# tests exercise the exact library that Dart FFI loads. Production Profile and
+# Release binaries must not expose test-only JNI symbols.
+if(ANDROID)
+  target_sources(zstandard_android PRIVATE
+      "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/../android/src/main/cpp/zstandard_android_test_bridge.c>")
+endif()
 
 # The CI instrumentation suite also exercises the maximum compression level
 # on a software-only emulator. Keep debug native builds optimized enough that

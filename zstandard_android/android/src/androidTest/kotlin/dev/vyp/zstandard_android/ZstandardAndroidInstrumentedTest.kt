@@ -7,8 +7,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Basic instrumented tests for the zstandard_android plugin. Native loading and
- * compression/decompression are covered by the native round-trip test class.
+ * Basic Android-context tests for the zstandard_android plugin. Native loading
+ * and compression are covered by the native round-trip test class.
  */
 @RunWith(AndroidJUnit4::class)
 class ZstandardAndroidInstrumentedTest {

@@ -10,7 +10,7 @@ Add the main plugin to your app; this package is included automatically via the 
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.5.0
 ```
 
 No extra setup is required for normal use.
@@ -42,12 +42,16 @@ final decompressed = await compressed?.decompress();
 
 - **ZstandardIOS()** — Creates the iOS platform implementation.
 - **compress(Uint8List data, int compressionLevel)** — Compresses `data` (level 1–22). Returns compressed bytes or `null`.
-- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or `null`.
+- **decompressWithOptions(Uint8List data, {int maxOutputSize})** — Decompresses complete, concatenated, or unknown-size zstd frames with a bounded output (256 MiB by default). Invalid, truncated, or oversized input returns `null`.
 - **getPlatformVersion()** — Returns a platform identifier string.
 
 ## Architecture
 
-This package uses Dart FFI with the native zstd C library. Swift Package Manager is the primary integration for Flutter 3.44 and newer and statically links the shared target into the app; CocoaPods remains supported for compatibility and embeds the plugin framework. Both paths use the same canonical C implementation from `zstandard_native`.
+This package uses Dart FFI with the native zstd C library. Swift Package
+Manager statically links the shared target into the app; CocoaPods remains
+supported and embeds the plugin framework. Both paths compile the same
+common/compress/decompress source set from `zstandard_native`. Public work runs
+in an isolate using Dart-owned bytes and bounded streaming decompression.
 
 ## Testing
 

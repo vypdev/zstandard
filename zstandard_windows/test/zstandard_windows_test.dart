@@ -29,7 +29,9 @@ void main() {
 
     test('compress and decompress large data', () async {
       if (skipPlatform) return;
-      final data = Uint8List.fromList(List<int>.generate(100000, (i) => i % 256));
+      final data = Uint8List.fromList(
+        List<int>.generate(100000, (i) => i % 256),
+      );
       expect(data, isNotEmpty);
       final compressed = await zstandard.compress(data, 3);
       expect(compressed, isNotNull);
@@ -70,7 +72,9 @@ void main() {
 
     test('decompress random bytes returns null', () async {
       if (skipPlatform) return;
-      final random = Uint8List.fromList(List.generate(64, (i) => (i * 31) % 256));
+      final random = Uint8List.fromList(
+        List.generate(64, (i) => (i * 31) % 256),
+      );
       final result = await zstandard.decompress(random);
       expect(result, isNull);
     }, skip: skipPlatform ? 'Only runs on Windows' : false);

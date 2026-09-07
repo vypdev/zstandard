@@ -1,3 +1,8 @@
+## Unreleased
+
+- Added byte-safe worker-isolate execution and bounded streaming decompression
+  for unknown-size and concatenated frames.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies
