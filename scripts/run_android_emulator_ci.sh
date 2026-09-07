@@ -55,6 +55,12 @@ export ANDROID_HOME="$sdk_root"
 export ANDROID_SDK_ROOT="$sdk_root"
 export PATH="$sdk_root/platform-tools:$sdk_root/emulator:$PATH"
 
+android_user_home="${ANDROID_USER_HOME:-$HOME/.android}"
+avd_home="${ANDROID_AVD_HOME:-$android_user_home/avd}"
+mkdir -p "$avd_home"
+export ANDROID_USER_HOME="$android_user_home"
+export ANDROID_AVD_HOME="$avd_home"
+
 echo "Installing Android emulator prerequisites..."
 set +o pipefail
 yes 2>/dev/null | "$sdkmanager_bin" --licenses >/dev/null
@@ -74,7 +80,12 @@ echo no | "$avdmanager_bin" create avd \
   --package "system-images;android-${api_level};${target};${arch}" \
   --device pixel_2
 
-avd_config="$HOME/.android/avd/${avd_name}.avd/config.ini"
+avd_config="$avd_home/${avd_name}.avd/config.ini"
+if [[ ! -f "$avd_config" ]]; then
+  echo "AVD manager did not create the expected configuration: ${avd_config}" >&2
+  find "$avd_home" -maxdepth 2 -type f -print >&2 || true
+  exit 1
+fi
 # Location is outside the scope of these integration tests.
 printf 'hw.cpu.ncore=2\nhw.gps=no\n' >> "$avd_config"
 

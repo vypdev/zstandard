@@ -32,6 +32,11 @@ The workflow also calls [`scripts/check_android_ci_prerequisites.sh`](../../scri
 
 The workflow first bootstraps the Android SDK tools, then builds debug APKs for every supported Flutter ABI, starts an API 30 `aosp_atd` `pixel_2` emulator through `scripts/run_android_emulator_ci.sh`, waits for the Android `package`, `input`, and `settings` services to remain stable across repeated checks, and runs the compression, property, and native instrumentation suites. The Android Test Device image is intentionally used for headless testing because these package tests do not require Google Play services. GPS is disabled in the generated AVD because location is outside this test scope, and the launcher disables the emulator's `GnssGrpcV1` feature so it does not start an unnecessary host GNSS socket. Vulkan is disabled explicitly because this runner uses software rendering and the Vulkan/SwiftShader path has crashed during emulator startup. A missing SDK or platform tools fails before the test starts with a diagnostic message. Software emulation is slower than KVM and is given a longer job/boot timeout. The launcher does not run optional input or animation setup commands before the Android system services are ready, and each ADB operation is bounded by a timeout to prevent an offline daemon from hanging the job; if boot or readiness fails, it prints the emulator log and Android logcat for diagnosis.
 
+The launcher also initializes and exports `ANDROID_USER_HOME` and
+`ANDROID_AVD_HOME` explicitly. This is required on clean hosted images where
+`avdmanager` does not create the default `$HOME/.android/avd` hierarchy before
+returning.
+
 The Android matrix runs sequentially because all entries share the runner's ADB daemon and emulator port. It covers both example projects and both native-source layouts: the normal workspace path and an exact external path recorded in Dart's package configuration.
 
 ## Linux job requirements
