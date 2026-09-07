@@ -1,5 +1,6 @@
 zstandard_cli/zstd/
 .zstd_upstream/
+.DS_Store
 .idea/
 */.idea/
 */build/
