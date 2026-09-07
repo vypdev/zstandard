@@ -17,55 +17,53 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final Uint8List _originalData = Uint8List.fromList(
-    [
-      10,
-      20,
-      30,
-      4,
-      3,
-      3,
-      10,
-      20,
-      30,
-      10,
-      20,
-      30,
-      4,
-      3,
-      3,
-      10,
-      20,
-      30,
-      10,
-      20,
-      30,
-      4,
-      3,
-      3,
-      10,
-      20,
-      30,
-      10,
-      20,
-      30,
-      4,
-      3,
-      3,
-      10,
-      20,
-      30,
-      10,
-      20,
-      30,
-      4,
-      3,
-      3,
-      10,
-      20,
-      30
-    ],
-  );
+  final Uint8List _originalData = Uint8List.fromList([
+    10,
+    20,
+    30,
+    4,
+    3,
+    3,
+    10,
+    20,
+    30,
+    10,
+    20,
+    30,
+    4,
+    3,
+    3,
+    10,
+    20,
+    30,
+    10,
+    20,
+    30,
+    4,
+    3,
+    3,
+    10,
+    20,
+    30,
+    10,
+    20,
+    30,
+    4,
+    3,
+    3,
+    10,
+    20,
+    30,
+    10,
+    20,
+    30,
+    4,
+    3,
+    3,
+    10,
+    20,
+    30,
+  ]);
 
   Uint8List? _compressedData;
 
@@ -89,8 +87,7 @@ class _MyAppState extends State<MyApp> {
     // We also handle the message potentially returning null.
     try {
       platformVersion =
-          await _zstandard.getPlatformVersion() ??
-              'Unknown platform version';
+          await _zstandard.getPlatformVersion() ?? 'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
@@ -130,9 +127,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
+        appBar: AppBar(title: const Text('Plugin example app')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(15.0),

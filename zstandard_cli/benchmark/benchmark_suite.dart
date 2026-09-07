@@ -27,13 +27,13 @@ class BenchmarkResult {
   });
 
   Map<String, dynamic> toJson() => {
-    'name': name,
-    'compress_throughput_mbps': compressThroughputMBps,
-    'decompress_throughput_mbps': decompressThroughputMBps,
-    'iterations': iterations,
-    'data_size_bytes': dataSizeBytes,
-    'level': level,
-  };
+        'name': name,
+        'compress_throughput_mbps': compressThroughputMBps,
+        'decompress_throughput_mbps': decompressThroughputMBps,
+        'iterations': iterations,
+        'data_size_bytes': dataSizeBytes,
+        'level': level,
+      };
 }
 
 Future<List<BenchmarkResult>> runAll({int runs = 5}) async {
@@ -58,9 +58,8 @@ Future<List<BenchmarkResult>> runAll({int runs = 5}) async {
         final sw = Stopwatch()..start();
         final c = await cli.compress(data, compressionLevel: level);
         sw.stop();
-        compressSumUs += sw.elapsedMicroseconds == 0
-            ? 1
-            : sw.elapsedMicroseconds;
+        compressSumUs +=
+            sw.elapsedMicroseconds == 0 ? 1 : sw.elapsedMicroseconds;
         if (c == null) {
           throw StateError('Compression failed for ${size}B at level $level');
         }
@@ -68,9 +67,8 @@ Future<List<BenchmarkResult>> runAll({int runs = 5}) async {
         sw.start();
         final d = await cli.decompress(c);
         sw.stop();
-        decompressSumUs += sw.elapsedMicroseconds == 0
-            ? 1
-            : sw.elapsedMicroseconds;
+        decompressSumUs +=
+            sw.elapsedMicroseconds == 0 ? 1 : sw.elapsedMicroseconds;
         if (d == null || !_bytesEqual(d, data)) {
           throw StateError('Roundtrip failed for ${size}B at level $level');
         }

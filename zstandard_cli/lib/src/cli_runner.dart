@@ -16,13 +16,14 @@ Future<int> runCompressCommand(
   Stream<List<int>>? standardInput,
   IOSink? standardOutput,
   IOSink? standardError,
-}) => _runCommand(
-  _Operation.compress,
-  arguments,
-  standardInput: standardInput,
-  standardOutput: standardOutput,
-  standardError: standardError,
-);
+}) =>
+    _runCommand(
+      _Operation.compress,
+      arguments,
+      standardInput: standardInput,
+      standardOutput: standardOutput,
+      standardError: standardError,
+    );
 
 /// Runs the decompression command and returns a process exit code.
 Future<int> runDecompressCommand(
@@ -30,13 +31,14 @@ Future<int> runDecompressCommand(
   Stream<List<int>>? standardInput,
   IOSink? standardOutput,
   IOSink? standardError,
-}) => _runCommand(
-  _Operation.decompress,
-  arguments,
-  standardInput: standardInput,
-  standardOutput: standardOutput,
-  standardError: standardError,
-);
+}) =>
+    _runCommand(
+      _Operation.decompress,
+      arguments,
+      standardInput: standardInput,
+      standardOutput: standardOutput,
+      standardError: standardError,
+    );
 
 enum _Operation { compress, decompress }
 
@@ -94,8 +96,7 @@ Future<int> _runCommand(
 
   if (inputPath != '-' && outputPath != '-') {
     final outputFile = File(outputPath);
-    final aliasesInput =
-        outputFile.existsSync() &&
+    final aliasesInput = outputFile.existsSync() &&
         File(inputPath).existsSync() &&
         FileSystemEntity.identicalSync(inputPath, outputPath);
     if (_samePath(inputPath, outputPath) || aliasesInput) {
@@ -195,16 +196,14 @@ _CommandOptions _parseArguments(_Operation operation, List<String> arguments) {
         operation == _Operation.compress &&
         (argument == '-l' || argument == '--level')) {
       final rawLevel = valueAfter(index, argument);
-      compressionLevel =
-          int.tryParse(rawLevel) ??
+      compressionLevel = int.tryParse(rawLevel) ??
           (throw FormatException('invalid compression level: $rawLevel'));
       index++;
     } else if (!positionalOnly &&
         operation == _Operation.decompress &&
         (argument == '-m' || argument == '--max-output-size')) {
       final rawLimit = valueAfter(index, argument);
-      maxOutputSize =
-          int.tryParse(rawLimit) ??
+      maxOutputSize = int.tryParse(rawLimit) ??
           (throw FormatException('invalid maximum output size: $rawLimit'));
       index++;
     } else if (!positionalOnly && argument.startsWith('-') && argument != '-') {

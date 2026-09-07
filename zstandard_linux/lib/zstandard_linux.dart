@@ -55,11 +55,12 @@ class ZstandardLinux extends ZstandardPlatform
   Future<Uint8List?> decompressWithOptions(
     Uint8List data, {
     int maxOutputSize = ZstandardPlatform.defaultMaxDecompressedSize,
-  }) => Isolate.run(
-    () => _hasZstdFrameMagic(data)
-        ? _codec.decompress(data, maxOutputSize: maxOutputSize)
-        : null,
-  );
+  }) =>
+      Isolate.run(
+        () => _hasZstdFrameMagic(data)
+            ? _codec.decompress(data, maxOutputSize: maxOutputSize)
+            : null,
+      );
 }
 
 /// Low-level synchronous compression for existing FFI consumers.
@@ -69,7 +70,8 @@ int compress(
   Pointer<Void> src,
   int srcSize,
   int compressionLevel,
-) => _bindings.ZSTD_compress(dst, dstCapacity, src, srcSize, compressionLevel);
+) =>
+    _bindings.ZSTD_compress(dst, dstCapacity, src, srcSize, compressionLevel);
 
 /// Low-level synchronous decompression for existing FFI consumers.
 int decompress(
@@ -77,7 +79,8 @@ int decompress(
   int dstCapacity,
   Pointer<Void> src,
   int compressedSize,
-) => _bindings.ZSTD_decompress(dst, dstCapacity, src, compressedSize);
+) =>
+    _bindings.ZSTD_decompress(dst, dstCapacity, src, compressedSize);
 
 /// Compatibility wrapper that completes after the pointer call returns.
 @Deprecated('Use ZstandardLinux.compress with Dart-owned bytes instead.')
@@ -87,9 +90,10 @@ Future<int> compressAsync(
   Pointer<Void> src,
   int srcSize,
   int compressionLevel,
-) => Future<int>.sync(
-  () => compress(dst, dstCapacity, src, srcSize, compressionLevel),
-);
+) =>
+    Future<int>.sync(
+      () => compress(dst, dstCapacity, src, srcSize, compressionLevel),
+    );
 
 /// Compatibility wrapper that completes after the pointer call returns.
 @Deprecated('Use ZstandardLinux.decompress with Dart-owned bytes instead.')
@@ -98,4 +102,5 @@ Future<int> decompressAsync(
   int dstCapacity,
   Pointer<Void> src,
   int compressedSize,
-) => Future<int>.sync(() => decompress(dst, dstCapacity, src, compressedSize));
+) =>
+    Future<int>.sync(() => decompress(dst, dstCapacity, src, compressedSize));

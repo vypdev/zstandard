@@ -61,11 +61,12 @@ arguments or a refused overwrite.
 
 ## Native library resolution
 
-The package resolves the library relative to its own package URI, independent
-of the process working directory. `ZSTANDARD_CLI_LIBRARY` can name an explicit
-library for testing or custom deployment; an executable-adjacent library is
-also supported for compiled applications. Windows bundles use the static MSVC
-runtime and do not require a matching redistributable solely for this library.
+The package resolves the library through the active Dart package
+configuration, independent of the process working directory.
+`ZSTANDARD_CLI_LIBRARY` can name an explicit library for testing or custom
+deployment; an executable-adjacent library is also supported for compiled
+applications. Windows bundles use the static MSVC runtime and do not require a
+matching redistributable solely for this library.
 
 ## Testing
 

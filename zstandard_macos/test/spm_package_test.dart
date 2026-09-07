@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('Swift Package Manager consumes the shared native package', () {
-    final manifest = File('macos/zstandard_macos/Package.swift')
-        .readAsStringSync();
+    final manifest =
+        File('macos/zstandard_macos/Package.swift').readAsStringSync();
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final version = RegExp(
       r'^version:\s*(\d+\.\d+\.\d+)$',

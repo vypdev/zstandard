@@ -87,9 +87,8 @@ final class ZstandardNativeCodec {
       input = calloc<ZSTD_inBuffer>();
       output = calloc<ZSTD_outBuffer>();
       final recommendedOutputSize = bindings.ZSTD_DStreamOutSize();
-      final chunkCapacity = recommendedOutputSize > 0
-          ? recommendedOutputSize
-          : 128 * 1024;
+      final chunkCapacity =
+          recommendedOutputSize > 0 ? recommendedOutputSize : 128 * 1024;
       chunk = malloc.allocate<Uint8>(chunkCapacity);
 
       src.asTypedList(data.lengthInBytes).setAll(0, data);
@@ -133,8 +132,7 @@ final class ZstandardNativeCodec {
           return result.takeBytes();
         }
 
-        final madeProgress =
-            input.ref.pos != previousInputPosition ||
+        final madeProgress = input.ref.pos != previousInputPosition ||
             result.length != previousOutputLength;
         if (!madeProgress || (allInputConsumed && produced == 0)) {
           // More input is required: the frame is truncated or incomplete.
