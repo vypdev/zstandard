@@ -1,76 +1,41 @@
 # Platform Interface API Reference
 
-The **zstandard_platform_interface** package defines the contract that every platform implementation (Android, iOS, macOS, Linux, Windows, Web) must satisfy. Application code typically uses the main **zstandard** package and does not depend on this package directly.
+`zstandard_platform_interface` defines the federated plugin contract.
+Applications should use the main `zstandard` package.
 
-## ZstandardPlatform
+## `ZstandardPlatform`
 
-**Library:** `package:zstandard_platform_interface/zstandard_platform_interface.dart`
-
-Abstract base class for all platform implementations. Extends `PlatformInterface` from the plugin_platform_interface package.
-
-### instance (static getter)
+Implementations extend `ZstandardPlatform`, provide `getPlatformVersion`,
+`compress`, and the legacy-compatible `decompress`, then register themselves:
 
 ```dart
-static ZstandardPlatform get instance
+ZstandardPlatform.instance = MyZstandardPlatform();
 ```
 
-Returns the current platform implementation. Defaults to `MethodChannelZstandardPlatform`.
+The default `MethodChannelZstandardPlatform` only implements platform-version
+lookup. Codec operations throw `UnimplementedError` until an implementation is
+registered.
 
-### instance (static setter)
+## Bounded decompression capability
+
+New and official implementations should additionally implement:
 
 ```dart
-static set instance(ZstandardPlatform instance)
+abstract interface class BoundedZstandardPlatform {
+  Future<Uint8List?> decompressWithOptions(
+    Uint8List data, {
+    int maxOutputSize = ZstandardPlatform.defaultMaxDecompressedSize,
+  });
+}
 ```
 
-Sets the platform implementation. Only instances created with the correct token (from this package) can be set. Platform packages call this in their `registerWith()`.
+`ZstandardPlatform.defaultMaxDecompressedSize` is 256 MiB. Implementations
+must enforce the limit during decompression, not only after allocating the
+result. Keeping this as a separate optional interface avoids a source-breaking
+method addition for existing third-party platform implementations.
 
-### getPlatformVersion
+The main package uses the bounded capability when present. Its compatibility
+fallback calls legacy `decompress` and rejects an oversized returned value,
+but cannot prevent the third-party implementation's earlier allocation.
 
-```dart
-Future<String?> getPlatformVersion()
-```
-
-Returns a platform-specific version or identifier string. Base implementation throws `UnimplementedError`.
-
-### compress
-
-```dart
-Future<Uint8List?> compress(Uint8List data, int compressionLevel)
-```
-
-Compresses `data` at the given `compressionLevel` (1–22). Base implementation throws `UnimplementedError`.
-
-### decompress
-
-```dart
-Future<Uint8List?> decompress(Uint8List data)
-```
-
-Decompresses Zstandard-compressed `data`. Base implementation throws `UnimplementedError`.
-
----
-
-## MethodChannelZstandardPlatform
-
-Default implementation used when no native implementation is registered (e.g. in tests or unsupported platforms).
-
-- **getPlatformVersion()**: Implemented; invokes the method channel `plugins.flutter.io/zstandard` with method `getPlatformVersion`.
-- **compress()**: Not implemented; throws `UnimplementedError`.
-- **decompress()**: Not implemented; throws `UnimplementedError`.
-
-So in environments where only the method channel is available, only `getPlatformVersion` is usable unless a test sets a mock platform.
-
-## Implementing the Interface
-
-Platform packages:
-
-1. Extend `ZstandardPlatform`.
-2. Implement `getPlatformVersion`, `compress`, and `decompress`.
-3. In registration, set `ZstandardPlatform.instance = MyPlatform()` (with the token from the interface).
-
-See [Architecture — Platform Interface](../architecture/platform-interface.md) for the registration flow.
-
-## See Also
-
-- [Architecture — Platform Interface](../architecture/platform-interface.md)
-- [Main API](main-api.md)
+See [Platform interface architecture](../architecture/platform-interface.md).

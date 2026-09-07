@@ -151,7 +151,10 @@ Linux and Windows keep unit tests in `test/` that run only when the host OS matc
 
 ### CLI
 
-- The existing tests in `zstandard_cli/test/` are a good reference: small/large/empty data, repeated values, min/max compression level. Add tests for invalid compression levels and platform detection if desired.
+- The tests in `zstandard_cli/test/` cover small, large, empty, invalid and
+  concatenated inputs; output limits; compression-level boundaries; platform
+  and ABI-aware library selection; filesystem collisions; stdin/stdout; exit
+  codes; and concurrent calls.
 
 ## Coverage
 

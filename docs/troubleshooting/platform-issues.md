@@ -29,7 +29,7 @@ Issues that are specific to one platform or environment.
 
 - **WASM or JS errors**: Ensure `zstd.js` and `zstd.wasm` are served from the same origin (or CORS is set correctly) and that the path in the script matches. Check the browser console and network tab.
 - **compressData/decompressData undefined**: The script must load before the Flutter app. Put `<script src="zstd.js"></script>` in `<head>` and ensure it loads without errors.
-- **Slow or blocking**: Web runs on the main thread. For large data, consider chunking or offloading to a Web Worker if you implement it.
+- **Slow operations**: Web already runs zstd in a dedicated Worker. For large data, use smaller independently framed chunks and limit concurrency to reduce Worker/WASM memory pressure.
 
 ## CLI (macOS, Windows, Linux)
 

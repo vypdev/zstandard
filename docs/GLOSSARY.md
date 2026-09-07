@@ -20,7 +20,7 @@ Definitions of terms and acronyms used in the Zstandard plugin and CLI documenta
 
 **Federated plugin** — A Flutter plugin that delegates to platform-specific implementations (e.g. zstandard_android, zstandard_ios) rather than implementing everything in one package. The **zstandard_native** package holds the shared C source (facebook/zstd) used by all native implementations and the CLI; it is published to pub.dev as part of the release set.
 
-**Frame** — A Zstandard-compressed unit of data with a header and optional checksum. The API compresses and decompresses one frame at a time (or a single buffer that may contain a frame).
+**Frame** — A Zstandard-compressed unit of data with a header and optional checksum. Compression emits one frame; decompression accepts a complete buffer containing one or more concatenated frames, including frames without a declared content size.
 
 **Isolate** — A Dart concurrency unit. The native implementations may run compression/decompression in a separate isolate so the UI thread is not blocked.
 

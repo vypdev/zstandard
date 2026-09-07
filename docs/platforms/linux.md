@@ -15,7 +15,7 @@ Add the main plugin to your app; the Linux implementation is included via the fe
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.5.0
 ```
 
 No additional setup is required for normal use. The plugin registers the Linux implementation automatically when running on Linux.
@@ -23,8 +23,8 @@ No additional setup is required for normal use. The plugin registers the Linux i
 ## Architecture
 
 - **Native layer**: The facebook/zstd C library is built with CMake (e.g. under `linux/` or `src/`) and produces a shared library `libzstandard_linux_plugin.so` that the Dart plugin loads via FFI.
-- **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
-- **Isolates**: The implementation may use a helper isolate for async compression/decompression.
+- **Dart layer**: The package uses Dart FFI and the shared native codec for one-frame compression and bounded streaming decompression.
+- **Isolates**: Public compression/decompression runs in a worker isolate with Dart-owned byte buffers.
 
 ## Usage
 

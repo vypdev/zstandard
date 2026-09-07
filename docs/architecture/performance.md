@@ -25,7 +25,7 @@ Higher levels use more CPU and memory during compression; decompression memory a
 ## Platform behaviour
 
 - **Native (Android, iOS, macOS, Windows, Linux)**: Work runs in a **background isolate** by default, so the UI thread is not blocked. Throughput is comparable to the underlying zstd C library; some builds disable assembly optimizations for portability (e.g. Android, iOS).
-- **Web**: Runs on the **main thread** (no isolates). For large data, prefer smaller chunks or offload to a Web Worker if you implement it. Throughput is generally lower than native.
+- **Web**: Runs in a dedicated **Web Worker** through transferable byte buffers, keeping the browser UI thread responsive. Throughput is generally lower than native.
 - **CLI**: Runs in the **current isolate**; suitable for CLI/server where blocking is acceptable. Throughput is similar to native.
 
 See the [platform guides](../platforms/) for platform-specific performance notes.
@@ -33,7 +33,7 @@ See the [platform guides](../platforms/) for platform-specific performance notes
 ## Optimization techniques
 
 1. **Choose the right level**: Use 1–3 for speed, 10+ for size when CPU and time allow.
-2. **Chunk large data**: Process in fixed-size chunks to limit peak memory and (on web) keep the UI responsive. See [Advanced usage](../guides/advanced-usage.md).
+2. **Chunk large data**: Process in fixed-size, independently framed chunks to limit peak memory. See [Advanced usage](../guides/advanced-usage.md).
 3. **Reuse the instance**: `Zstandard()` is a singleton; no need to cache it. Same for `ZstandardCLI()`.
 4. **Limit concurrency**: Many simultaneous compress/decompress calls increase peak memory; batch or limit parallelism if needed.
 5. **Avoid compressing very small payloads**: Frame overhead can make compressed output larger than input; consider a size threshold below which you skip compression.

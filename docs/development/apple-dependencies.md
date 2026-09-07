@@ -32,14 +32,13 @@ The iOS and macOS manifests depend on the repository-level SwiftPM facade:
 ```swift
 .package(
     url: "https://github.com/vypdev/zstandard.git",
-    branch: "develop"
+    exact: "1.5.0"
 )
 ```
 
-The development branch is used while the facade is being integrated into the
-next release. Before publishing a plugin release, replace it with an
-immutable release tag (or revision) that contains the matching
-`zstandard_native` source and `Package.swift`.
+The dependency is always immutable and matches the plugin package version.
+Release preparation updates both manifests to the requested exact version;
+mutable branches are never used in a published manifest.
 
 The SwiftPM target deliberately excludes unsupported or unnecessary upstream
 directories and disables assembly for the Apple build. It also preserves the
@@ -58,8 +57,10 @@ native integration tests, not only by manifest parsing.
 Every Apple change must be tested through both dependency managers on the
 ARM64 self-hosted macOS runner:
 
-- iOS simulator builds and integration tests with Swift Package Manager;
-- iOS simulator builds and integration tests with CocoaPods;
+- unsigned iOS device Release builds plus simulator Debug builds and
+  integration tests with Swift Package Manager;
+- unsigned iOS device Release builds plus simulator Debug builds and
+  integration tests with CocoaPods;
 - macOS application builds and integration tests with Swift Package Manager; and
 - macOS application builds and integration tests with CocoaPods.
 
@@ -70,27 +71,24 @@ runner's existing graphical session. macOS applications still require a
 WindowServer session, so the macOS runner must remain logged in even though no
 manual interaction is needed.
 
-The matrix also exercises the platform packages with the Dart
-`zstandard_native` dependency resolved from the Pub cache. In the workspace
-rows, SwiftPM receives `ZSTANDARD_NATIVE_PACKAGE_PATH` and uses the checkout's
-repository-level package; in the Pub-cache rows, SwiftPM resolves the remote
-repository package while CocoaPods syncs the native C source from the cached
-`zstandard_native` package. This catches accidental reliance on the monorepo
-checkout and ensures that published platform packages still locate the native
-dependency.
+The matrix also exercises the platform packages with the current Dart
+`zstandard_native` package staged outside the repository. In the workspace
+rows, SwiftPM receives `ZSTANDARD_NATIVE_PACKAGE_PATH` for the checkout root.
+In the package-config rows, Dart, CocoaPods, and SwiftPM all receive the exact
+external path to the same candidate source. This catches accidental reliance
+on the monorepo's sibling-directory layout without compiling against an older
+version from the runner's Pub cache.
 
 The workflows use Flutter 3.47.2, which is new enough for Flutter's default
 SwiftPM integration. CocoaPods jobs explicitly disable SwiftPM so that both
-paths are tested independently.
+paths are tested independently. Jobs that change this persistent Flutter
+preference share a non-cancelling concurrency group across iOS, macOS, and
+release validation, and cleanup restores CocoaPods mode.
 
-The SwiftPM pub-cache integration jobs also create a temporary, ignored
-`FlutterFramework` package copy next to the plugin package. Flutter's
-integration-test project inspection evaluates a plugin manifest from its
-resolved source path, while the generated framework package lives under the
-example application's ephemeral SwiftPM directory and may be regenerated
-while the test starts. The copy makes the manifest's standard
-`../FlutterFramework` dependency resolvable in that test mode and is removed
-at the end of the job.
+Flutter generates its ephemeral `FlutterFramework` dependency beside the
+example application's generated plugin package. The platform plugin itself
+remains in the checkout in both source-layout rows, so no CI-only manifest or
+framework copy is required.
 
 ## Migration policy
 

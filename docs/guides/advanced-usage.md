@@ -46,7 +46,11 @@ If you stored chunks as [length, bytes, length, bytes, ...], read back the same 
 4. Repeat until the stream ends.
 
 ```dart
-Future<void> decompressFileChunked(String path, String outPath) async {
+Future<void> decompressFileChunked(
+  String path,
+  String outPath,
+  int maxDecodedChunkSize,
+) async {
   final file = File(path);
   final out = File(outPath);
   final z = Zstandard();
@@ -60,7 +64,10 @@ Future<void> decompressFileChunked(String path, String outPath) async {
     if (offset + length > bytes.length) break;
     final chunk = Uint8List.sublistView(bytes, offset, offset + length);
     offset += length;
-    final decompressed = await z.decompress(chunk);
+    final decompressed = await z.decompress(
+      chunk,
+      maxOutputSize: maxDecodedChunkSize,
+    );
     if (decompressed == null) throw Exception('Decompression failed');
     sink.add(decompressed);
   }
@@ -106,10 +113,10 @@ final results = await Future.wait(futures);
 
 ## Web platform
 
-On web, compression and decompression run on the main thread (no isolates). For large data:
+On web, compression and decompression run in the packaged Web Worker. For large data:
 
-- Prefer smaller chunks to keep the UI responsive.
-- Consider moving work to a Web Worker and calling the same API from there if you run Dart in the worker.
+- Prefer smaller chunks to reduce per-request Worker/WASM memory.
+- Limit concurrent calls so several large WASM operations do not grow memory at once.
 - Lower compression levels reduce CPU time and improve responsiveness.
 
 ## CLI and batch processing
