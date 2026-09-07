@@ -64,7 +64,7 @@ Future<String> resolveZstdLibraryPath({
   }
 
   for (final packageConfig
-      in packageConfigs ?? await _packageConfigCandidates()) {
+      in packageConfigs ?? await zstdPackageConfigCandidates()) {
     final candidate = await resolveZstdLibraryFromPackageConfig(packageConfig);
     if (candidate != null && File(candidate).existsSync()) {
       return path.normalize(candidate);
@@ -94,7 +94,14 @@ Future<String> resolveZstdLibraryPath({
 Future<DynamicLibrary> openZstdLibrary() async =>
     DynamicLibrary.open(await resolveZstdLibraryPath());
 
-Future<List<Uri>> _packageConfigCandidates() async {
+/// Returns package-config candidates visible to the current Dart process.
+///
+/// Optional arguments expose otherwise host-controlled inputs to internal
+/// tests without changing production resolution behavior.
+Future<List<Uri>> zstdPackageConfigCandidates({
+  List<String>? executableArguments,
+  Future<Uri?> Function()? isolatePackageConfigProvider,
+}) async {
   final candidates = <Uri>[];
   final seen = <String>{};
 
@@ -119,19 +126,22 @@ Future<List<Uri>> _packageConfigCandidates() async {
     addPath(configuredPath);
   }
 
-  final executableArguments = Platform.executableArguments;
-  for (var index = 0; index < executableArguments.length; index++) {
-    final argument = executableArguments[index];
+  final arguments = executableArguments ?? Platform.executableArguments;
+  for (var index = 0; index < arguments.length; index++) {
+    final argument = arguments[index];
     if (argument.startsWith('--packages=')) {
       addPath(argument.substring('--packages='.length));
-    } else if (argument == '--packages' &&
-        index + 1 < executableArguments.length) {
-      addPath(executableArguments[++index]);
+    } else if (argument == '--packages' && index + 1 < arguments.length) {
+      addPath(arguments[++index]);
     }
   }
 
   try {
-    add(await Isolate.packageConfig);
+    add(
+      isolatePackageConfigProvider == null
+          ? await Isolate.packageConfig
+          : await isolatePackageConfigProvider(),
+    );
   } on UnsupportedError {
     // Some embedders, including flutter_tester, do not expose this VM API.
   }
@@ -161,12 +171,17 @@ void _addAncestorPackageConfigs(Directory start, void Function(Uri) add) {
 /// Resolves the CLI library path declared by one package configuration.
 ///
 /// Exposed from this internal `src` library for deterministic parser tests.
-Future<String?> resolveZstdLibraryFromPackageConfig(Uri configUri) async {
+Future<String?> resolveZstdLibraryFromPackageConfig(
+  Uri configUri, {
+  Future<String> Function(File)? readConfig,
+}) async {
   final configFile = File.fromUri(configUri);
   if (!configFile.existsSync()) return null;
 
   try {
-    final config = jsonDecode(await configFile.readAsString());
+    final config = jsonDecode(
+      await (readConfig ?? (file) => file.readAsString())(configFile),
+    );
     if (config is! Map<String, Object?>) return null;
     final packages = config['packages'];
     if (packages is! List<Object?>) return null;

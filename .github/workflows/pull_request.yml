@@ -80,7 +80,7 @@ jobs:
         include:
           - package: zstandard_cli
             flag: cli
-            threshold: 95
+            threshold: 100
           - package: zstandard_platform_interface
             flag: platform_interface
             threshold: 85

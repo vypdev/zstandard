@@ -8,6 +8,8 @@ import 'package:leak_tracker_testing/leak_tracker_testing.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 import 'package:zstandard_cli/src/cli_runner.dart';
+import 'package:zstandard_cli/src/zstandard_cli_base.dart'
+    show zstdPlatformVersion;
 import 'package:zstandard_cli/zstandard_cli.dart';
 import 'package:zstandard_cli/src/utils/constants.dart';
 import 'package:zstandard_cli/src/utils/lib_loader.dart';
@@ -245,6 +247,44 @@ void main() {
           }),
         );
         expect(await resolveZstdLibraryFromPackageConfig(config.uri), isNull);
+
+        expect(
+          await resolveZstdLibraryFromPackageConfig(
+            config.uri,
+            readConfig: (_) async => throw const FileSystemException(
+              'simulated read failure',
+            ),
+          ),
+          isNull,
+        );
+      } finally {
+        await directory.delete(recursive: true);
+      }
+    });
+
+    test('discovers split package arguments and tolerates unsupported VM APIs',
+        () async {
+      final directory =
+          await Directory.systemTemp.createTemp('zstd_candidates');
+      try {
+        final config = await File(
+          path.join(directory.path, 'package_config.json'),
+        ).create();
+        final candidates = await zstdPackageConfigCandidates(
+          executableArguments: [
+            '--packages',
+            config.path,
+            '--packages=${config.uri}',
+          ],
+          isolatePackageConfigProvider: () async =>
+              throw UnsupportedError('simulated embedder limitation'),
+        );
+
+        expect(candidates, contains(config.absolute.uri));
+        expect(
+          candidates.where((candidate) => candidate == config.absolute.uri),
+          hasLength(1),
+        );
       } finally {
         await directory.delete(recursive: true);
       }
@@ -252,6 +292,14 @@ void main() {
   });
 
   group('Zstandard CLI tests', () {
+    test('formats every native platform version deterministically', () {
+      expect(zstdPlatformVersion(null, null), 'Unknown platform');
+      expect(zstdPlatformVersion('macos', '14.0'), 'macOS 14.0');
+      expect(zstdPlatformVersion('windows', '11'), 'Windows 11');
+      expect(zstdPlatformVersion('linux', '6.8'), 'Linux 6.8');
+      expect(zstdPlatformVersion('android', '15'), 'Unknown platform');
+    });
+
     test(
       'getPlatformVersion returns non-null string on supported platform',
       () async {

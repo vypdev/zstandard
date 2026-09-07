@@ -507,7 +507,8 @@ and regression proof):
   only to another ancestor. A required PR coverage matrix now uploads all three
   expected flags on every trusted head, applies the same thresholds without
   secrets on forks, and scopes CLI LCOV to package sources. New resolver/error
-  tests raise CLI line coverage from 80.5% to 96.68%. Resolved, high confidence.
+  tests raise CLI line coverage from 80.5% to 100% (213/213), which is now
+  enforced as the package threshold. Resolved, high confidence.
 
 ## 15. Platform/test matrix
 

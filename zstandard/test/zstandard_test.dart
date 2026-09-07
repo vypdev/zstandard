@@ -23,6 +23,31 @@ class MockZstandardPlatform
   }
 }
 
+class MockBoundedZstandardPlatform
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform, BoundedZstandardPlatform {
+  int? receivedMaxOutputSize;
+
+  @override
+  Future<String?> getPlatformVersion() => Future.value('BoundedMock 1.0');
+
+  @override
+  Future<Uint8List?> compress(Uint8List data, int compressionLevel) async =>
+      data;
+
+  @override
+  Future<Uint8List?> decompress(Uint8List data) async => data;
+
+  @override
+  Future<Uint8List?> decompressWithOptions(
+    Uint8List data, {
+    int maxOutputSize = ZstandardPlatform.defaultMaxDecompressedSize,
+  }) async {
+    receivedMaxOutputSize = maxOutputSize;
+    return Uint8List.fromList(<int>[1, 2, 3]);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -80,6 +105,19 @@ void main() {
         expect(result, isNull);
       },
     );
+
+    test('bounded platform receives the output limit', () async {
+      final platform = MockBoundedZstandardPlatform();
+      ZstandardPlatform.instance = platform;
+
+      final result = await Zstandard().decompress(
+        Uint8List.fromList(<int>[0x7f]),
+        maxOutputSize: 1234,
+      );
+
+      expect(result, Uint8List.fromList(<int>[1, 2, 3]));
+      expect(platform.receivedMaxOutputSize, 1234);
+    });
 
     test('negative decompression limit is rejected', () async {
       final result = await Zstandard().decompress(
