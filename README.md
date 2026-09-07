@@ -59,7 +59,9 @@ void main() async {
 
   Uint8List? compressed = await zstandard.compress(originalData, 3);
   
-  Uint8List? decompressed = await zstandard.decompress(compressed ?? Uint8List(0));
+  final decompressed = compressed == null
+      ? null
+      : await zstandard.decompress(compressed, maxOutputSize: 64 * 1024 * 1024);
 }
 ```
 
@@ -73,7 +75,9 @@ void main() async {
 
   Uint8List? compressed = await originalData.compress();
   
-  Uint8List? decompressed = await compressed.decompress();
+  final decompressed = await compressed.decompress(
+    maxOutputSize: 64 * 1024 * 1024,
+  );
 }
 ```
 
@@ -81,7 +85,7 @@ void main() async {
 
 ```bash
 # Compress a file with a specified compression level
-dart run zstandard_cli:compress myfile.txt 3
+dart run zstandard_cli:compress --level 3 myfile.txt
 
 # Decompress a file
 dart run zstandard_cli:decompress myfile.txt.zstd

@@ -10,7 +10,7 @@ Add the main plugin to your app; this package is included automatically via the 
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.5.0
 ```
 
 No extra setup is required for normal use.
@@ -42,12 +42,15 @@ final decompressed = await compressed?.decompress();
 
 - **ZstandardWindows()** — Creates the Windows platform implementation.
 - **compress(Uint8List data, int compressionLevel)** — Compresses `data` (level 1–22). Returns compressed bytes or `null`.
-- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or `null`.
+- **decompressWithOptions(Uint8List data, {int maxOutputSize})** — Decompresses complete, concatenated, or unknown-size zstd frames with a bounded output (256 MiB by default). Invalid, truncated, or oversized input returns `null`.
 - **getPlatformVersion()** — Returns a platform identifier string.
 
 ## Architecture
 
-This package uses Dart FFI to load `zstandard_windows.dll` and call the Zstandard C API. The DLL is built by CMake when you build your Flutter Windows app. Supports x64 and arm64.
+This package uses Dart FFI to load `zstandard_windows.dll`; CMake builds it
+with the Flutter application. Public work runs in a worker isolate using
+Dart-owned bytes, and decompression enforces the configured output limit as it
+streams. Both x64 and arm64 are supported.
 
 ## Testing
 

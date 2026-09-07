@@ -10,13 +10,13 @@ Suggestions to get the best performance and resource usage when using the Zstand
 ## Data size
 
 - **Small data** (e.g. &lt; 100 bytes): Compression may not reduce size (zstd has frame overhead). Consider skipping compression for very small payloads.
-- **Large data**: The plugin may use a background isolate on native platforms to avoid blocking the UI. For very large inputs (e.g. tens of MB), consider **chunking**: compress chunks and store/transmit separately, or use streaming if the API supports it in the future.
+- **Large data**: Native packages use worker isolates and Web uses a dedicated Worker. For very large inputs, consider application-level chunking to bound peak memory.
 - **Empty data**: Handled quickly; no need to avoid.
 
 ## Memory
 
 - Compress and decompress allocate buffers (input + output). For very large inputs, peak memory is roughly proportional to input size plus compressed/decompressed size. Chunking reduces peak usage.
-- On native platforms, work may run in an isolate; the main isolate only holds the input and result bytes, which helps keep UI responsive.
+- On native platforms, work runs in an isolate; the main isolate holds the input and result bytes while native allocations stay in the worker.
 
 ## Reuse
 
@@ -25,8 +25,8 @@ Suggestions to get the best performance and resource usage when using the Zstand
 
 ## Platform-specific
 
-- **Web**: No isolates; compression/decompression run on the main thread. For large data on web, consider chunking or moving work to a Web Worker if you implement it.
-- **Native (Android, iOS, macOS, Linux, Windows)**: The implementation may offload work to an isolate; you get non-blocking behavior without extra code.
+- **Web**: Compression/decompression run in the packaged Web Worker. The request broker remains on the UI thread.
+- **Native (Android, iOS, macOS, Linux, Windows)**: Public codec work runs in an isolate without extra application code.
 
 ## Measuring
 

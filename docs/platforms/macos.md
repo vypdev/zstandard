@@ -15,7 +15,7 @@ Add the main plugin to your app; the macOS implementation is included via the fe
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.5.0
 ```
 
 No additional setup is required for normal use. The plugin registers the macOS implementation automatically when running on macOS.
@@ -23,8 +23,8 @@ No additional setup is required for normal use. The plugin registers the macOS i
 ## Architecture
 
 - **Native layer**: The canonical facebook/zstd C library lives in `zstandard_native/src/zstd/`. Swift Package Manager statically links it through the repository-level `Package.swift`; CocoaPods synchronizes it into the generated `macos/Classes/zstd/` directory and embeds the plugin framework. Dart FFI resolves the symbols from the application process in SwiftPM builds or from the framework in CocoaPods builds.
-- **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
-- **Isolates**: The implementation may use a helper isolate for async compression/decompression.
+- **Dart layer**: The package uses Dart FFI and the shared native codec for one-frame compression and bounded streaming decompression.
+- **Isolates**: Public compression/decompression runs in a worker isolate with Dart-owned byte buffers.
 
 ## Usage
 

@@ -4,7 +4,8 @@
 # does not use this generated directory. Works in repo and in the pub cache.
 #
 # Usage: ./scripts/sync_zstd.sh
-# Resolves zstd from: 1) sibling zstandard_native (repo), 2) pub-cache sibling zstandard_native-*, 3) package_config.json (pub or repo).
+# Resolves zstd from a repository sibling or the exact package selected in
+# package_config.json. It never guesses among versioned Pub-cache directories.
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,18 +16,7 @@ DEST="$PLUGIN_ROOT/macos/Classes/zstd"
 SRC="$PLUGIN_ROOT/../zstandard_native/src/zstd"
 if [[ ! -d "$SRC" || ! -f "$SRC/zstd.h" ]]; then
   SRC=""
-  # 2. Pub cache: sibling zstandard_native-* next to this plugin (e.g. .../pub.dev/zstandard_native-1.4.x)
-  CACHE_DIR="$PLUGIN_ROOT/.."
-  for NATIVE_PKG in "$CACHE_DIR"/zstandard_native-*; do
-    if [[ -d "$NATIVE_PKG" ]]; then
-      CANDIDATE="$NATIVE_PKG/src/zstd"
-      if [[ -d "$CANDIDATE" && -f "$CANDIDATE/zstd.h" ]]; then
-        SRC="$CANDIDATE"
-        break
-      fi
-    fi
-  done
-  # 3. package_config.json (walk up from plugin: plugin itself or app that depends on it)
+  # 2. package_config.json (walk up from plugin: plugin itself or app that depends on it)
   if [[ -z "$SRC" ]]; then
     SEARCH="$PLUGIN_ROOT"
     while [[ -n "$SEARCH" ]]; do

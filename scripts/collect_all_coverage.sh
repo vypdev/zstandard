@@ -18,7 +18,7 @@ done
 
 if [ -d "zstandard_cli" ]; then
   (cd zstandard_cli && dart test --coverage=coverage 2>/dev/null) || true
-  (cd zstandard_cli && dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json 2>/dev/null) || true
+  (cd zstandard_cli && dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib 2>/dev/null) || true
   if [ -f "zstandard_cli/coverage/lcov.info" ]; then
     cp zstandard_cli/coverage/lcov.info coverage_all/zstandard_cli.lcov.info 2>/dev/null || true
   fi

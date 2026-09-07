@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Run web tests in Chrome: unit tests (flutter test -d chrome) and integration
-# tests (flutter drive with ChromeDriver + web-server).
+# Run package-level artifact tests on the Dart VM and browser integration tests
+# with ChromeDriver plus Flutter's web-server device.
 #
 # Usage: from repo root, ./scripts/test_web_integration.sh
 #
@@ -12,28 +12,19 @@
 #     npx @puppeteer/browsers install chromedriver@stable
 #     See: https://docs.flutter.dev/testing/integration-tests#web
 
-set -e
+set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 EXIT_CODE=0
-CHROMEDRIVER_PID=""
 CHROMEDRIVER_PORT=4444
+WEB_SERVER_PORT="${ZSTANDARD_WEB_PORT:-0}"
 
-# If we start ChromeDriver, stop it on exit.
-cleanup_chromedriver() {
-  if [[ -n "$CHROMEDRIVER_PID" ]] && kill -0 "$CHROMEDRIVER_PID" 2>/dev/null; then
-    kill "$CHROMEDRIVER_PID" 2>/dev/null || true
-    wait "$CHROMEDRIVER_PID" 2>/dev/null || true
-  fi
-}
-trap cleanup_chromedriver EXIT
-
-# --- Unit tests (Chrome), if the package has any ---
+# --- Package-level artifact tests, if the package has any ---
 WEB_TEST_COUNT=$(find "$ROOT/zstandard_web/test" -name "*_test.dart" 2>/dev/null | wc -l | tr -d ' ')
 if [[ "$WEB_TEST_COUNT" -gt 0 ]]; then
-  echo "Running zstandard_web unit tests in Chrome..."
-  if (cd "$ROOT/zstandard_web" && flutter test -d chrome --coverage 2>/dev/null || flutter test -d chrome); then
+  echo "Running zstandard_web package tests..."
+  if (cd "$ROOT/zstandard_web" && flutter test --coverage); then
     echo "Web unit tests passed."
   else
     EXIT_CODE=1
@@ -44,7 +35,7 @@ else
 fi
 
 # --- Integration tests (flutter drive + ChromeDriver + web-server) ---
-if [[ -n "$ZSTANDARD_SKIP_WEB" ]]; then
+if [[ -n "${ZSTANDARD_SKIP_WEB:-}" ]]; then
   echo "Web integration tests skipped (ZSTANDARD_SKIP_WEB=1)."
 elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zstandard_web/example/test_driver" ]]; then
   if ! command -v chromedriver &>/dev/null; then
@@ -70,13 +61,18 @@ elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zst
     }
 
     run_web_driver() {
-      local driver_pid=""
-      local driver_log=""
+      # These must outlive the function body because the EXIT trap runs when
+      # the exported-function subshell exits (Bash 3.2 included).
+      driver_pid=""
+      driver_log=""
 
       cleanup_driver() {
         if [[ -n "$driver_pid" ]] && kill -0 "$driver_pid" 2>/dev/null; then
           kill "$driver_pid" 2>/dev/null || true
           wait "$driver_pid" 2>/dev/null || true
+        fi
+        if [[ -n "$driver_log" ]]; then
+          rm -f "$driver_log"
         fi
       }
       trap cleanup_driver EXIT
@@ -102,23 +98,31 @@ elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zst
 
       sleep 2
       echo "Running zstandard_web example integration tests (flutter drive -d web-server)..."
-      local chrome_args=()
       if [[ -n "${CHROME_EXECUTABLE:-}" ]]; then
-        chrome_args+=("--chrome-binary=$CHROME_EXECUTABLE")
+        flutter drive \
+          --driver=test_driver/integration_test.dart \
+          --target=integration_test/zstandard_web_integration_test.dart \
+          --driver-port="$CHROMEDRIVER_PORT" \
+          --chrome-binary="$CHROME_EXECUTABLE" \
+          --web-browser-flag=--disable-dev-shm-usage \
+          --web-browser-flag=--disable-gpu \
+          -d web-server \
+          --web-port="$WEB_SERVER_PORT"
+      else
+        flutter drive \
+          --driver=test_driver/integration_test.dart \
+          --target=integration_test/zstandard_web_integration_test.dart \
+          --driver-port="$CHROMEDRIVER_PORT" \
+          --web-browser-flag=--disable-dev-shm-usage \
+          --web-browser-flag=--disable-gpu \
+          -d web-server \
+          --web-port="$WEB_SERVER_PORT"
       fi
-      flutter drive \
-        --driver=test_driver/integration_test.dart \
-        --target=integration_test/zstandard_web_integration_test.dart \
-        --driver-port="$CHROMEDRIVER_PORT" \
-        "${chrome_args[@]}" \
-        --web-browser-flag=--disable-dev-shm-usage \
-        --web-browser-flag=--disable-gpu \
-        -d web-server \
-        --web-port=8080
     }
 
     export -f chrome_driver_ready run_web_driver
     export CHROMEDRIVER_PORT
+    export WEB_SERVER_PORT
 
     DRIVE_OUTPUT=$(mktemp -t flutter_drive_XXXXXX.txt)
     if [[ "$(uname -s)" == "Linux" ]] && command -v xvfb-run >/dev/null 2>&1; then
@@ -132,8 +136,11 @@ elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zst
     else
       DRIVE_EXIT=$?
     fi
-    # Flutter drive can exit 0 even when compilation fails; detect known failure output.
-    if [[ $DRIVE_EXIT -ne 0 ]] || grep -qE "Failed to compile|Dart compiler exited unexpectedly|SessionNotCreatedException|Unable to start a WebDriver session" "$DRIVE_OUTPUT"; then
+    # Flutter drive can exit 0 even when setup or compilation fails. Require
+    # its positive completion marker as well as the process exit status.
+    if [[ $DRIVE_EXIT -ne 0 ]] || \
+      grep -qE "Failed to compile|Dart compiler exited unexpectedly|SessionNotCreatedException|Unable to start a WebDriver session|unbound variable" "$DRIVE_OUTPUT" || \
+      ! grep -q "All tests passed" "$DRIVE_OUTPUT"; then
       EXIT_CODE=1
       echo "Web integration tests failed."
       cat "$DRIVE_OUTPUT"

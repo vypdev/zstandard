@@ -1,13 +1,10 @@
 name: PR Check Platform Interface
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!master'
   push:
     branches:
       - develop
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,7 +20,7 @@ jobs:
     name: Analyze Platform Interface
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
@@ -41,11 +38,9 @@ jobs:
     name: Test Platform Interface
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
-        with:
-          coverage: 'true'
 
       - uses: ./.github/actions/setup-flutter
         with:
@@ -62,26 +57,22 @@ jobs:
       # Coverage threshold: lib/ only (same pattern as CLI)
       - name: Check coverage threshold (85% of lib/)
         working-directory: zstandard_platform_interface
-        run: |
-          lcov --extract coverage/lcov.info 'lib/*' -o coverage/lcov_lib.info
-          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage (lib/ only): ${COVERAGE}%"
-          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
-          if (( $(echo "$COVERAGE < 85" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 85%"; exit 1; fi
+        run: dart ../scripts/check_lcov_coverage.dart coverage/lcov.info 85
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard_platform_interface/coverage/lcov.info
           flags: platform_interface
+          disable_search: true
           fail_ci_if_error: true
 
   check_platform_interface_publish_dry_run:
     name: Dry Run Publish Platform Interface
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/preserve-flutter-project-files
         with:

@@ -15,7 +15,7 @@ Add the main plugin to your app; the Windows implementation is included via the 
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.5.0
 ```
 
 No additional setup is required for normal use. The plugin registers the Windows implementation automatically when running on Windows.
@@ -23,8 +23,8 @@ No additional setup is required for normal use. The plugin registers the Windows
 ## Architecture
 
 - **Native layer**: The facebook/zstd C library is built with CMake under the package’s `windows/` (or `src/`) and produces a DLL (e.g. `zstandard_windows_plugin.dll`) that the Dart plugin loads via FFI.
-- **Dart layer**: The package uses Dart FFI and generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
-- **Isolates**: The implementation may use a helper isolate for async compression/decompression.
+- **Dart layer**: The package uses Dart FFI and the shared native codec for one-frame compression and bounded streaming decompression.
+- **Isolates**: Public compression/decompression runs in a worker isolate with Dart-owned byte buffers.
 
 ## Usage
 

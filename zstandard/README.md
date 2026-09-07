@@ -26,7 +26,9 @@ void act() async {
 
   Uint8List? compressed = await zstandard.compress(original);
   
-  Uint8List? decompressed = await zstandard.decompress(compressed ?? Uint8List(0));
+  final decompressed = compressed == null
+      ? null
+      : await zstandard.decompress(compressed);
 }
 ```
 
@@ -38,9 +40,15 @@ void act() async {
 
   Uint8List? compressed = await original.compress();
   
-  Uint8List? decompressed = await compressed.decompress();
+  final decompressed = await compressed.decompress();
 }
 ```
+
+Compression always emits a valid zstd frame, including for empty input.
+Decompression supports concatenated frames and frames without a declared
+content size. It returns `null` for malformed or truncated input and limits
+output to 256 MiB by default. Pass `maxOutputSize` to `decompress` (including
+the extension method) to choose a smaller application-specific budget.
 
 Below are examples of the plugin in action across different platforms.
 

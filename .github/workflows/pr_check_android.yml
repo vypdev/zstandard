@@ -1,13 +1,10 @@
 name: PR Check Android
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!master'
   push:
     branches:
       - develop
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,11 +25,14 @@ jobs:
     name: Analyze Android
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_android
 
       - name: Get dependencies
         working-directory: zstandard_android
@@ -72,9 +72,9 @@ jobs:
       max-parallel: 1
       matrix:
         example: [example, example_legacy]
-        source: [workspace, pub-cache]
+        source: [workspace, package-config]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
         with:
@@ -84,9 +84,20 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
-      - name: Remove zstandard_native to force resolution from pub cache
-        if: matrix.source == 'pub-cache'
-        run: mv zstandard_native "$RUNNER_TEMP/zstandard_native"
+      - name: Stage native package outside the repository
+        if: matrix.source == 'package-config'
+        run: |
+          mkdir -p "$RUNNER_TEMP/zstandard-stage"
+          mv zstandard_native "$RUNNER_TEMP/zstandard-stage/zstandard_native"
+
+      - name: Resolve the selected native source exactly
+        run: |
+          if [[ "${{ matrix.source }}" == package-config ]]; then
+            dart scripts/create_local_overrides.dart zstandard_android \
+              "$RUNNER_TEMP/zstandard-stage/zstandard_native"
+          else
+            dart scripts/create_local_overrides.dart zstandard_android
+          fi
 
       - name: Get dependencies
         working-directory: zstandard_android/${{ matrix.example }}
@@ -98,7 +109,7 @@ jobs:
           flutter clean
           # The plugin CMake cache is kept outside Flutter's build directory
           # on persistent self-hosted runners. Remove it so workspace and
-          # pub-cache matrix entries cannot reuse a previous native source.
+          # package-config matrix entries cannot reuse a previous native source.
           rm -rf android/.cxx
           flutter pub get
 
@@ -109,13 +120,13 @@ jobs:
           flutter pub get
 
       - name: Set up JDK 17 (required by Android SDK tools and Gradle)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Android SDK tools
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699
 
       - name: Verify Android SDK prerequisites
         run: bash scripts/check_android_ci_prerequisites.sh
@@ -176,7 +187,7 @@ jobs:
 
       - name: Upload Android emulator diagnostics
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: android-emulator-logs-${{ matrix.example }}-${{ matrix.source }}-${{ github.run_id }}
           path: |
@@ -185,17 +196,17 @@ jobs:
           if-no-files-found: ignore
 
       - name: Restore workspace native package
-        if: always() && matrix.source == 'pub-cache'
+        if: always() && matrix.source == 'package-config'
         run: |
-          if [[ -d "$RUNNER_TEMP/zstandard_native" ]]; then
-            mv "$RUNNER_TEMP/zstandard_native" zstandard_native
+          if [[ -d "$RUNNER_TEMP/zstandard-stage/zstandard_native" ]]; then
+            mv "$RUNNER_TEMP/zstandard-stage/zstandard_native" zstandard_native
           fi
 
   check_android_publish_dry_run:
     name: Dry Run Publish Android
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/preserve-flutter-project-files
         with:
@@ -205,6 +216,9 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_android
 
       - name: Get dependencies
         working-directory: zstandard_android

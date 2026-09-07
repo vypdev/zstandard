@@ -1,0 +1,188 @@
+name: Pull Request Safety Gate
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+concurrency:
+  group: pull-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.47.2'
+
+jobs:
+  dart_packages:
+    name: Analyze and test ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - zstandard_platform_interface
+          - zstandard_native
+          - zstandard_android
+          - zstandard_ios
+          - zstandard_linux
+          - zstandard_macos
+          - zstandard_web
+          - zstandard_windows
+          - zstandard_cli
+          - zstandard
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve monorepo dependencies
+        run: dart scripts/create_local_overrides.dart "${{ matrix.package }}"
+
+      - name: Get dependencies
+        working-directory: ${{ matrix.package }}
+        run: flutter pub get
+
+      - name: Verify formatting
+        working-directory: ${{ matrix.package }}
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        working-directory: ${{ matrix.package }}
+        run: flutter analyze
+
+      - name: Test
+        # Native/Linux need a built shared library. The three coverage packages
+        # are tested by the required coverage matrix below.
+        if: >-
+          matrix.package != 'zstandard_native' &&
+          matrix.package != 'zstandard_linux' &&
+          matrix.package != 'zstandard_cli' &&
+          matrix.package != 'zstandard_platform_interface' &&
+          matrix.package != 'zstandard'
+        working-directory: ${{ matrix.package }}
+        run: flutter test
+
+  coverage:
+    name: Coverage (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: zstandard_cli
+            flag: cli
+            threshold: 100
+          - package: zstandard_platform_interface
+            flag: platform_interface
+            threshold: 85
+          - package: zstandard
+            flag: zstandard
+            threshold: 76
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve monorepo dependencies
+        run: dart scripts/create_local_overrides.dart "${{ matrix.package }}"
+
+      - name: Get dependencies
+        working-directory: ${{ matrix.package }}
+        run: flutter pub get
+
+      - name: Run CLI tests with coverage
+        if: matrix.package == 'zstandard_cli'
+        working-directory: ${{ matrix.package }}
+        run: dart test --coverage=coverage
+
+      - name: Format CLI coverage
+        if: matrix.package == 'zstandard_cli'
+        working-directory: ${{ matrix.package }}
+        run: >-
+          dart run coverage:format_coverage --lcov -i coverage
+          -o coverage/lcov.info --packages=.dart_tool/package_config.json
+          --report-on=lib
+
+      - name: Run Flutter tests with coverage
+        if: matrix.package != 'zstandard_cli'
+        working-directory: ${{ matrix.package }}
+        run: flutter test --coverage
+
+      - name: Enforce line coverage
+        working-directory: ${{ matrix.package }}
+        run: >-
+          dart ../scripts/check_lcov_coverage.dart coverage/lcov.info
+          "${{ matrix.threshold }}"
+
+      - name: Upload coverage to Codecov
+        if: >-
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.actor != 'dependabot[bot]'
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ matrix.package }}/coverage/lcov.info
+          flags: ${{ matrix.flag }}
+          disable_search: true
+          fail_ci_if_error: true
+
+  repository_checks:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Validate metadata and generated artifacts
+        run: |
+          set -euo pipefail
+          dart scripts/check_pub_metadata.dart
+          git diff --check
+          cmp zstandard_web/blob/zstd.js zstandard_web/example/web/zstd.js
+          cmp zstandard_web/blob/zstd.js zstandard/example/web/zstd.js
+          cmp zstandard_web/blob/zstd_core.js zstandard_web/example/web/zstd_core.js
+          cmp zstandard_web/blob/zstd_core.js zstandard/example/web/zstd_core.js
+          cmp zstandard_web/blob/zstd_worker.js zstandard_web/example/web/zstd_worker.js
+          cmp zstandard_web/blob/zstd_worker.js zstandard/example/web/zstd_worker.js
+          cmp zstandard_web/blob/zstd.wasm zstandard_web/example/web/zstd.wasm
+          cmp zstandard_web/blob/zstd.wasm zstandard/example/web/zstd.wasm
+
+      - name: Validate shell scripts
+        run: bash -n scripts/*.sh zstandard_ios/scripts/*.sh zstandard_macos/scripts/*.sh
+
+  safety_gate:
+    name: Pull Request Safety Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [dart_packages, coverage, repository_checks]
+    steps:
+      - name: Require every safety-gate job
+        env:
+          PACKAGE_RESULT: ${{ needs.dart_packages.result }}
+          COVERAGE_RESULT: ${{ needs.coverage.result }}
+          REPOSITORY_RESULT: ${{ needs.repository_checks.result }}
+        run: |
+          set -euo pipefail
+          [[ "$PACKAGE_RESULT" == success ]]
+          [[ "$COVERAGE_RESULT" == success ]]
+          [[ "$REPOSITORY_RESULT" == success ]]

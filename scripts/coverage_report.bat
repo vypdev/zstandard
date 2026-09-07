@@ -21,7 +21,7 @@ if exist zstandard_cli (
   echo ---- Coverage: zstandard_cli ----
   cd zstandard_cli
   dart test --coverage=coverage
-  dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json
+  dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json --report-on=lib
   cd "%ROOT%"
 )
 

@@ -1,7 +1,13 @@
 ## Unreleased
 
+- Added `maxOutputSize` to decompression and extension APIs with a 256 MiB
+  default, while preserving third-party platform-interface compatibility.
+- Standardized null failure semantics and documented unknown-size,
+  concatenated, and empty-frame behavior across platforms.
 - Improved pub.dev package metadata and added regression checks for publication
   requirements, including Apple Swift Package Manager manifests.
+- Removed the placeholder `WIP` test; the package now reports only meaningful
+  unit and property checks.
 
 ## 1.5.0 - Dependencies Updated
 

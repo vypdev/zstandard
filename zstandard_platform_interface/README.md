@@ -16,6 +16,11 @@ platform-specific behavior, and when you register your plugin, set the default
 `ZstandardPlatform` by calling
 `ZstandardPlatform.instance = MyPlatformZstandard()`.
 
+Implementations that can enforce a decompressed-output budget should also
+implement `BoundedZstandardPlatform`. The main package detects this optional
+capability while preserving source compatibility for existing third-party
+implementations of `ZstandardPlatform`.
+
 # Note on breaking changes
 
 Strongly prefer non-breaking changes (such as adding a method to the interface)

@@ -1,78 +1,102 @@
 # Release Process
 
-This document outlines how releases of the Zstandard plugin and CLI are prepared and published. The project uses a centralized version and CHANGELOG across all packages.
+All ten published packages use one stable `MAJOR.MINOR.PATCH` version. A
+release has three deliberately separate stages: candidate preparation,
+tag-triggered publication, and reviewed branch integration.
 
-## Versioning
+## Candidate checklist
 
-- All packages (zstandard, zstandard_platform_interface, **zstandard_native**, zstandard_android, zstandard_ios, zstandard_macos, zstandard_linux, zstandard_windows, zstandard_web, zstandard_cli) share the **same version number** (e.g. 1.5.0). **zstandard_native** contains the shared C source and is published so that platform packages and the CLI can depend on it from pub.dev.
-- Follow [semantic versioning](https://semver.org/): MAJOR.MINOR.PATCH. Bump:
-  - **MAJOR** for incompatible API changes.
-  - **MINOR** for new backward-compatible features.
-  - **PATCH** for backward-compatible bug fixes.
+- Update the root changelog with user-facing changes.
+- Run format, analysis, tests, native integration tests, metadata checks, and
+  `dart pub publish --dry-run` for every package.
+- Confirm `zstandard_native/UPSTREAM_ZSTD.md` records the exact upstream zstd
+  version, commit, and any backport.
+- Confirm all four generated Web files are synchronized across the package and
+  examples.
+- Confirm the Apple SwiftPM manifests and CocoaPods podspecs build the same
+  common/compress/decompress source set.
 
-## Pre-Release Checklist
+## Stage 1: prepare and validate
 
-- [ ] All tests pass (`flutter test` / `dart test` in each package).
-- [ ] `flutter analyze` (or `dart analyze`) reports no errors in the packages you are releasing.
-- [ ] CHANGELOG.md is updated with user-facing changes for the release.
-- [ ] Version in root and in each package’s `pubspec.yaml` is updated to the new version.
-- [ ] Inter-package dependencies use the new version (e.g. `zstandard_android` depends on `zstandard_platform_interface: ^x.y.z` and `zstandard_native: ^x.y.z`).
-- [ ] Every published package description is between 50 and 180 characters and uses HTTPS metadata URLs.
-- [ ] `dart pub publish --dry-run` is clean for every package; verify that the iOS and macOS archives contain their `Package.swift` manifests.
-- [ ] Run `pana` against a copy of the main package and review its report before publishing.
+Create and push `release/X.Y.Z`, then run **Task - Prepare Release** from that
+branch with version `X.Y.Z`. The workflow refuses existing tags and mismatched
+branch/version values. It:
 
-## Release Workflow (CI)
+1. updates changelogs, package/dependency versions, podspecs, and exact SwiftPM
+   versions;
+2. regenerates the pinned Web Worker/WASM artifacts;
+3. builds and commits macOS universal, Linux x64/arm64, and Windows x64/arm64
+   CLI libraries;
+4. runs static, release-build, and native integration candidate gates on the
+   trusted platform runners; and
+5. reports the exact remote release-branch commit that is ready to tag.
 
-The project uses a **Release** workflow (GitHub Actions “Task - Release”) that runs from a `release/x.y.z` branch and:
+The preparation workflow does not create a tag and cannot publish. Re-run it
+only while the release tag does not exist.
 
-1. **Validates** that the branch matches the requested version and that the tag is available.
-2. **Copies** CHANGELOG.md into each package (including zstandard_native).
-3. **Updates** `version:` and dependency versions in every package’s `pubspec.yaml`, pins Apple SwiftPM to the exact release, and synchronizes CocoaPods podspec versions.
-4. **Regenerates and verifies** WebAssembly from the canonical `zstandard_native/src/zstd/` source.
-5. **Builds and verifies** CLI libraries for macOS universal, Linux x86_64/arm64, and Windows x64/ARM64.
-6. **Runs candidate builds and integration tests** for Android (AGP 9 and legacy), Linux, Web, Windows, and Apple (SwiftPM and CocoaPods on ARM64 macOS).
-7. **Creates** one immutable git tag and a draft GitHub release. All publication jobs check out that tag.
-8. **Publishes** packages to pub.dev in dependency order: **platform_interface → zstandard_native** (shared C source) **→ platform implementations** (android, ios, macos, linux, windows, web) **→ zstandard_cli → zstandard**.
+## Stage 2: immutable tag and OIDC publication
 
-The workflow is typically triggered manually (workflow_dispatch) with inputs such as:
+After reviewing the successful candidate, push `vX.Y.Z` at exactly the commit
+reported by the workflow:
 
-- **version**: e.g. `1.5.0`
-- **title**: Release title
-- **changelog**: Summary of changes
-- **issue**: Optional launcher issue reference
-- **resume**: Set to `true` only to continue a partial release whose immutable tag already exists.
+```bash
+git fetch origin release/X.Y.Z
+git tag -s vX.Y.Z origin/release/X.Y.Z
+git push origin vX.Y.Z
+```
 
-## Manual Steps (if not using full automation)
+The **Publish Tagged Release** workflow revalidates that the tag equals the
+tip of `origin/release/X.Y.Z`, publishes through GitHub OIDC in this order, and
+waits for pub.dev indexing between dependency layers:
 
-If you need to release without the full workflow:
+```text
+zstandard_platform_interface
+  → zstandard_native
+  → zstandard_android → zstandard_ios → zstandard_linux
+  → zstandard_macos → zstandard_web → zstandard_windows
+  → zstandard_cli
+  → zstandard
+```
 
-1. Create `release/x.y.z` and update **CHANGELOG.md** at the repo root with the new version and list of changes.
-2. Update **version** in every package’s **pubspec.yaml** to the new version.
-3. Update **dependency versions** in each package that depends on another (e.g. `zstandard_android` depends on `zstandard_platform_interface: ^X.Y.Z` — set to the new version).
-4. Copy **CHANGELOG.md** into each package’s directory if the project keeps a copy per package.
-5. **Publish** in dependency order:
-   - `zstandard_platform_interface`
-   - `zstandard_native` (platform packages and CLI depend on it)
-   - Platform packages (android, ios, macos, linux, windows, web)
-   - `zstandard_cli`
-   - `zstandard`
-6. **Tag** the release only after candidate checks: `git tag vX.Y.Z` (e.g. `v1.5.0`) and push the tag.
-7. **Create** a draft GitHub release, upload checksums/package archives, and finalize it only after pub.dev verification.
+It then verifies all ten public versions and creates an immutable GitHub
+release containing checksums for the native and Web artifacts. No dirty source
+archives are attached.
 
-After publication, a separate workflow integrates the release branch into `develop` and `master`. The release workflow does not alter either branch or their rulesets.
+Publication is idempotent for a workflow retry: versions already visible on
+pub.dev are skipped. Before each unpublished package is sent, its dependencies
+are resolved and `dart pub publish --dry-run` must pass. A tag never moves. If
+the tagged candidate is wrong, prepare a new patch version.
 
-## Publishing to pub.dev
+## Stage 3: reviewed branch integration
 
-- Use `dart pub publish` (or `flutter pub publish`) from each package directory. Confirm the package name and version when prompted.
-- Ensure you are logged in (`dart pub login`) and have permissions to publish the package. Prefer pub.dev trusted publishing with GitHub OIDC once configured for all packages.
-- Publish in order so that dependencies are available: platform_interface first, then **zstandard_native**, then platform implementations, then zstandard and zstandard_cli.
+After publication succeeds, run **Integrate Published Release** with `X.Y.Z`.
+It verifies that the stable tag equals `release/X.Y.Z`, that the GitHub Release
+is final, and that all ten versions are visible on pub.dev. It then opens or
+reuses pull requests from the release branch into `master` and `develop`.
 
-## After Release
+The workflow never merges a pull request and never bypasses a ruleset. Keep
+the release branch until both pull requests have passed their normal review
+and required checks and have been merged.
 
-- Bump the development version in `pubspec.yaml` files if the project uses a separate “next” version (e.g. 1.3.30+1 or 1.5.0-dev).
-- Add an “Unreleased” or “Next” section in CHANGELOG.md for the next release.
-- Announce the release (e.g. GitHub release notes, changelog link) as appropriate.
+## Required external configuration
 
-## Hotfixes
+For every pub.dev package, configure automated publishing for this GitHub
+repository and the stable `vX.Y.Z` tag pattern. Protect the GitHub `pub.dev`
+environment with appropriate reviewer rules. The workflow uses
+`id-token: write`; no persistent pub token belongs on a runner.
 
-For critical fixes, the project may use a **hotfix** workflow (see `.github/workflows/hotfix_workflow.yml` and issue templates). Follow the same versioning and publish order; use a PATCH bump (e.g. 1.5.0 → 1.4.1).
+Allow GitHub Actions to create pull requests in the repository Actions
+settings. The integration workflow uses only its short-lived `GITHUB_TOKEN`
+with contents-read and pull-requests-write permissions. GitHub places checks
+triggered by an automation-created pull request in an approval-required state;
+a maintainer must approve those runs from the pull request before merging.
+
+Protect `master`, `develop`, release branches, and stable tags with active
+GitHub rulesets. Require pull requests and the stable `Pull Request Safety
+Gate` status context on both long-lived branches, plus deletion and
+non-fast-forward protection. Remove obsolete per-matrix context names before
+enabling a ruleset. The integration workflow only opens reviewed pull
+requests; it cannot merge or bypass those protections.
+
+See the [deployment runbook](../deployment/RUNBOOK.md) and
+[CI/CD](ci-cd.md).

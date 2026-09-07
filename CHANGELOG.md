@@ -1,7 +1,21 @@
 ## Unreleased
 
+- Added bounded decompression (256 MiB default) with support for unknown-size
+  and concatenated frames across native, Web, CLI, and extension APIs.
+- Moved native work to byte-safe isolates and WebAssembly work to a dedicated
+  Web Worker; empty input now always produces a valid zstd frame.
+- Reworked CLI argument parsing, stdin/stdout support, collision protection,
+  library resolution, exported-symbol tests, and finite benchmark reporting.
+- Pinned native provenance, dependency sources, Apple versions, Emscripten,
+  third-party Actions, and aligned SwiftPM/CocoaPods native source sets.
+- Split release preparation from immutable tag-triggered OIDC publishing and
+  added a GitHub-hosted, read-only safety gate for untrusted pull requests and
+  a separate reviewed release-integration workflow.
 - Fixed intermittent iOS and macOS build failures caused by deleting synced zstd sources during compilation.
 - Updated the minimum supported SDK version to Flutter 3.44/Dart 3.12 and migrated Android builds to Built-in Kotlin on AGP 9+.
+- Removed obsolete Android Jetifier settings, stale workflow paths, and 58 MiB of unreferenced repository media.
+- Removed placeholder `WIP` tests, isolated the legacy Android example's analysis,
+  and migrated the CLI away from deprecated platform APIs.
 - Added Swift Package Manager support for iOS and macOS while retaining CocoaPods compatibility.
 
 ## 1.5.0 - Dependencies Updated

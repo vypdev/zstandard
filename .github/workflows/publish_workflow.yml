@@ -1,0 +1,187 @@
+name: Publish Tagged Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: zstandard-release-publication
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.47.2'
+
+jobs:
+  validate_tag:
+    name: Validate immutable release tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.context.outputs.version }}
+      commit: ${{ steps.context.outputs.commit }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Validate tag, release branch and package metadata
+        id: context
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid stable release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          git fetch origin "release/$version:refs/remotes/origin/release/$version"
+          commit="$(git rev-parse HEAD)"
+          branch_commit="$(git rev-parse "origin/release/$version")"
+          if [[ "$commit" != "$branch_commit" ]]; then
+            echo "Tag $GITHUB_REF_NAME must point to the tip of release/$version." >&2
+            exit 1
+          fi
+          dart scripts/check_pub_metadata.dart --release-version "$version"
+          git diff --check
+          for artifact in \
+            zstandard_cli/lib/src/bin/libzstandard_macos.dylib \
+            zstandard_cli/lib/src/bin/libzstandard_linux_x64.so \
+            zstandard_cli/lib/src/bin/libzstandard_linux_arm64.so \
+            zstandard_cli/lib/src/bin/zstandard_windows_x64.dll \
+            zstandard_cli/lib/src/bin/zstandard_windows_arm64.dll \
+            zstandard_web/blob/zstd.js \
+            zstandard_web/blob/zstd_core.js \
+            zstandard_web/blob/zstd_worker.js \
+            zstandard_web/blob/zstd.wasm; do
+            test -s "$artifact"
+          done
+          cmp zstandard_web/blob/zstd.js zstandard_web/example/web/zstd.js
+          cmp zstandard_web/blob/zstd.js zstandard/example/web/zstd.js
+          cmp zstandard_web/blob/zstd_core.js zstandard_web/example/web/zstd_core.js
+          cmp zstandard_web/blob/zstd_core.js zstandard/example/web/zstd_core.js
+          cmp zstandard_web/blob/zstd_worker.js zstandard_web/example/web/zstd_worker.js
+          cmp zstandard_web/blob/zstd_worker.js zstandard/example/web/zstd_worker.js
+          cmp zstandard_web/blob/zstd.wasm zstandard_web/example/web/zstd.wasm
+          cmp zstandard_web/blob/zstd.wasm zstandard/example/web/zstd.wasm
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish packages to pub.dev with OIDC
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    needs: [validate_tag]
+    environment: pub.dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.validate_tag.outputs.commit }}
+          fetch-depth: 0
+
+      # setup-dart provisions the short-lived pub.dev credential from GitHub's
+      # OIDC token. Flutter is installed afterwards so its bundled Dart stays
+      # first on PATH while using the same Pub credentials.
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Publish in dependency order, safely skipping immutable versions
+        env:
+          VERSION: ${{ needs.validate_tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          publish_and_wait() {
+            local package="$1"
+            if [[ "$package" == zstandard_native || "$package" == zstandard_cli ]]; then
+              (cd "$package" && dart pub get)
+            else
+              (cd "$package" && flutter pub get)
+            fi
+            dart run scripts/publish_if_missing.dart "$package" "$VERSION"
+            dart run scripts/wait_for_pub_version.dart "$package" "$VERSION" 1200
+          }
+
+          publish_and_wait zstandard_platform_interface
+          publish_and_wait zstandard_native
+          for package in \
+            zstandard_android zstandard_ios zstandard_linux zstandard_macos \
+            zstandard_web zstandard_windows; do
+            publish_and_wait "$package"
+          done
+          publish_and_wait zstandard_cli
+          publish_and_wait zstandard
+
+  verify:
+    name: Verify all published packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [validate_tag, publish]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.validate_tag.outputs.commit }}
+
+      - name: Verify exact versions through the public API
+        env:
+          VERSION: ${{ needs.validate_tag.outputs.version }}
+        run: |
+          set -euo pipefail
+          for package in \
+            zstandard_platform_interface zstandard_native zstandard_android \
+            zstandard_ios zstandard_linux zstandard_macos zstandard_web \
+            zstandard_windows zstandard_cli zstandard; do
+            dart run scripts/wait_for_pub_version.dart "$package" "$VERSION" 1200
+          done
+
+  github_release:
+    name: Create immutable GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [validate_tag, verify]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.validate_tag.outputs.commit }}
+
+      - name: Build native-library checksum manifest
+        run: |
+          set -euo pipefail
+          {
+            echo "Native CLI library checksums for $GITHUB_REF_NAME"
+            sha256sum zstandard_cli/lib/src/bin/*
+            sha256sum zstandard_web/blob/zstd.js zstandard_web/blob/zstd_core.js \
+              zstandard_web/blob/zstd_worker.js zstandard_web/blob/zstd.wasm
+          } > checksums.txt
+
+      - name: Create release from the validated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" checksums.txt --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" checksums.txt \
+              --repo "$GITHUB_REPOSITORY" \
+              --verify-tag \
+              --generate-notes \
+              --title "Release $GITHUB_REF_NAME"
+          fi

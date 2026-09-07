@@ -8,7 +8,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  zstandard_platform_interface: ^1.0.0
+  zstandard_platform_interface:
+    path: ../../zstandard_platform_interface
   zstandard_web:
     path: ../
   cupertino_icons: ^1.0.8

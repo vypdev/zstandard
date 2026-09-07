@@ -1,118 +1,50 @@
-import 'dart:ffi';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
 import 'package:platform/platform.dart';
-import 'package:zstandard_native/zstandard_native_bindings.dart';
+import 'package:zstandard_native/zstandard_native.dart';
 
 import 'utils/lib_loader.dart';
 import 'zstandard_interface.dart';
 
-/// Command-line and in-code Zstandard compression for macOS, Windows, and Linux.
+/// Formats a native platform version without consulting host state.
 ///
-/// Uses FFI with precompiled native zstd libraries. Supports [compress] and
-/// [decompress] with the same semantics as the Flutter plugin. Use this
-/// package in pure Dart (non-Flutter) desktop apps or CLI tools.
-///
-/// Example:
-/// ```dart
-/// final cli = ZstandardCLI();
-/// final compressed = await cli.compress(data, compressionLevel: 3);
-/// final decompressed = await cli.decompress(compressed!);
-/// ```
+/// This internal helper keeps all platform branches deterministic in tests.
+String zstdPlatformVersion(String? operatingSystem, String? version) {
+  if (operatingSystem == null) return 'Unknown platform';
+  return switch (operatingSystem) {
+    NativePlatform.macOS => 'macOS $version',
+    NativePlatform.windows => 'Windows $version',
+    NativePlatform.linux => 'Linux $version',
+    _ => 'Unknown platform',
+  };
+}
+
+/// Command-line and in-code Zstandard compression for desktop Dart.
 class ZstandardCLI implements ZstandardInterface {
-  final ZstandardNativeBindings _bindings =
-      ZstandardNativeBindings(openZstdLibrary());
+  static final Future<ZstandardNativeCodec> _sharedCodec = _loadCodec();
+
+  static Future<ZstandardNativeCodec> _loadCodec() async =>
+      ZstandardNativeCodec(ZstandardNativeBindings(await openZstdLibrary()));
 
   @override
   Future<Uint8List?> compress(
     Uint8List data, {
     int compressionLevel = 3,
-  }) async {
-    if (data.isEmpty) return data;
-    final int srcSize = data.lengthInBytes;
-    final Pointer<Uint8> src = malloc.allocate<Uint8>(srcSize);
-    src.asTypedList(srcSize).setAll(0, data);
-
-    final int dstCapacity = _bindings.ZSTD_compressBound(srcSize);
-    final Pointer<Uint8> dst = malloc.allocate<Uint8>(dstCapacity);
-
-    try {
-      final int compressedSize = _bindings.ZSTD_compress(
-        dst.cast(),
-        dstCapacity,
-        src.cast(),
-        srcSize,
-        compressionLevel,
-      );
-
-      if (_bindings.ZSTD_isError(compressedSize) == 0 && compressedSize > 0) {
-        return Uint8List.fromList(dst.asTypedList(compressedSize));
-      } else {
-        return null;
-      }
-    } finally {
-      malloc.free(src);
-      malloc.free(dst);
-    }
-  }
+  }) async =>
+      (await _sharedCodec).compress(data, compressionLevel);
 
   @override
-  Future<Uint8List?> decompress(Uint8List data) async {
-    if (data.isEmpty) return data;
-    const int contentSizeUnknown = 0xffffffffffffffff;
-    const int contentSizeError = 0xfffffffffffffffe;
-
-    final int compressedSize = data.lengthInBytes;
-    final Pointer<Uint8> src = malloc.allocate<Uint8>(compressedSize);
-    src.asTypedList(compressedSize).setAll(0, data);
-
-    final int decompressedSizeExpected =
-        _bindings.ZSTD_getFrameContentSize(src.cast(), compressedSize);
-    if (decompressedSizeExpected == contentSizeError) {
-      malloc.free(src);
-      return null;
-    }
-    final int dstCapacity =
-        (decompressedSizeExpected != contentSizeUnknown &&
-                decompressedSizeExpected > 0)
-            ? decompressedSizeExpected
-            : compressedSize * 20;
-    final Pointer<Uint8> dst = malloc.allocate<Uint8>(dstCapacity);
-
-    try {
-      final int decompressedSize = _bindings.ZSTD_decompress(
-        dst.cast(),
-        dstCapacity,
-        src.cast(),
-        compressedSize,
-      );
-
-      if (_bindings.ZSTD_isError(decompressedSize) != 0) {
-        return null;
-      }
-      return Uint8List.fromList(dst.asTypedList(decompressedSize));
-    } finally {
-      malloc.free(src);
-      malloc.free(dst);
-    }
-  }
+  Future<Uint8List?> decompress(
+    Uint8List data, {
+    int maxOutputSize = nativeDefaultMaxDecompressedSize,
+  }) async =>
+      (await _sharedCodec).decompress(data, maxOutputSize: maxOutputSize);
 
   @override
   Future<String?> getPlatformVersion() {
-    final platform = LocalPlatform();
-
-    String version;
-    if (platform.isMacOS) {
-      version = 'macOS ${platform.version}';
-    } else if (platform.isWindows) {
-      version = 'Windows ${platform.version}';
-    } else if (platform.isLinux) {
-      version = 'Linux ${platform.version}';
-    } else {
-      version = 'Unknown platform';
-    }
-
-    return Future.value(version);
+    final platform = NativePlatform.current;
+    return Future.value(
+      zstdPlatformVersion(platform?.operatingSystem, platform?.version),
+    );
   }
 }

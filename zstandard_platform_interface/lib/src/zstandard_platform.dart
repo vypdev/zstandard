@@ -12,6 +12,9 @@ import 'zstandard_platform_interface_method_channel.dart';
 ///
 /// Application code should use the main [zstandard] package, not this interface.
 abstract class ZstandardPlatform extends PlatformInterface {
+  /// Default maximum output accepted by [decompress].
+  static const int defaultMaxDecompressedSize = 256 * 1024 * 1024;
+
   /// Constructs a [ZstandardPlatform].
   ZstandardPlatform() : super(token: _token);
 
@@ -55,4 +58,13 @@ abstract class ZstandardPlatform extends PlatformInterface {
   Future<Uint8List?> decompress(Uint8List data) {
     throw UnimplementedError('decompress() has not been implemented.');
   }
+}
+
+/// Optional capability implemented by platforms that enforce an output limit.
+abstract interface class BoundedZstandardPlatform {
+  /// Decompresses [data] while limiting the maximum produced byte count.
+  Future<Uint8List?> decompressWithOptions(
+    Uint8List data, {
+    int maxOutputSize = ZstandardPlatform.defaultMaxDecompressedSize,
+  });
 }

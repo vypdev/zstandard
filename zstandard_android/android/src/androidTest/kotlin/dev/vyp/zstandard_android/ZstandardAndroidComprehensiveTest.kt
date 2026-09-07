@@ -1,0 +1,45 @@
+package dev.vyp.zstandard_android
+
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.MethodChannel
+import org.junit.Assert.assertNotNull
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/**
+ * Additional instrumented tests for the zstandard_android plugin.
+ * Verifies plugin type and instantiation in an Android context. Native loading
+ * and compression round-trips are covered by ZstandardAndroidNativeRoundTripTest.
+ */
+@RunWith(AndroidJUnit4::class)
+class ZstandardAndroidComprehensiveTest {
+
+    @Test
+    fun pluginImplementsFlutterPlugin() {
+        val plugin: FlutterPlugin = ZstandardAndroidPlugin()
+        assertNotNull(plugin)
+    }
+
+    @Test
+    fun pluginImplementsMethodCallHandler() {
+        val plugin: MethodChannel.MethodCallHandler = ZstandardAndroidPlugin()
+        assertNotNull(plugin)
+    }
+
+    @Test
+    fun instrumentationContextIsValid() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        assertNotNull(context)
+        assertNotNull(context.packageName)
+    }
+
+    @Test
+    fun multiplePluginInstancesCanBeCreated() {
+        val plugin1 = ZstandardAndroidPlugin()
+        val plugin2 = ZstandardAndroidPlugin()
+        assertNotNull(plugin1)
+        assertNotNull(plugin2)
+    }
+}

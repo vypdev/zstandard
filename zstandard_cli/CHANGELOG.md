@@ -1,3 +1,14 @@
+## Unreleased
+
+- Added bounded streaming decompression for unknown-size and concatenated
+  frames, and valid compression of empty input.
+- Added structured CLI options, stdin/stdout pipelines, safe output naming and
+  overwrite refusal, stable exit codes, and CWD-independent library loading.
+- Added complete native-symbol validation, finite microsecond benchmarks, and
+  static MSVC runtime linkage for bundled Windows libraries.
+- Migrated platform-version detection from deprecated `LocalPlatform` APIs to
+  `NativePlatform.current`.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

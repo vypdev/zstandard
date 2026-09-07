@@ -4,15 +4,19 @@ on:
   issues:
     types: [opened, reopened, edited, labeled, unlabeled, assigned, unassigned]
 
+permissions:
+  contents: read
+
 jobs:
   copilot-issues:
     name: Copilot - Issue
+    if: contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
-      - uses: vypdev/copilot@v2
+      - uses: vypdev/copilot@274db4058088d0b2e93c807d27e24c160162d54a
         with:
           ai-ignore-files: build/*
           debug: ${{ vars.DEBUG }}

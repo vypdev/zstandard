@@ -12,6 +12,12 @@ All platform implementations must extend `ZstandardPlatform` and implement:
 | `compress` | `Future<Uint8List?> compress(Uint8List data, int compressionLevel)` | Compresses `data` with the given level (1–22). Returns compressed bytes or `null` on failure. |
 | `decompress` | `Future<Uint8List?> decompress(Uint8List data)` | Decompresses zstd-compressed `data`. Returns decompressed bytes or `null` on failure. |
 
+Official implementations also implement the separate
+`BoundedZstandardPlatform` capability. Its `decompressWithOptions` method
+accepts `maxOutputSize` and must enforce it before allocating oversized output.
+The separate interface preserves source compatibility for third-party
+implementations of the original contract.
+
 ## Abstract Base Class
 
 `ZstandardPlatform` extends `PlatformInterface` from plugin_platform_interface:
@@ -57,7 +63,7 @@ sequenceDiagram
 ## Implementing a New Platform
 
 1. Create a new package (e.g. `zstandard_fuchsia`) that depends on `zstandard_platform_interface`.
-2. Implement a class that extends `ZstandardPlatform` and implements `getPlatformVersion`, `compress`, and `decompress`.
+2. Implement a class that extends `ZstandardPlatform`, implements its three methods, and implements `BoundedZstandardPlatform` for production-safe decompression.
 3. Expose a `registerWith()` (or similar) that sets `ZstandardPlatform.instance = YourPlatform()` using the token from the interface package.
 4. In the main plugin’s `ZstandardImpl`, add detection for the new platform and call your `registerWith()` when that platform is active.
 

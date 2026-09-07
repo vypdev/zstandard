@@ -13,13 +13,13 @@ This guide summarizes recommended practices, a production checklist, and common 
 7. **Choose the right level**: level 3 for general use; 1 for speed; 10+ for size when CPU and time allow.
 8. **Validate decompressed content** when data comes from untrusted sources; the API only guarantees valid zstd output, not safe application-level content.
 9. **Run tests and analyze** before release: `flutter test`, `flutter analyze` (or `dart test` / `dart analyze` for the CLI package).
-10. **Pin package versions** in `pubspec.yaml` (e.g. `zstandard: ^1.3.0`) and update in a controlled way.
+10. **Use a deliberate dependency constraint** in `pubspec.yaml` (for example, `zstandard: ^1.5.0`) and test upgrades.
 
 ## Don'ts
 
 1. **Don't ignore null results** — using a null result as if it were data can lead to crashes or wrong behaviour.
 2. **Don't use compression levels outside 1–22** — behaviour is implementation-defined and may differ by platform.
-3. **Don't decompress untrusted data without a size limit** — cap input size to what you are willing to allocate.
+3. **Don't decompress untrusted data without an output limit** — pass the smallest safe `maxOutputSize` and also cap input size.
 4. **Don't assume decompress throws** on invalid input — it typically returns null; handle null.
 5. **Don't load entire very large files into memory** if you can avoid it; use chunked reading and compression.
 6. **Don't run many concurrent compress/decompress operations** without limiting concurrency; memory usage can grow quickly.
@@ -61,9 +61,10 @@ await send(c);
 // Bad: no size limit on untrusted input
 final d = await z.decompress(userBytes);
 
-// Good: reject or cap size before calling
-if (userBytes.length > maxDecompressSize) return reject();
-final d = await z.decompress(userBytes);
+// Good: cap both compressed input and produced output
+if (userBytes.length > maxCompressedSize) return reject();
+final d = await z.decompress(userBytes, maxOutputSize: maxDecodedSize);
+if (d == null) return reject();
 ```
 
 **Assuming exceptions**

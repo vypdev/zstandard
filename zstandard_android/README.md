@@ -10,7 +10,7 @@ Add the main plugin to your app; this package is included automatically via the 
 
 ```yaml
 dependencies:
-  zstandard: ^1.3.29
+  zstandard: ^1.5.0
 ```
 
 No extra Gradle or native setup is required for normal use.
@@ -42,12 +42,15 @@ final decompressed = await compressed?.decompress();
 
 - **ZstandardAndroid()** — Creates the Android platform implementation.
 - **compress(Uint8List data, int compressionLevel)** — Compresses `data` (level 1–22). Returns compressed bytes or `null`.
-- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or `null`.
+- **decompressWithOptions(Uint8List data, {int maxOutputSize})** — Decompresses complete, concatenated, or unknown-size zstd frames with a bounded output (256 MiB by default). Invalid, truncated, or oversized input returns `null`.
 - **getPlatformVersion()** — Returns a platform identifier string.
 
 ## Architecture
 
-This package uses Dart FFI to load `libzstandard_android.so` and call the Zstandard C API (`ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, `ZSTD_getFrameContentSize`). Heavy work may run in a background isolate to keep the UI responsive.
+This package uses Dart FFI to load `libzstandard_android.so`. Public operations
+send Dart-owned bytes to a worker isolate; native pointers never cross an
+isolate boundary. Decompression uses zstd's streaming API and enforces the
+configured output limit while producing bytes.
 
 The plugin does not pin an Android Gradle Plugin version. The consuming app
 owns that choice. The repository contains two Android consumers for CI:

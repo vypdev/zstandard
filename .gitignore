@@ -1,5 +1,6 @@
 zstandard_cli/zstd/
 .zstd_upstream/
+.DS_Store
 .idea/
 */.idea/
 */build/
@@ -29,3 +30,4 @@ zstandard_cli/zstd/
 **/windows/flutter/generated_plugin_registrant.*
 **/windows/flutter/generated_plugins.cmake
 **/example/pubspec.lock
+**/pubspec_overrides.yaml

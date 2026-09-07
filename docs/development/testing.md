@@ -151,7 +151,10 @@ Linux and Windows keep unit tests in `test/` that run only when the host OS matc
 
 ### CLI
 
-- The existing tests in `zstandard_cli/test/` are a good reference: small/large/empty data, repeated values, min/max compression level. Add tests for invalid compression levels and platform detection if desired.
+- The tests in `zstandard_cli/test/` cover small, large, empty, invalid and
+  concatenated inputs; output limits; compression-level boundaries; platform
+  and ABI-aware library selection; filesystem collisions; stdin/stdout; exit
+  codes; and concurrent calls.
 
 ## Coverage
 
@@ -163,6 +166,13 @@ flutter test --coverage
 ```
 
 View the generated `coverage/lcov.info` with a tool like `lcov` or your IDE. Aim for high coverage on the main plugin and platform interface; platform-specific code may have lower coverage when run on a single host.
+
+Pull requests collect three independent Codecov flags on every head:
+`cli` (required 100%), `platform_interface` (minimum 85%), and `zstandard`
+(minimum 76%). CLI reports are restricted to `zstandard_cli/lib`, so test files
+and dependency sources cannot inflate or dilute its result. The stable Safety
+Gate requires all three local thresholds even when a fork cannot access the
+Codecov upload token.
 
 ## Mutation testing
 

@@ -1,13 +1,10 @@
 name: PR Check CLI
 
 on:
-  pull_request:
-    branches:
-      - '**'
-      - '!master'
   push:
     branches:
       - develop
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,11 +20,14 @@ jobs:
     name: Analyze CLI
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_cli
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -42,15 +42,16 @@ jobs:
     runs-on: [self-hosted, Linux]
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-linux-dependencies
-        with:
-          coverage: 'true'
 
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_cli
 
       - name: Get dependencies
         working-directory: zstandard_cli
@@ -62,25 +63,23 @@ jobs:
 
       - name: Format coverage to lcov
         working-directory: zstandard_cli
-        run: dart run coverage:format_coverage --lcov -i coverage -o coverage/lcov.info --packages=.dart_tool/package_config.json
+        run: >-
+          dart run coverage:format_coverage --lcov -i coverage
+          -o coverage/lcov.info --packages=.dart_tool/package_config.json
+          --report-on=lib
 
-      # Coverage threshold: lib/ only, excluding generated bindings
-      - name: Check coverage threshold (79% of lib/)
+      # Coverage threshold: this package's lib/ only.
+      - name: Check coverage threshold (100% of lib/)
         working-directory: zstandard_cli
-        run: |
-          lcov --extract coverage/lcov.info '*zstandard_cli/lib/*' -o coverage/lcov_lib.info
-          lcov --remove coverage/lcov_lib.info '*bindings_generated*' -o coverage/lcov_lib.info --ignore-errors unused
-          COVERAGE=$(lcov --summary coverage/lcov_lib.info 2>&1 | grep "lines" | awk '{print $2}' | sed 's/%//')
-          echo "Coverage (lib/ excluding generated): ${COVERAGE}%"
-          if [ -z "$COVERAGE" ]; then echo "Could not parse coverage"; exit 1; fi
-          if (( $(echo "$COVERAGE < 79" | bc -l) )); then echo "ERROR: Coverage ${COVERAGE}% is below 79%"; exit 1; fi
+        run: dart ../scripts/check_lcov_coverage.dart coverage/lcov.info 100
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: zstandard_cli/coverage/lcov.info
           flags: cli
+          disable_search: true
           fail_ci_if_error: true
 
       - name: Run benchmarks (informational)
@@ -103,11 +102,14 @@ jobs:
     name: Dry Run Publish CLI
     runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
 
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_cli
 
       - name: Get dependencies
         working-directory: zstandard_cli

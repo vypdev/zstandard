@@ -40,7 +40,7 @@ The plugin may log errors or debug info. Check whether the implementation uses `
 
 When opening an issue, include:
 
-- Package and version (e.g. zstandard 1.3.29)
+- Package and version (for example, zstandard 1.5.0)
 - Platform (Android, iOS, macOS, Windows, Linux, web, CLI)
 - Flutter/Dart version
 - Minimal code that reproduces the issue

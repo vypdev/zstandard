@@ -6,7 +6,9 @@ import 'package:zstandard/zstandard.dart';
 import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 
 /// Mock that echoes data for roundtrip-style tests.
-class EchoMockPlatform with MockPlatformInterfaceMixin implements ZstandardPlatform {
+class EchoMockPlatform
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('EchoMock 1.0');
 
@@ -147,7 +149,9 @@ void main() {
 
     test('multiple compressions in parallel', () async {
       final futures = List.generate(10, (i) {
-        final data = Uint8List.fromList(List.generate(1000, (j) => (i + j) % 256));
+        final data = Uint8List.fromList(
+          List.generate(1000, (j) => (i + j) % 256),
+        );
         return data.compress(compressionLevel: 3);
       });
       final results = await Future.wait(futures);

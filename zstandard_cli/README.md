@@ -2,89 +2,81 @@
 
 # zstandard_cli
 
-The command-line implementation of [`zstandard`](https://pub.dev/packages/zstandard).
+Pure-Dart Zstandard API and command-line tools for macOS, Windows, and Linux,
+with bundled native libraries for x64 and arm64.
 
-Zstandard (zstd) is a fast compression algorithm developed by Meta (formerly Facebook) for real-time scenarios. It provides a flexible range of compression levels, enabling both high-speed and high-compression-ratio options. This makes it ideal for applications needing efficient data storage, transmission, and backup solutions.
-
-`zstandard_cli` is a Dart package that binds to the high-performance Zstandard compression library, enabling both in-code and command-line compression and decompression. It leverages FFI to directly access native Zstandard functionality, allowing efficient data processing in Dart applications, from in-memory data compression to file handling via the CLI.
-
-**Available on macOS, Windows, and Linux desktops only**.
-
-|             | [macOS](https://flutter.dev/desktop) | [Windows](https://flutter.dev/desktop) | [Linux](https://flutter.dev/desktop) |
-|:-----------:|:------------------------------------:|:--------------------------------------:|:------------------------------------:|
-|     x64     |          :heavy_check_mark:          |           :heavy_check_mark:           |          :heavy_check_mark:          |
-|    arm64    |          :heavy_check_mark:          |           :heavy_check_mark:           |          :heavy_check_mark:          |  
-| Precompiled |                 Yes                  |                  Yes                   |                 Yes                  |  
-
-> **Note:** This is a pure Dart package for desktop usage. For Flutter, please see the [zstandard](https://pub.dev/packages/zstandard) plugin.
-
-## Basic Usage
+## Dart API
 
 ```dart
-void main() async {
-  var cli = ZstandardCLI();
-
-  final originalData = Uint8List.fromList([...]);
-
-  final compressed = await cli.compress(originalData, compressionLevel: 3);
-
-  final decompressed = await cli.decompress(compressed ?? Uint8List(0));
-}
+final codec = ZstandardCLI();
+final compressed = await codec.compress(data, compressionLevel: 3);
+final decompressed = compressed == null
+    ? null
+    : await codec.decompress(
+        compressed,
+        maxOutputSize: 64 * 1024 * 1024,
+      );
 ```
 
-With extensions:
+The `Uint8List?` extensions expose the same `compress` and `decompress`
+options. Compression levels are 1–22 and empty input produces a valid frame.
+Decompression supports concatenated frames and frames without a declared
+content size. It returns `null` on failure and enforces a 256 MiB output limit
+by default.
 
-```dart
-void main() async {
-  final originalData = Uint8List.fromList([...]);
+## Command line
 
-  final compressed = await originalData.compress(compressionLevel: 3);
-
-  final decompressed = await compressed.decompress();
-}
-```
-
-## CLI Usage
+After `dart pub global activate zstandard_cli`, use the installed executables:
 
 ```bash
-dart run zstandard_cli:compress any_file 3
-
-dart run zstandard_cli:decompress any_file.zstd
+zstandard-compress --level 5 input.bin
+zstandard-decompress input.bin.zstd
 ```
 
-## API
+The same commands can be run from a package checkout:
 
-- **ZstandardCLI()** — Creates a CLI instance. The native library is loaded once per process.
-- **compress(Uint8List data, {int compressionLevel = 3})** — Compresses `data` (level 1–22). Returns compressed bytes or `null`.
-- **decompress(Uint8List data)** — Decompresses zstd-compressed data. Returns decompressed bytes or `null`.
-- **getPlatformVersion()** — Returns a string like `"macOS 14.0"` or `"Windows 10"`.
+```bash
+dart run zstandard_cli:compress --level 5 input.bin
+dart run zstandard_cli:decompress input.bin.zstd
+```
 
-Extensions on `Uint8List?`: **compress({int compressionLevel = 3})** and **decompress()**; they return `null` when the receiver is null.
+Common options:
+
+```text
+-o, --output PATH   output path, or - for stdout
+-f, --force         replace an existing output file
+-h, --help          show help
+    --version       show the package version
+```
+
+Compression also accepts `-l, --level 1..22`. Decompression accepts
+`-m, --max-output-size BYTES`. Use `-` as the input to read stdin; it defaults
+to stdout, so pipelines remain binary-clean. File compression appends `.zstd`.
+File decompression strips `.zstd`, or appends `.out` when the input has no such
+suffix. Existing outputs are refused unless `--force` is present; an output
+that aliases the input is always refused.
+
+Exit codes are 0 for success, 1 for I/O or codec failure, and 2 for invalid
+arguments or a refused overwrite.
+
+## Native library resolution
+
+The package resolves the library through the active Dart package
+configuration, independent of the process working directory.
+`ZSTANDARD_CLI_LIBRARY` can name an explicit library for testing or custom
+deployment; an executable-adjacent library is also supported for compiled
+applications. Windows bundles use the static MSVC runtime and do not require a
+matching redistributable solely for this library.
 
 ## Testing
 
-From the package directory:
-
 ```bash
 dart test
+dart analyze
 ```
 
-Tests run only on supported platforms (macOS, Windows, Linux). They cover small/large/empty data, compression levels, and null-safe extensions.
+Tests verify empty, unknown-size and concatenated frames, output bounds,
+symbol exports, CWD-independent loading, file collisions, and CLI exit codes.
 
-## Troubleshooting
-
-- **Library not found**: Ensure you are on macOS, Windows, or Linux (x64 or arm64). Update the package with `dart pub upgrade zstandard_cli`.
-- **Compress/decompress returns null**: Check that input is valid; for decompress, ensure the data is a complete zstd frame.
-
-See the [documentation](https://github.com/vypdev/zstandard/tree/master/docs) for more.
-
----
-
-The images provided below illustrate how to use `zstandard_cli` for compression and decompression on different platforms.
-
-<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/macos_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/macos_decompression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/windows_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/windows_decompression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/linux_compression_sample.png"></p>
-<p align="center"><img width="90%" vspace="10" src="https://github.com/vypdev/zstandard/raw/master/zstandard_cli/images/linux_decompression_sample.png"></p>
+See the repository [CLI guide](https://github.com/vypdev/zstandard/blob/master/docs/platforms/cli.md)
+for more detail.

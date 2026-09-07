@@ -5,14 +5,14 @@
 Pod::Spec.new do |s|
   s.cocoapods_version = '>= 1.11.0'  # for script_phase :before_headers
   s.name             = 'zstandard_macos'
-  s.version          = '0.0.1'
-  s.summary          = 'A new Flutter FFI plugin project.'
+  s.version          = '1.5.0'
+  s.summary          = 'macOS implementation of the Zstandard Flutter plugin.'
   s.description      = <<-DESC
-A new Flutter FFI plugin project.
+Native Zstandard compression and bounded decompression for Flutter on macOS.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/vypdev/zstandard'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'VypDev' => 'https://github.com/vypdev' }
 
   # Zstd C sources: synced from zstandard_native/src/zstd/ into Classes/zstd/ by
   # scripts/sync_zstd.sh (in this plugin). Must exist at pod install time so source_files glob finds them.
@@ -21,9 +21,6 @@ A new Flutter FFI plugin project.
                        'Classes/zstd/common/*.c', 'Classes/zstd/common/*.h',
                        'Classes/zstd/compress/*.c', 'Classes/zstd/compress/*.h',
                        'Classes/zstd/decompress/*.c', 'Classes/zstd/decompress/*.h',
-                       'Classes/zstd/decompress/*.S',
-                       'Classes/zstd/dictBuilder/*.c', 'Classes/zstd/dictBuilder/*.h',
-                       'Classes/zstd/legacy/*.c', 'Classes/zstd/legacy/*.h',
                        'Classes/zstd/*.h'
   s.private_header_files = 'Classes/zstd/**/*.h'
 
@@ -32,13 +29,14 @@ A new Flutter FFI plugin project.
 
   s.dependency 'FlutterMacOS'
 
-  s.platform = :osx, '10.11'
+  s.platform = :osx, '10.15'
   # Export zstd C symbols so Dart FFI (DynamicLibrary.lookup) can find them in the framework.
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
     'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/zstd',
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
-    'OTHER_CFLAGS' => '$(inherited) -DZSTD_STATIC_LINKING_ONLY -DZSTD_DISABLE_ASM -fvisibility=default',
+    'OTHER_CFLAGS' => '$(inherited) -DZSTD_DISABLE_ASM -fvisibility=default',
+    'GCC_WARN_INHIBIT_ALL_WARNINGS' => 'YES',
     'DEAD_CODE_STRIPPING' => 'NO',
     'STRIP_INSTALLED_PRODUCT' => 'NO',
   }

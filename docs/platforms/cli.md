@@ -1,108 +1,59 @@
 # CLI Platform Guide
 
-The **zstandard_cli** package provides Zstandard compression and decompression for **pure Dart** applications (no Flutter) on **macOS, Windows, and Linux**. It uses FFI with precompiled native zstd libraries and supports both in-code API and command-line entry points.
+`zstandard_cli` is a pure-Dart API and command-line package for macOS, Windows,
+and Linux. Bundled native libraries support x64 and arm64.
 
-## Support
-
-| Platform | x64 | arm64 | Precompiled |
-|----------|-----|-------|-------------|
-| macOS    | Yes | Yes   | Yes         |
-| Windows  | Yes | Yes   | Yes         |
-| Linux    | Yes | Yes   | Yes         |
-
-## Installation
-
-Add the package to your Dart project (not Flutter):
+## Installation and API
 
 ```yaml
 dependencies:
-  zstandard_cli: ^1.3.29
+  zstandard_cli: ^1.5.0
 ```
-
-## Usage in Code
 
 ```dart
-import 'package:zstandard_cli/zstandard_cli.dart';
-
-void main() async {
-  final cli = ZstandardCLI();
-  final data = Uint8List.fromList([1, 2, 3, 4, 5]);
-
-  final compressed = await cli.compress(data, compressionLevel: 3);
-  final decompressed = await cli.decompress(compressed ?? Uint8List(0));
-}
+final codec = ZstandardCLI();
+final compressed = await codec.compress(data, compressionLevel: 3);
+final decompressed = compressed == null
+    ? null
+    : await codec.decompress(
+        compressed,
+        maxOutputSize: 16 * 1024 * 1024,
+      );
 ```
 
-With extensions:
+Empty input produces a valid frame. Streaming decompression supports frames
+without a declared size and concatenated frames, with a 256 MiB default output
+budget.
 
-```dart
-final compressed = await data.compress(compressionLevel: 3);
-final decompressed = await compressed?.decompress();
-```
-
-## Command-Line Usage
-
-Compress a file with a given compression level:
+## Commands
 
 ```bash
-dart run zstandard_cli:compress <input_file> <compression_level>
+dart run zstandard_cli:compress --level 5 input.bin
+dart run zstandard_cli:decompress --max-output-size 16777216 input.bin.zstd
 ```
 
-Example: `dart run zstandard_cli:compress myfile.txt 3`
+Use `--output PATH` to select output and `--force` to replace an existing
+file. Input `-` reads stdin and defaults to stdout, enabling binary pipelines.
+Run either command with `--help` for its exact options and naming rules.
 
-Decompress a file:
+The commands return 0 on success, 1 on I/O/codec failure, and 2 on invalid
+usage or unsafe overwrite. An output that aliases the input is always refused.
 
-```bash
-dart run zstandard_cli:decompress <compressed_file>
-```
+## Native loading and deployment
 
-Example: `dart run zstandard_cli:decompress myfile.txt.zstd`
+The loader selects a packaged library using the package URI, not the current
+working directory. It also supports compiled-executable adjacency and an
+explicit `ZSTANDARD_CLI_LIBRARY` override. Windows CLI binaries link the MSVC
+runtime statically to avoid an otherwise undeclared redistributable dependency.
 
-Output file names and default paths are defined by the package (e.g. compressed files may get a `.zstd` suffix). See the package README for exact behavior.
-
-## Architecture
-
-- **Precompiled libraries**: The package ships with native zstd libraries per platform/architecture (e.g. in `lib/src/bin/` or similar). At runtime, the correct library is loaded based on the current platform and CPU architecture.
-- **FFI**: Dart opens the library with `DynamicLibrary` and uses generated bindings to call `ZSTD_compress`, `ZSTD_decompress`, `ZSTD_compressBound`, and `ZSTD_getFrameContentSize`.
-- **No Flutter**: No dependency on Flutter; suitable for server or CLI Dart apps.
-
-## API Summary
-
-- **ZstandardCLI()** — Create an instance.
-- **compress(Uint8List data, {int compressionLevel = 3})** — Compress; returns `Future<Uint8List?>`.
-- **decompress(Uint8List data)** — Decompress; returns `Future<Uint8List?>`.
-- **getPlatformVersion()** — Returns a string like `"macOS 14.0"` or `"Linux ..."`.
-- **Extensions** on `Uint8List?`: `compress({int compressionLevel = 3})`, `decompress()`.
-
-See [CLI API Reference](../api/cli-api.md) for full details.
+Public API operations pass bytes to the shared native codec and never expose
+FFI allocation ownership. Callers doing concurrent large operations should
+still cap their own concurrency and output budgets.
 
 ## Testing
 
-From the package directory:
+Run `dart test` and `dart analyze` on each target OS. The test suite verifies
+the bundled symbol surface and the native roundtrip in addition to argument,
+file-safety, and loading behavior.
 
-```bash
-dart test
-```
-
-The package has a solid set of unit tests (small/large/empty data, compression levels, roundtrip). Run them on the target platform to ensure the native library loads and behaves correctly.
-
-## Performance characteristics
-
-- **No isolates**: Runs in the current isolate; suitable for CLI or server where blocking is acceptable.
-- **Throughput**: Comparable to native zstd; level 1–3 fastest, level 22 slowest.
-- **Memory**: Proportional to input and output; precompiled libs are built with standard zstd options.
-
-## Known limitations
-
-- **Desktop only**: macOS, Windows, Linux. For mobile or web, use the main **zstandard** Flutter plugin.
-- **Precompiled binaries**: You depend on the package’s shipped libraries; for custom builds or other platforms you would need to build and load your own library (see [Building](development/building.md) and `scripts/build_*.sh`).
-
-## Troubleshooting
-
-- **Library not found**: Ensure you are on a supported platform and architecture. Check that the package’s native library for that platform/arch is present and that `openZstdLibrary()` (or equivalent) can find it.
-- **Compress/decompress returns null**: Check that input is valid (e.g. non-empty for cases where the implementation requires it, valid zstd frame for decompress). See [Common Issues](../troubleshooting/common-issues.md).
-
-## See Also
-
-- [API — CLI](../api/cli-api.md)
-- [Architecture — FFI Implementation](../architecture/ffi-implementation.md)
+See [CLI API](../api/cli-api.md) and [FFI architecture](../architecture/ffi-implementation.md).
