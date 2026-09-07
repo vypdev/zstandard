@@ -27,7 +27,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Resolve workspace dependencies
-        run: bash scripts/create_local_overrides.sh zstandard
+        run: dart scripts/create_local_overrides.dart zstandard
 
       - name: Verify publication metadata
         run: dart scripts/check_pub_metadata.dart
@@ -56,7 +56,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Resolve workspace dependencies
-        run: bash scripts/create_local_overrides.sh zstandard
+        run: dart scripts/create_local_overrides.dart zstandard
 
       - name: Get dependencies
         working-directory: zstandard
@@ -104,6 +104,9 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard
 
       - name: Get dependencies
         working-directory: zstandard

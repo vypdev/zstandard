@@ -28,8 +28,8 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Resolve workspace dependencies
-        shell: bash
-        run: bash scripts/create_local_overrides.sh zstandard_windows
+        shell: cmd
+        run: call dart scripts\create_local_overrides.dart zstandard_windows
 
       - name: Get dependencies
         working-directory: zstandard_windows
@@ -53,8 +53,8 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Resolve workspace dependencies
-        shell: bash
-        run: bash scripts/create_local_overrides.sh zstandard_windows
+        shell: cmd
+        run: call dart scripts\create_local_overrides.dart zstandard_windows
 
       - name: Get dependencies
         working-directory: zstandard_windows
@@ -128,26 +128,15 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Stage zstandard_native outside the repository
-        shell: pwsh
+        shell: cmd
         run: |
-          $stage = Join-Path $env:RUNNER_TEMP 'zstandard-stage'
-          New-Item -ItemType Directory -Force $stage | Out-Null
-          Move-Item zstandard_native (Join-Path $stage 'zstandard_native')
-          $native = (Join-Path $stage 'zstandard_native').Replace('\', '/')
-          @"
-          dependency_overrides:
-            zstandard_native:
-              path: $native
-            zstandard_platform_interface:
-              path: ../zstandard_platform_interface
-          "@ | Set-Content zstandard_windows/pubspec_overrides.yaml
-          @"
-          dependency_overrides:
-            zstandard_native:
-              path: $native
-            zstandard_platform_interface:
-              path: ../../zstandard_platform_interface
-          "@ | Set-Content zstandard_windows/example/pubspec_overrides.yaml
+          @echo off
+          set "STAGE=%RUNNER_TEMP%\zstandard-stage"
+          if not exist "%STAGE%" mkdir "%STAGE%"
+          move zstandard_native "%STAGE%\zstandard_native"
+          if errorlevel 1 exit /b %ERRORLEVEL%
+          call dart scripts\create_local_overrides.dart zstandard_windows "%STAGE%\zstandard_native"
+          if errorlevel 1 exit /b %ERRORLEVEL%
 
       - name: Clean and get dependencies from package_config
         working-directory: zstandard_windows
@@ -210,10 +199,10 @@ jobs:
 
       - name: Restore workspace native package
         if: always()
-        shell: pwsh
+        shell: cmd
         run: |
-          $native = Join-Path $env:RUNNER_TEMP 'zstandard-stage/zstandard_native'
-          if (Test-Path $native) { Move-Item $native zstandard_native }
+          @echo off
+          if exist "%RUNNER_TEMP%\zstandard-stage\zstandard_native" move "%RUNNER_TEMP%\zstandard-stage\zstandard_native" zstandard_native
 
   check_windows_federated_example:
     name: Test federated Windows example
@@ -253,6 +242,10 @@ jobs:
       - uses: ./.github/actions/setup-preinstalled-flutter-windows
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        shell: cmd
+        run: call dart scripts\create_local_overrides.dart zstandard_windows
 
       - name: Get dependencies
         working-directory: zstandard_windows

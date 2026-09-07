@@ -55,8 +55,9 @@ missing infrastructure is a failure rather than a silent skip.
 
 ## Local equivalents
 
-Use `scripts/create_local_overrides.sh <package>` before resolving an
-individual monorepo package. Run `dart format --output=none
+Use `dart scripts/create_local_overrides.dart <package>` before resolving an
+individual monorepo package; the `.sh` wrapper remains available on Unix-like
+systems. Run `dart format --output=none
 --set-exit-if-changed .`, the appropriate analyzer/test command, and the
 platform integration script. `scripts/check_pub_metadata.dart` validates the
 publication contract; `scripts/build_web_wasm.sh` regenerates Web artifacts.

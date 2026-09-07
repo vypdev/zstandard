@@ -32,7 +32,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Resolve workspace dependencies
-        run: bash scripts/create_local_overrides.sh zstandard_android
+        run: dart scripts/create_local_overrides.dart zstandard_android
 
       - name: Get dependencies
         working-directory: zstandard_android
@@ -93,10 +93,10 @@ jobs:
       - name: Resolve the selected native source exactly
         run: |
           if [[ "${{ matrix.source }}" == package-config ]]; then
-            bash scripts/create_local_overrides.sh zstandard_android \
+            dart scripts/create_local_overrides.dart zstandard_android \
               "$RUNNER_TEMP/zstandard-stage/zstandard_native"
           else
-            bash scripts/create_local_overrides.sh zstandard_android
+            dart scripts/create_local_overrides.dart zstandard_android
           fi
 
       - name: Get dependencies
@@ -216,6 +216,9 @@ jobs:
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_android
 
       - name: Get dependencies
         working-directory: zstandard_android

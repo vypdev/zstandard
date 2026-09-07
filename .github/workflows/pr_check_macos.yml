@@ -32,7 +32,7 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Resolve workspace dependencies
-        run: bash scripts/create_local_overrides.sh zstandard_macos
+        run: dart scripts/create_local_overrides.dart zstandard_macos
 
       - name: Get dependencies
         working-directory: zstandard_macos
@@ -101,10 +101,10 @@ jobs:
       - name: Resolve the selected native source exactly
         run: |
           if [[ "${{ matrix.source }}" == package-config ]]; then
-            bash scripts/create_local_overrides.sh zstandard_macos \
+            dart scripts/create_local_overrides.dart zstandard_macos \
               "$RUNNER_TEMP/zstandard-stage/zstandard_native"
           else
-            bash scripts/create_local_overrides.sh zstandard_macos
+            dart scripts/create_local_overrides.dart zstandard_macos
           fi
 
       - name: Clean plugin and example
@@ -167,6 +167,9 @@ jobs:
       - uses: ./.github/actions/setup-preinstalled-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Resolve workspace dependencies
+        run: dart scripts/create_local_overrides.dart zstandard_macos
 
       - name: Get dependencies
         working-directory: zstandard_macos

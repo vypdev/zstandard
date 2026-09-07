@@ -44,7 +44,7 @@ jobs:
           cache: true
 
       - name: Resolve monorepo dependencies
-        run: bash scripts/create_local_overrides.sh "${{ matrix.package }}"
+        run: dart scripts/create_local_overrides.dart "${{ matrix.package }}"
 
       - name: Get dependencies
         working-directory: ${{ matrix.package }}
