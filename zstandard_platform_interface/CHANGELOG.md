@@ -1,3 +1,8 @@
+## Unreleased
+
+- Added the source-compatible `BoundedZstandardPlatform` capability and a
+  shared 256 MiB default decompression limit.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

@@ -1,3 +1,10 @@
+## Unreleased
+
+- Added the shared byte-safe codec with bounded streaming decompression.
+- Recorded the exact upstream zstd revision and applied upstream's allocation
+  null-check backport.
+- Made the zstd update script deterministic and safe to rerun.
+
 ## 1.5.0 - Dependencies Updated
 
 - Updated direct dependencies

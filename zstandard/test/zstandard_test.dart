@@ -6,7 +6,9 @@ import 'package:zstandard/zstandard.dart';
 import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 import 'package:zstandard/src/platform_manager.dart';
 
-class MockZstandardPlatform with MockPlatformInterfaceMixin implements ZstandardPlatform {
+class MockZstandardPlatform
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('MockPlatform 1.0');
 
@@ -66,6 +68,25 @@ void main() {
       final decompressed = await z.decompress(data);
       expect(decompressed, isNotNull);
       expect(decompressed, Uint8List.fromList(<int>[1, 2, 3, 4, 5]));
+    });
+
+    test(
+      'legacy platform result is rejected when it exceeds the limit',
+      () async {
+        final result = await Zstandard().decompress(
+          Uint8List.fromList([0x7f]),
+          maxOutputSize: 4,
+        );
+        expect(result, isNull);
+      },
+    );
+
+    test('negative decompression limit is rejected', () async {
+      final result = await Zstandard().decompress(
+        Uint8List.fromList([0x7f]),
+        maxOutputSize: -1,
+      );
+      expect(result, isNull);
     });
 
     test('instance returns registered platform', () {

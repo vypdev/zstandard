@@ -6,13 +6,25 @@ import 'package:zstandard/zstandard.dart';
 import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 
 /// Mock that returns null for decompress (simulates corrupted/invalid input).
-class MockDecompressFails with MockPlatformInterfaceMixin implements ZstandardPlatform {
+class MockDecompressFails
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('Mock 1.0');
 
   @override
   Future<Uint8List?> compress(Uint8List data, int compressionLevel) async {
-    return Uint8List.fromList([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00, 0x01, 0x00, 0x00]);
+    return Uint8List.fromList([
+      0x28,
+      0xb5,
+      0x2f,
+      0xfd,
+      0x00,
+      0x00,
+      0x01,
+      0x00,
+      0x00,
+    ]);
   }
 
   @override
@@ -20,12 +32,15 @@ class MockDecompressFails with MockPlatformInterfaceMixin implements ZstandardPl
 }
 
 /// Mock that returns null for compress (simulates compression failure).
-class MockCompressFails with MockPlatformInterfaceMixin implements ZstandardPlatform {
+class MockCompressFails
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('Mock 1.0');
 
   @override
-  Future<Uint8List?> compress(Uint8List data, int compressionLevel) async => null;
+  Future<Uint8List?> compress(Uint8List data, int compressionLevel) async =>
+      null;
 
   @override
   Future<Uint8List?> decompress(Uint8List data) async =>

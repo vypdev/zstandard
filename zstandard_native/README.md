@@ -6,6 +6,8 @@ Native zstd C sources and FFI bindings used by the [zstandard](https://pub.dev/p
 
 - **`src/zstd/`** — C source code from [facebook/zstd](https://github.com/facebook/zstd) (common, compress, decompress).
 - **`lib/zstandard_native_bindings.dart`** — FFI bindings generated from `zstd.h` for use by all platform plugins.
+- **`lib/src/zstandard_native_codec.dart`** — Shared bounded byte-oriented codec used by every native implementation.
+- **`UPSTREAM_ZSTD.md`** — Exact upstream version, commit, and locally applied upstream backport.
 
 ## Usage
 
@@ -13,7 +15,11 @@ This package is a dependency of the platform-specific zstandard plugins. End use
 
 ### Development (monorepo)
 
-From the repository root, the main **example** app uses `dependency_overrides` in `zstandard/example/pubspec.yaml` so that all packages (including `zstandard_native`) resolve from path. Run `flutter pub get` and builds from the example. When publishing to pub.dev, publish **zstandard_native** first, then the platform packages and the main plugin (they depend on `zstandard_native: ^1.4.0`).
+From the repository root, run `scripts/create_local_overrides.sh <package>` to
+resolve the monorepo packages by path for local tests. Generated
+`pubspec_overrides.yaml` files are ignored and must not be published. During a
+release, publish `zstandard_native` after the platform interface and before
+the platform packages and CLI.
 
 ### Regenerating bindings
 
@@ -37,4 +43,6 @@ From the repository root:
 ./scripts/update_zstd.sh
 ```
 
-This updates `zstandard_native/src/zstd/` from the official facebook/zstd repository.
+This refreshes `zstandard_native/src/zstd/` from the exact requested upstream
+revision (the repository default is pinned). Update `UPSTREAM_ZSTD.md` whenever
+the revision or the recorded backport changes.

@@ -5,7 +5,9 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:zstandard_platform_interface/src/zstandard_platform_interface_method_channel.dart';
 import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 
-class MockZstandardPlatform with MockPlatformInterfaceMixin implements ZstandardPlatform {
+class MockZstandardPlatform
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('42');
 
@@ -131,7 +133,10 @@ void main() {
       expect(await ZstandardPlatform.instance.getPlatformVersion(), '42');
 
       ZstandardPlatform.instance = MockB();
-      expect(await ZstandardPlatform.instance.getPlatformVersion(), 'PlatformB');
+      expect(
+        await ZstandardPlatform.instance.getPlatformVersion(),
+        'PlatformB',
+      );
       final data = Uint8List.fromList([1]);
       final c = await ZstandardPlatform.instance.compress(data, 3);
       expect(c, Uint8List.fromList([9, 9]));

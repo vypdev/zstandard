@@ -21,6 +21,10 @@ export 'src/zstandard_ext.dart';
 ///
 /// See also [ZstandardExt] for extension methods on [Uint8List?].
 class Zstandard {
+  /// Default maximum output accepted by [decompress].
+  static const int defaultMaxDecompressedSize =
+      ZstandardPlatform.defaultMaxDecompressedSize;
+
   static Zstandard? _instance;
 
   Zstandard._internal();
@@ -52,7 +56,26 @@ class Zstandard {
 
   /// Decompresses Zstandard-compressed [data].
   ///
-  /// Returns the decompressed bytes, or null if decompression failed
-  /// (e.g. invalid or corrupted input).
-  Future<Uint8List?> decompress(Uint8List data) => instance.decompress(data);
+  /// Returns the decompressed bytes, or null if decompression failed, the
+  /// input is incomplete, or the output would exceed [maxOutputSize].
+  Future<Uint8List?> decompress(
+    Uint8List data, {
+    int maxOutputSize = defaultMaxDecompressedSize,
+  }) async {
+    if (maxOutputSize < 0) return null;
+    final platform = instance;
+    if (platform is BoundedZstandardPlatform) {
+      return (platform as BoundedZstandardPlatform).decompressWithOptions(
+        data,
+        maxOutputSize: maxOutputSize,
+      );
+    }
+    // Compatibility path for third-party implementations of the original
+    // platform interface. Official implementations enforce the limit while
+    // streaming and therefore never allocate the oversized result.
+    final result = await platform.decompress(data);
+    return result != null && result.lengthInBytes <= maxOutputSize
+        ? result
+        : null;
+  }
 }

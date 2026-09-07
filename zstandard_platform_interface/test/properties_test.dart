@@ -5,7 +5,9 @@ import 'package:kiri_check/kiri_check.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:zstandard_platform_interface/zstandard_platform_interface.dart';
 
-class RoundtripMockPlatform with MockPlatformInterfaceMixin implements ZstandardPlatform {
+class RoundtripMockPlatform
+    with MockPlatformInterfaceMixin
+    implements ZstandardPlatform {
   @override
   Future<String?> getPlatformVersion() => Future.value('mock');
 
@@ -23,24 +25,25 @@ class RoundtripMockPlatform with MockPlatformInterfaceMixin implements Zstandard
 void main() {
   group('Property-based tests', () {
     property('mock roundtrip: decompress(compress(x)) == x', () {
-      forAll(
-        binary(minLength: 0, maxLength: 500),
-        (List<int> data) async {
-          final saved = ZstandardPlatform.instance;
-          ZstandardPlatform.instance = RoundtripMockPlatform();
-          try {
-            final input = Uint8List.fromList(data);
-            final compressed = await ZstandardPlatform.instance.compress(input, 3);
-            expect(compressed, isNotNull);
-            final decompressed = await ZstandardPlatform.instance.decompress(compressed!);
-            expect(decompressed, isNotNull);
-            expect(List<int>.from(decompressed!), data);
-          } finally {
-            ZstandardPlatform.instance = saved;
-          }
-        },
-        maxExamples: 100,
-      );
+      forAll(binary(minLength: 0, maxLength: 500), (List<int> data) async {
+        final saved = ZstandardPlatform.instance;
+        ZstandardPlatform.instance = RoundtripMockPlatform();
+        try {
+          final input = Uint8List.fromList(data);
+          final compressed = await ZstandardPlatform.instance.compress(
+            input,
+            3,
+          );
+          expect(compressed, isNotNull);
+          final decompressed = await ZstandardPlatform.instance.decompress(
+            compressed!,
+          );
+          expect(decompressed, isNotNull);
+          expect(List<int>.from(decompressed!), data);
+        } finally {
+          ZstandardPlatform.instance = saved;
+        }
+      }, maxExamples: 100);
     });
   });
 }

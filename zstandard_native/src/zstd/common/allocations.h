@@ -36,7 +36,9 @@ MEM_STATIC void* ZSTD_customCalloc(size_t size, ZSTD_customMem customMem)
         /* calloc implemented as malloc+memset;
          * not as efficient as calloc, but next best guess for custom malloc */
         void* const ptr = customMem.customAlloc(customMem.opaque, size);
-        ZSTD_memset(ptr, 0, size);
+        if (ptr != NULL) {
+            ZSTD_memset(ptr, 0, size);
+        }
         return ptr;
     }
     return ZSTD_calloc(1, size);
