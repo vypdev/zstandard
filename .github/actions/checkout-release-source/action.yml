@@ -1,0 +1,26 @@
+name: Checkout complete release source
+description: Avoid unshallowing a reused CI checkout before fetching release history.
+inputs:
+  ref:
+    description: Exact source ref or commit accepted by the calling release job.
+    default: ''
+  fetch-depth:
+    description: History depth; release jobs require complete history.
+    default: '0'
+  persist-credentials:
+    description: Preserve the calling job's existing checkout credential policy.
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Retire only the inherited shallow CI Git metadata
+      uses: actions/github-script@v9
+      env:
+        ZSTANDARD_CHECKOUT_BOOTSTRAP: ${{ github.action_path }}/retire-shallow-cache.cjs
+      with:
+        script: return require(process.env.ZSTANDARD_CHECKOUT_BOOTSTRAP)({core});
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref }}
+        fetch-depth: ${{ inputs.fetch-depth }}
+        persist-credentials: ${{ inputs.persist-credentials }}

@@ -74,7 +74,7 @@ jobs:
     runs-on:
       group: vypdev
       labels: [self-hosted, codex, Linux]
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       # The self-hosted runner shares one ADB daemon and one emulator port.

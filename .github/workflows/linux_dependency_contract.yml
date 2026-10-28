@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - .github/actions/setup-linux-dependencies/**
+      - .github/actions/copilot-verification-setup/linux-dependencies.sh
       - .github/scripts/tests/verify_linux_prefix.sh
       - .github/workflows/linux_dependency_contract.yml
 permissions:
@@ -29,14 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           state="$(mktemp -d "$RUNNER_TEMP/zstandard-linux-contract.XXXXXX")"
-          python3 -m venv "$state/venv"
-          "$state/venv/bin/python" -m pip --isolated install --index-url https://pypi.org/simple PyYAML==6.0.3
-          "$state/venv/bin/python" - "$state" <<'PY'
-          from pathlib import Path
-          import sys, yaml
-          action = yaml.safe_load(Path('.github/actions/setup-linux-dependencies/action.yml').read_text())
-          Path(sys.argv[1], 'action.sh').write_text(action['runs']['steps'][0]['run'])
-          PY
+          cp .github/actions/copilot-verification-setup/linux-dependencies.sh "$state/action.sh"
           cp .github/scripts/tests/verify_linux_prefix.sh "$state/check.sh"
           echo "LINUX_CONTRACT_STATE=$state" >> "$GITHUB_ENV"
       - name: Execute without privileges or a host Docker socket

@@ -170,6 +170,9 @@ jobs:
       - name: Test candidate source isolation
         run: python3 -m unittest discover -s scripts/tests -p test_native_candidate_source.py -v
 
+      - name: Test Web integration launcher
+        run: python3 -m unittest discover -s scripts/tests -p test_web_integration_runner.py -v
+
       - name: Validate shell scripts
         run: bash -n scripts/*.sh zstandard_ios/scripts/*.sh zstandard_macos/scripts/*.sh
 

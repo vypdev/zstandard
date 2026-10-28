@@ -1,5 +1,5 @@
 name: Preserve Flutter project files
-description: Preserve files that Flutter may rewrite during dependency resolution.
+description: Preserve analysis options and tracked Apple host files that Flutter may rewrite.
 
 inputs:
   package:
@@ -12,7 +12,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Save or restore analysis options
+    - name: Save or restore Flutter project files
       shell: bash
       env:
         PACKAGE: ${{ inputs.package }}
@@ -21,6 +21,14 @@ runs:
         set -euo pipefail
         BACKUP_DIR="$RUNNER_TEMP/flutter-project-files/${PACKAGE//\//_}"
         files=("analysis_options.yaml" "example/analysis_options.yaml")
+        case "$PACKAGE" in
+          zstandard_ios|zstandard_macos)
+            platform="${PACKAGE#zstandard_}"
+            while IFS= read -r -d '' file; do
+              files+=("${file#"$PACKAGE/"}")
+            done < <(git ls-files -z -- "$PACKAGE/example/$platform/Runner.xcodeproj")
+            ;;
+        esac
 
         if [[ "$MODE" == 'save' ]]; then
           mkdir -p "$BACKUP_DIR"
@@ -33,6 +41,7 @@ runs:
         elif [[ "$MODE" == 'restore' ]]; then
           for file in "${files[@]}"; do
             if [[ -f "$BACKUP_DIR/$file" ]]; then
+              mkdir -p "$PACKAGE/$(dirname "$file")"
               cp "$BACKUP_DIR/$file" "$PACKAGE/$file"
             fi
           done

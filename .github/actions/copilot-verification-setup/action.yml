@@ -1,13 +1,40 @@
-# Created once by Copilot setup. This action and its assets belong to your project.
-# Replace the placeholder with reviewed runtime/dependency setup, then merge onto MAIN_BRANCH.
+# Project-owned dependency setup, executed by Copilot's existing coordinator.
 name: Prepare project verification
-description: Configure project dependencies before enabling VERIFICATION_SETUP.
+description: Provision the tested Flutter/Dart SDK before project verification.
 runs:
   using: composite
   steps:
-    - name: Configure project verification dependencies
+    - name: Select private package and configuration paths
       shell: bash
       run: |
-        printf '%s\n' 'Configure .github/actions/copilot-verification-setup/action.yml with your project dependencies before enabling VERIFICATION_SETUP.'
-        printf '%s\n' 'Replace this failing placeholder, review and merge it onto the configured MAIN_BRANCH, then run a real verification.'
-        exit 1
+        set -euo pipefail
+        mkdir -p "$HOME/.pub-cache/bin" "$HOME/.config"
+        printf 'PUB_CACHE=%s\nXDG_CONFIG_HOME=%s\n' "$HOME/.pub-cache" "$HOME/.config" >> "$GITHUB_ENV"
+    - name: Install the tested Flutter SDK
+      uses: subosito/flutter-action@v2
+      with:
+        channel: stable
+        flutter-version: '3.47.2'
+        architecture: ${{ runner.arch == 'ARM64' && 'arm64' || 'x64' }}
+        cache-path: '${{ runner.tool_cache }}/zstandard-flutter-v2/:channel:-:version:-:arch:'
+        cache: false
+        pub-cache: false
+    - name: Prepare private Linux test dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        DESKTOP: 'true'
+        COVERAGE: 'false'
+        ANDROID: 'false'
+        ARM64: 'false'
+        BROWSER: 'false'
+      run: ZSTANDARD_LINUX_STATE_ROOT="$HOME" bash "$GITHUB_ACTION_PATH/linux-dependencies.sh"
+    - name: Preserve native tool settings through the supported PATH handoff
+      shell: bash
+      run: bash "$GITHUB_ACTION_PATH/runtime-launchers.sh"
+    - name: Verify the provisioned SDK
+      shell: bash
+      run: |
+        set -euo pipefail
+        flutter --version
+        dart --version

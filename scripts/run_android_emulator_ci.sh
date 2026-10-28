@@ -10,7 +10,7 @@ fi
 api_level="${ANDROID_API_LEVEL:-30}"
 target="${ANDROID_SYSTEM_IMAGE_TARGET:-aosp_atd}"
 arch="${ANDROID_SYSTEM_IMAGE_ARCH:-x86_64}"
-avd_name="${ANDROID_AVD_NAME:-zstandard_ci_test}"
+avd_name="${ANDROID_AVD_NAME:-zstandard_ci_test-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-1}-$$}"
 emulator_port="${EMULATOR_PORT:-5554}"
 
 sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
@@ -18,6 +18,15 @@ if [[ -z "$sdk_root" || ! -d "$sdk_root" ]]; then
   echo "ANDROID_SDK_ROOT or ANDROID_HOME must point to an Android SDK." >&2
   exit 1
 fi
+
+# Multiple runner services on one machine share the SDK, ADB daemon and port.
+# The Python parent owns the lease until this worker and its cleanup finish.
+if [[ "${ZSTANDARD_ANDROID_SESSION_PARENT:-}" != "$PPID" ]]; then
+  script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  exec python3 "$script_directory/android_ci_session.py" \
+    bash "$script_directory/run_android_emulator_ci.sh" "$@"
+fi
+unset ZSTANDARD_ANDROID_SESSION_PARENT
 
 find_sdk_tool() {
   local tool_name="$1"
@@ -49,7 +58,7 @@ export ANDROID_SDK_ROOT="$sdk_root"
 export PATH="$sdk_root/platform-tools:$sdk_root/emulator:$PATH"
 
 android_user_home="${ANDROID_USER_HOME:-$HOME/.android}"
-avd_home="${ANDROID_AVD_HOME:-$android_user_home/avd}"
+avd_home="${ANDROID_AVD_HOME:-${RUNNER_TEMP:-$android_user_home}/zstandard-android-avd}"
 mkdir -p "$avd_home"
 export ANDROID_USER_HOME="$android_user_home"
 export ANDROID_AVD_HOME="$avd_home"
@@ -93,13 +102,19 @@ printf 'hw.cpu.ncore=2\nhw.gps=no\n' >> "$avd_config"
 
 device="emulator-${emulator_port}"
 export EMULATOR_PORT="$emulator_port"
+export ANDROID_SERIAL="$device"
 emulator_log="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}.log"
 rm -f "$emulator_log"
 
 adb_timeout_seconds="${ANDROID_ADB_TIMEOUT_SECONDS:-30}"
 
 timeout "$adb_timeout_seconds" "$adb_bin" start-server >/dev/null
-timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
+connected_devices="$(timeout "$adb_timeout_seconds" "$adb_bin" devices)"
+if printf '%s\n' "$connected_devices" | awk -v serial="$device" \
+  '$1 == serial { found = 1 } END { exit !found }'; then
+  echo "Android device $device is already in use; refusing to replace another session." >&2
+  exit 1
+fi
 
 echo "Starting software Android emulator on port ${emulator_port}..."
 "$emulator_bin" \
@@ -116,11 +131,12 @@ echo "Starting software Android emulator on port ${emulator_port}..."
   -camera-back none \
   -accel off > "$emulator_log" 2>&1 &
 emulator_pid=$!
+owned_device=false
 
 cleanup() {
   local exit_code=$?
 
-  if (( exit_code != 0 )); then
+  if (( exit_code != 0 )) && [[ "$owned_device" == true ]]; then
     local diagnostics_file="${RUNNER_TEMP:-/tmp}/${avd_name}-${emulator_port}-diagnostics.txt"
     {
       echo "Android integration diagnostics for ${device}"
@@ -150,7 +166,6 @@ cleanup() {
     tail -n 350 "$diagnostics_file" >&2 || true
   fi
 
-  timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu kill >/dev/null 2>&1 || true
   if kill -0 "$emulator_pid" >/dev/null 2>&1; then
     kill "$emulator_pid" >/dev/null 2>&1 || true
     wait "$emulator_pid" >/dev/null 2>&1 || true
@@ -169,18 +184,24 @@ echo "Waiting for Android emulator boot..."
 boot_timeout_seconds=900
 boot_started_at="$(date +%s)"
 while true; do
+  if ! kill -0 "$emulator_pid" >/dev/null 2>&1; then
+    echo "Android emulator exited before boot completed." >&2
+    exit 1
+  fi
   boot_state="$( timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" shell getprop sys.boot_completed 2>/dev/null || true )"
   if [[ "$boot_state" == *"1"* ]]; then
+    registered_avd="$(timeout "$adb_timeout_seconds" "$adb_bin" -s "$device" emu avd name 2>/dev/null | sed -n '1{s/\r$//;p;}' || true)"
+    if [[ "$registered_avd" != "$avd_name" ]]; then
+      echo "Android port $emulator_port belongs to a different AVD; refusing to run tests." >&2
+      exit 1
+    fi
+    owned_device=true
     echo "Android emulator boot completed."
     break
   fi
 
   if (( $(date +%s) - boot_started_at >= boot_timeout_seconds )); then
     echo "Android emulator did not boot within ${boot_timeout_seconds} seconds." >&2
-    exit 1
-  fi
-  if ! kill -0 "$emulator_pid" >/dev/null 2>&1; then
-    echo "Android emulator exited before boot completed." >&2
     exit 1
   fi
   sleep 2

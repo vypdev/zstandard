@@ -1,6 +1,6 @@
 name: zstandard_cli
 description: Command-line interface for compressing and decompressing files with Zstandard.
-version: 1.5.0
+version: 1.5.3
 
 executables:
   zstandard-compress: compress
@@ -16,7 +16,7 @@ dependencies:
   ffi: ^2.2.0
   path: ^1.9.1
   platform: ^3.1.6
-  zstandard_native: ^1.5.0
+  zstandard_native: ^1.5.3
 
 dev_dependencies:
   coverage: ^1.15.0

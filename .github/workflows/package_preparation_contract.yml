@@ -7,6 +7,9 @@ on:
       - '.github/scripts/check_action_versions.py'
       - '.github/scripts/update_versions.dart'
       - '.github/scripts/tests/test_package_preparation.py'
+      - '.github/scripts/tests/test_package_publication.py'
+      - '.github/scripts/tests/test_release_checkout.py'
+      - '.github/scripts/tests/test_flutter_project_files.py'
       - '.github/scripts/tests/test_hotfix_ref.py'
       - 'scripts/check_pub_metadata.dart'
       - 'scripts/check_release_tag.sh'
@@ -27,6 +30,9 @@ jobs:
       group: vypdev
       labels: [self-hosted, codex, Linux]
     timeout-minutes: 10
+    env:
+      # Keep imported test modules out of subsequent clean-workspace checkouts.
+      PYTHONDONTWRITEBYTECODE: '1'
     steps:
       - uses: actions/checkout@v6
         with:
@@ -46,8 +52,14 @@ jobs:
           "$RUNNER_TEMP/preparation-contract/bin/python" -m pip install PyYAML==6.0.3
       - name: Require version tags for workflow and composite Actions
         run: '"$RUNNER_TEMP/preparation-contract/bin/python" .github/scripts/check_action_versions.py'
+      - name: Verify safe replacement of inherited shallow checkout metadata
+        run: '"$RUNNER_TEMP/preparation-contract/bin/python" -m unittest discover -s .github/scripts/tests -p test_release_checkout.py -v'
+      - name: Verify Apple fixture restoration after Flutter migrations
+        run: '"$RUNNER_TEMP/preparation-contract/bin/python" -m unittest discover -s .github/scripts/tests -p test_flutter_project_files.py -v'
       - name: Verify real metadata preparation and failure behavior
         run: '"$RUNNER_TEMP/preparation-contract/bin/python" -m unittest discover -s .github/scripts/tests -p test_package_preparation.py -v'
+      - name: Verify publication ordering, credential renewal and failure recovery without uploads
+        run: '"$RUNNER_TEMP/preparation-contract/bin/python" -m unittest discover -s .github/scripts/tests -p test_package_publication.py -v'
       - name: Reject preparation outside the matching hotfix branch
         run: '"$RUNNER_TEMP/preparation-contract/bin/python" -m unittest discover -s .github/scripts/tests -p test_hotfix_ref.py -v'
       - name: Verify release and hotfix tag provenance without publication

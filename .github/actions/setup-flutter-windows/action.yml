@@ -47,6 +47,34 @@ runs:
           Write-Host 'Removing the incomplete repository-specific Flutter installation before preparing the SDK.'
           Remove-Item -LiteralPath $sdkDirectory -Recurse -Force
         }
+    - name: Expose installed CMake and CTest
+      shell: powershell
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $directories = @(
+          (Join-Path $env:ProgramFiles 'CMake/bin'),
+          (Join-Path ${env:ProgramFiles(x86)} 'CMake/bin')
+        )
+        $command = Get-Command cmake.exe -CommandType Application -ErrorAction SilentlyContinue
+        if ($command) { $directories = @((Split-Path $command.Source)) + $directories }
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+        if (Test-Path -LiteralPath $vswhere) {
+          $installations = & $vswhere -products * -format json | ConvertFrom-Json
+          foreach ($installation in ($installations | Sort-Object { [Version]$_.installationVersion } -Descending)) {
+            $directories += Join-Path $installation.installationPath 'Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin'
+          }
+        }
+        $cmakeDirectory = $directories | Where-Object {
+          (Test-Path -LiteralPath (Join-Path $_ 'cmake.exe')) -and
+          (Test-Path -LiteralPath (Join-Path $_ 'ctest.exe'))
+        } | Select-Object -First 1
+        if (-not $cmakeDirectory) { throw 'Install CMake and CTest, or the Visual Studio C++ CMake tools component.' }
+        $cmakeDirectory | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        Write-Host "Using CMake and CTest from $cmakeDirectory"
+        & (Join-Path $cmakeDirectory 'cmake.exe') --version
+        if ($LASTEXITCODE -ne 0) { throw 'The installed CMake could not run.' }
+        & (Join-Path $cmakeDirectory 'ctest.exe') --version
+        if ($LASTEXITCODE -ne 0) { throw 'The installed CTest could not run.' }
     - name: Prepare Flutter SDK
       uses: subosito/flutter-action@v2
       with:

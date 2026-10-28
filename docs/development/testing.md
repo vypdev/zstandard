@@ -105,6 +105,13 @@ dart test
 ./scripts/test_all.sh
 ```
 
+This command requires Python 3 and Flutter/Dart. It resolves the matching local
+packages before testing, preserves existing local dependency overrides and
+restores them when it finishes. On Linux it builds the example's actual plugin
+before running FFI unit tests, so the native compiler and GTK development tools
+must be available. The resulting debug host is a test output; release artifacts
+are generated separately by deployment preparation.
+
 Use `./scripts/test_all_integration.sh` for full coverage without skips (see above).
 
 ### Integration tests (main plugin)

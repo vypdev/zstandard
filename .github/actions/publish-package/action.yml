@@ -1,0 +1,41 @@
+name: Publish one immutable package
+description: Renew OIDC for each package and resolve only the distributable package.
+inputs:
+  package:
+    required: true
+    description: Name of the matched release package.
+  version:
+    required: true
+    description: Accepted stable release version.
+  dart-version:
+    required: true
+    description: Exact Dart SDK version bundled with the tested Flutter SDK.
+runs:
+  using: composite
+  steps:
+    # Each package gets a fresh credential after the previous indexing wait.
+    - uses: dart-lang/setup-dart@v1
+      with:
+        sdk: ${{ inputs.dart-version }}
+        # A nested SDK action inherits this composite's path, which has no
+        # analyzer matcher. Publication keeps its dry runs and CI gates.
+        problem-matcher: false
+    - name: Resolve, publish and wait for the exact version
+      shell: bash
+      env:
+        ZSTANDARD_PUBLISH_PACKAGE: ${{ inputs.package }}
+        ZSTANDARD_PUBLISH_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        case "$ZSTANDARD_PUBLISH_PACKAGE" in
+          zstandard|zstandard_platform_interface|zstandard_native|zstandard_android|zstandard_ios|zstandard_linux|zstandard_macos|zstandard_web|zstandard_windows|zstandard_cli) ;;
+          *) echo 'Unknown release package.' >&2; exit 2 ;;
+        esac
+        case "$ZSTANDARD_PUBLISH_PACKAGE" in
+          zstandard_native|zstandard_cli)
+            (cd "$ZSTANDARD_PUBLISH_PACKAGE" && dart pub get --no-example) ;;
+          *)
+            (cd "$ZSTANDARD_PUBLISH_PACKAGE" && flutter pub get --no-example) ;;
+        esac
+        dart run scripts/publish_if_missing.dart "$ZSTANDARD_PUBLISH_PACKAGE" "$ZSTANDARD_PUBLISH_VERSION"
+        dart run scripts/wait_for_pub_version.dart "$ZSTANDARD_PUBLISH_PACKAGE" "$ZSTANDARD_PUBLISH_VERSION" 1200

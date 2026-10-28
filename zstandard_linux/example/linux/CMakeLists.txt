@@ -86,7 +86,8 @@ set_target_properties(${BINARY_NAME}
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/intermediates_do_not_run"
 )
 
-# Enable the test target.
+# Enable discovery from the example's build root and opt in to native tests.
+enable_testing()
 set(include_zstandard_linux_tests TRUE)
 
 # Generated plugin build rules, which manage building the plugins and adding

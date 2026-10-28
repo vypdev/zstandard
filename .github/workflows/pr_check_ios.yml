@@ -45,6 +45,7 @@ jobs:
         run: flutter pub get
 
       - uses: ./.github/actions/preserve-flutter-project-files
+        if: always()
         with:
           package: zstandard_ios
           mode: restore
@@ -112,6 +113,7 @@ jobs:
         run: flutter pub get
 
       - uses: ./.github/actions/preserve-flutter-project-files
+        if: always()
         with:
           package: zstandard_ios
           mode: restore
@@ -215,6 +217,13 @@ jobs:
         timeout-minutes: 3
         run: bash .github/scripts/prepare_ios_flutter.sh --cleanup
 
+      - name: Restore Apple host files after Flutter migrations
+        if: always()
+        uses: ./.github/actions/preserve-flutter-project-files
+        with:
+          package: zstandard_ios
+          mode: restore
+
   check_ios_publish_dry_run:
     name: Dry Run Publish iOS
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -243,6 +252,7 @@ jobs:
         run: flutter pub get
 
       - uses: ./.github/actions/preserve-flutter-project-files
+        if: always()
         with:
           package: zstandard_ios
           mode: restore

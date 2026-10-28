@@ -14,7 +14,7 @@
 5. Run release contract tests, metadata checks and PR platform CI. No tag or
    registry credential is needed for these checks.
 6. Record the release type and SDK compatibility in the Release issue. For a
-   patch, select `Patch` and `Automatic`; from `v1.5.0`, Copilot resolves `1.5.1`.
+   patch, select `Patch` and `Automatic`; from `v1.5.1`, Copilot resolves `1.5.2`.
    Announce Dart 3.12 / Flutter 3.44 minimums in the release notes. Maintenance
    changes alone do not authorize deployment.
 
@@ -53,7 +53,9 @@ uses GitHub OIDC; no persistent pub token is required.
 
 No platform is published during the native build chain. Once all builds and
 candidate gates pass, the ten package uploads run in dependency order and wait
-for indexing. This is not an atomic registry transaction: if publication stops,
+for indexing. Each package renews its OIDC credential after the previous wait.
+Resolve only the distributable package with `pub get --no-example`; example
+apps remain covered by candidate/CI tests. This is not an atomic registry transaction: if publication stops,
 use Copilot recovery for the same accepted candidate/tag to continue missing
 versions, rather than rebuilding and uploading platforms independently.
 
@@ -63,10 +65,23 @@ create independent integration PRs or delete managed branches yourself.
 
 ## Recovery
 
-- Preparation failure before promotion: fix the linked branch and rerun.
-  Native commit steps accept unchanged rebuilt outputs.
+- Preparation failure before promotion: fix the linked branch and start a new
+  preparation through Copilot's authorized launcher when workflow code changed.
+  GitHub reruns retain the original workflow revision; they suit transient
+  failures with unchanged code. Native commit steps accept unchanged outputs.
+- Checkout reports `pack has unresolved deltas`: deployment checkouts retire
+  inherited shallow Git metadata in the verified runner workspace before a fresh
+  full-history fetch. Inspect a refusal rather than deleting worktrees, stashes,
+  authored changes or another checkout. See
+  [complete-history checkout](../development/self-hosted-ci.md#complete-history-for-deployment-checkouts).
 - Remote tip moved: preparation stops rather than silently testing a newer
   commit. Inspect the concurrent change and start a consistent candidate attempt.
+- Promotion-PR CI requires a source correction before acceptance: Copilot has
+  already frozen the candidate SHA. Disable that PR's auto-merge and use an
+  explicitly approved recovery for the unpublished candidate; the current
+  limitation is tracked in [Copilot #732](https://github.com/vypdev/copilot/issues/732).
+  A replacement needs a complete new preparation and its own evidence. Never
+  reuse the old attestation or rewrite its stored `sourceSha` in place.
 - Production content differs: reconcile the production change before preparing
   a new candidate; do not bypass evidence validation.
 - Publication interrupted or indexing delayed: inspect the issue failure and
@@ -74,6 +89,19 @@ create independent integration PRs or delete managed branches yourself.
   versions are safely skipped.
 - Existing tag on recovery: the continuation retries its failed publication
   workflow, preserving the tag and operation identity.
+- Publisher code defect after tagging: a retry runs the same frozen workflow.
+  Prepare an authorized new patch with the fix, leaving the old tag and public
+  package versions unchanged. Record the old operation's partial publication;
+  do not report it as complete. Preserve production fixes in the new candidate
+  through Copilot's supported branch synchronization before preparation.
+- SDK setup reports a missing `dart-analyzer.json`: the package publisher runs
+  the SDK action inside a composite, whose inherited action path contains no
+  analyzer matcher. Publication SDK setup disables only that optional matcher
+  with `problem-matcher: false`; dry runs and required CI stay enabled. For an
+  already tagged workflow, prepare a new patch with this correction.
+- Copilot synchronization verification reports `flutter: command not found`:
+  provision Flutter for the command's own job, then retry the same supported
+  command. Do not remove configured tests or manually merge the managed branch.
 - GitHub Release/checksum finalization failed: rerun the same tag workflow.
   Existing packages are reused; Copilot verifies its release receipt.
 - Expired evidence: publication stops. Retention is 90 days; plan a new verified

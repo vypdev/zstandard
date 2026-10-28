@@ -62,7 +62,7 @@ elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zst
 
     run_web_driver() {
       # These must outlive the function body because the EXIT trap runs when
-      # the exported-function subshell exits (Bash 3.2 included).
+      # the browser-driver subshell exits (Bash 3.2 included).
       driver_pid=""
       driver_log=""
 
@@ -120,13 +120,14 @@ elif [[ -d "$ROOT/zstandard_web/example/integration_test" ]] && [[ -d "$ROOT/zst
       fi
     }
 
-    export -f chrome_driver_ready run_web_driver
     export CHROMEDRIVER_PORT
     export WEB_SERVER_PORT
 
     DRIVE_OUTPUT=$(mktemp -t flutter_drive_XXXXXX.txt)
     if [[ "$(uname -s)" == "Linux" ]] && command -v xvfb-run >/dev/null 2>&1; then
-      if (cd "$ROOT/zstandard_web/example" && xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bash -c 'run_web_driver') > "$DRIVE_OUTPUT" 2>&1; then
+      # Xvfb's /bin/sh wrapper can discard Bash's exported-function variables.
+      # Pass the trusted definitions as an argument to the child Bash instead.
+      if (cd "$ROOT/zstandard_web/example" && xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' bash -euo pipefail -c "$(declare -f chrome_driver_ready run_web_driver); run_web_driver") > "$DRIVE_OUTPUT" 2>&1; then
         DRIVE_EXIT=0
       else
         DRIVE_EXIT=$?

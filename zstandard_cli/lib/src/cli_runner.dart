@@ -8,7 +8,7 @@ import 'utils/constants.dart';
 import 'zstandard_cli_base.dart';
 
 /// Version of the command-line interface.
-const String zstandardCliVersion = '1.5.0';
+const String zstandardCliVersion = '1.5.3';
 
 /// Runs the compression command and returns a process exit code.
 Future<int> runCompressCommand(

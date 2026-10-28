@@ -1,6 +1,6 @@
 name: zstandard_ios
 description: iOS implementation of the Zstandard compression plugin for Flutter applications.
-version: 1.5.0
+version: 1.5.3
 
 homepage: https://vyp.dev
 repository: https://github.com/vypdev/zstandard/tree/master/zstandard_ios
@@ -12,8 +12,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  zstandard_platform_interface: ^1.5.0
-  zstandard_native: ^1.5.0
+  zstandard_platform_interface: ^1.5.3
+  zstandard_native: ^1.5.3
   ffi: ^2.2.0
 
 dev_dependencies:

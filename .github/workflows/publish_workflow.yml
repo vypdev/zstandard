@@ -34,7 +34,7 @@ jobs:
       issue: ${{ steps.candidate.outputs.issue }}
       operation-id: ${{ steps.candidate.outputs.operation-id }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: $/.github/actions/checkout-release-source
         with:
           fetch-depth: 0
 
@@ -101,45 +101,80 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: $/.github/actions/checkout-release-source
         with:
           ref: ${{ needs.validate_tag.outputs.commit }}
           fetch-depth: 0
-
-      # setup-dart provisions the short-lived pub.dev credential from GitHub's
-      # OIDC token. Flutter is installed afterwards so its bundled Dart stays
-      # first on PATH while using the same Pub credentials.
-      - uses: dart-lang/setup-dart@v1
-
       - uses: ./.github/actions/setup-flutter
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-
-      - name: Publish in dependency order, safely skipping immutable versions
-        env:
-          VERSION: ${{ needs.validate_tag.outputs.version }}
+      - name: Read the tested Dart SDK version
+        id: dart
         run: |
           set -euo pipefail
-          publish_and_wait() {
-            local package="$1"
-            if [[ "$package" == zstandard_native || "$package" == zstandard_cli ]]; then
-              (cd "$package" && dart pub get)
-            else
-              (cd "$package" && flutter pub get)
-            fi
-            dart run scripts/publish_if_missing.dart "$package" "$VERSION"
-            dart run scripts/wait_for_pub_version.dart "$package" "$VERSION" 1200
-          }
-
-          publish_and_wait zstandard_platform_interface
-          publish_and_wait zstandard_native
-          for package in \
-            zstandard_android zstandard_ios zstandard_linux zstandard_macos \
-            zstandard_web zstandard_windows; do
-            publish_and_wait "$package"
-          done
-          publish_and_wait zstandard_cli
-          publish_and_wait zstandard
+          version="$(dart --version 2>&1 | sed -nE 's/^Dart SDK version: ([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Publish zstandard_platform_interface
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_platform_interface
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_native
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_native
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_android
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_android
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_ios
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_ios
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_linux
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_linux
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_macos
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_macos
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_web
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_web
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_windows
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_windows
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard_cli
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard_cli
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
+      - name: Publish zstandard
+        uses: ./.github/actions/publish-package
+        with:
+          package: zstandard
+          version: ${{ needs.validate_tag.outputs.version }}
+          dart-version: ${{ steps.dart.outputs.version }}
 
   verify:
     name: Verify all published packages

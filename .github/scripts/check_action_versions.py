@@ -29,7 +29,7 @@ def main(root):
     for path in paths:
         for reference in references(yaml.safe_load(path.read_text(encoding="utf-8"))):
             count += 1
-            if isinstance(reference, str) and reference.startswith("./"):
+            if isinstance(reference, str) and reference.startswith(("./", "$/.github/actions/")):
                 continue
             if not isinstance(reference, str) or "@" not in reference or not VERSION.fullmatch(reference.rsplit("@", 1)[-1]):
                 errors.append(f"{path.relative_to(root)}: {reference}: use a version tag such as @v1")
