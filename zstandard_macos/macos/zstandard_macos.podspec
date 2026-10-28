@@ -5,7 +5,7 @@
 Pod::Spec.new do |s|
   s.cocoapods_version = '>= 1.11.0'  # for script_phase :before_headers
   s.name             = 'zstandard_macos'
-  s.version          = '1.5.3'
+  s.version          = '1.5.4'
   s.summary          = 'macOS implementation of the Zstandard Flutter plugin.'
   s.description      = <<-DESC
 Native Zstandard compression and bounded decompression for Flutter on macOS.
