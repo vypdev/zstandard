@@ -25,9 +25,31 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
+      - name: Prepare verified job-local Python without a Windows installer
+        shell: powershell
+        env:
+          REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          New-Item -ItemType Directory -Path $env:REPRODUCTION_REPORT -Force | Out-Null
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          $version = '3.13.17'
+          $expected = '9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38'
+          $url = "https://www.python.org/ftp/python/$version/python-$version-embed-amd64.zip"
+          [IO.File]::WriteAllText((Join-Path $env:REPRODUCTION_REPORT 'python-bootstrap.txt'), "$url`nSHA256 $expected`n", $utf8)
+          $directory = Join-Path $env:RUNNER_TEMP "zstandard-python-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          New-Item -ItemType Directory -Path $directory | Out-Null
+          $archive = Join-Path $directory 'python.zip'
+          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $archive
+          if ((Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant() -ne $expected) {
+            throw 'The portable Python archive does not match the official release checksum.'
+          }
+          $runtime = Join-Path $directory 'runtime'
+          Expand-Archive -LiteralPath $archive -DestinationPath $runtime
+          & (Join-Path $runtime 'python.exe') --version
+          if ($LASTEXITCODE -ne 0) { throw 'The job-local Python runtime could not execute.' }
+          [IO.File]::AppendAllText($env:GITHUB_PATH, "$runtime`n", $utf8)
       - name: Reproduce the published failure and build its explicit-root control
         shell: powershell
         env:
