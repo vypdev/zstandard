@@ -76,7 +76,7 @@ def prepare(sdk, report):
         raise
 
 
-def install_packages(sdk, report):
+def install_packages(sdk, report, headless=False):
     sdk = sdk.resolve()
     if sdk.parent != Path(os.environ['RUNNER_TEMP']).resolve():
         raise ValueError('Package installation must remain inside the job-private SDK.')
@@ -91,6 +91,8 @@ def install_packages(sdk, report):
                f'-Dcom.android.sdklib.toolsdir={tools}', '-classpath', str(classpath),
                'com.android.sdklib.tool.sdkmanager.SdkManagerCli', f'--sdk_root={sdk}']
     requested = ['ndk;27.0.12077973', 'cmake;3.22.1', 'platform-tools', 'emulator']
+    if headless:
+        requested.append('system-images;android-30;aosp_atd;x86_64')
     for phase, arguments, timeout in [('licenses', ['--licenses'], 180),
                                       ('install', ['--install', *requested], 900)]:
         print(f'Running SDK manager {phase} with explicit stdin (timeout {timeout}s).', flush=True)
@@ -120,8 +122,9 @@ if __name__ == '__main__':
     parser.add_argument('--sdk-root', type=Path, required=True)
     parser.add_argument('--report-directory', type=Path, required=True)
     parser.add_argument('--install-packages', action='store_true')
+    parser.add_argument('--headless', action='store_true')
     arguments = parser.parse_args()
     if arguments.install_packages:
-        install_packages(arguments.sdk_root, arguments.report_directory)
+        install_packages(arguments.sdk_root, arguments.report_directory, arguments.headless)
     else:
         prepare(arguments.sdk_root, arguments.report_directory)

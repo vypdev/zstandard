@@ -1,0 +1,57 @@
+import groovy.json.JsonSlurper
+import java.nio.file.Paths
+
+// Resolve from the consumer, not from this plugin's possibly hosted location.
+ext.resolveZstandardNativeRoot = { File consumerDirectory, File pluginDirectory, String explicitRoot = null ->
+    def validate = { File candidate, String origin ->
+        File root = candidate.canonicalFile
+        if (!new File(root, 'zstd.h').isFile() ||
+            !['common', 'compress', 'decompress'].every { new File(root, it).isDirectory() }) {
+            throw new GradleException("zstd source not found at ${root} (${origin}). Run flutter pub get in the consuming application or workspace.")
+        }
+        return root
+    }
+
+    if (explicitRoot) {
+        File supplied = new File(explicitRoot)
+        if (!supplied.isAbsolute()) {
+            supplied = new File(consumerDirectory, explicitRoot)
+        }
+        return validate(supplied, 'explicit ZSTD_ROOT')
+    }
+
+    for (File directory = consumerDirectory.canonicalFile; directory != null; directory = directory.parentFile) {
+        File configuration = new File(directory, '.dart_tool/package_config.json')
+        if (!configuration.isFile()) {
+            continue
+        }
+        def data
+        try {
+            data = new JsonSlurper().parse(configuration, 'UTF-8')
+        } catch (Exception error) {
+            throw new GradleException("Cannot read ${configuration}. Run flutter pub get in the consuming application or workspace.", error)
+        }
+        if (!(data instanceof Map) || !(data.packages instanceof List)) {
+            throw new GradleException("Invalid package configuration: ${configuration}.")
+        }
+        def selected = data.packages.findAll { it instanceof Map && it.name == 'zstandard_native' }
+        if (selected.size() != 1 || !(selected[0].rootUri instanceof String) || !selected[0].rootUri) {
+            throw new GradleException("Expected exactly one zstandard_native dependency in ${configuration}. Run flutter pub get.")
+        }
+        try {
+            URI uri = configuration.toURI().resolve(new URI(selected[0].rootUri))
+            if (uri.scheme != 'file') {
+                throw new IllegalArgumentException('Expected a local file URI.')
+            }
+            File nativePackage = Paths.get(uri).toFile()
+            return validate(new File(nativePackage, 'src/zstd'), "selected by ${configuration}")
+        } catch (GradleException error) {
+            throw error
+        } catch (Exception error) {
+            throw new GradleException("Cannot resolve the zstandard_native file URI in ${configuration}.", error)
+        }
+    }
+
+    // Direct repository builds can run before a consumer's pub configuration exists.
+    return validate(new File(pluginDirectory, '../../zstandard_native/src/zstd'), 'repository fallback')
+}

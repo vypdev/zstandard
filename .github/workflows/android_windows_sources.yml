@@ -6,20 +6,38 @@ on:
       - zstandard_android/**
       - zstandard_native/**
       - scripts/check_android_windows_sources.py
+      - scripts/check_android_native_sources.py
       - scripts/download_android_windows_tools.py
+      - scripts/run_android_windows_emulator.py
+      - scripts/fixtures/android_native_smoke.c
       - .github/workflows/android_windows_sources.yml
+  push:
+    branches: [develop]
+    paths:
+      - zstandard_android/**
+      - zstandard_native/**
+      - scripts/check_android_windows_sources.py
+      - scripts/check_android_native_sources.py
+      - scripts/download_android_windows_tools.py
+      - scripts/run_android_windows_emulator.py
+      - scripts/fixtures/android_native_smoke.c
+      - .github/workflows/android_windows_sources.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   reproduce-source-resolution:
-    name: Reproduce Android Pub-cache source lookup on Windows
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    name: Android Pub-cache regression on Windows
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on:
       group: vypdev
       labels: [self-hosted, Windows, X64]
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -56,6 +74,18 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Isolate Gradle state
+        shell: powershell
+        run: |
+          $directory = Join-Path $env:RUNNER_TEMP "zstandard-gradle-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          New-Item -ItemType Directory -Path $directory | Out-Null
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          [IO.File]::WriteAllText((Join-Path $directory 'gradle.properties'), "org.gradle.daemon=false`norg.gradle.workers.max=2`n", $utf8)
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "GRADLE_USER_HOME=$directory`n", $utf8)
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.2'
+          cache-disabled: true
       - name: Prepare a private Windows Android SDK
         shell: powershell
         env:
@@ -71,18 +101,28 @@ jobs:
           $env:ANDROID_SDK_ROOT = $sdk
           $env:ANDROID_USER_HOME = Join-Path $sdk 'user-state'
           New-Item -ItemType Directory -Path $env:ANDROID_USER_HOME | Out-Null
-          python scripts/download_android_windows_tools.py --sdk-root "$sdk" --report-directory "$env:REPRODUCTION_REPORT" --install-packages
+          python scripts/download_android_windows_tools.py --sdk-root "$sdk" --report-directory "$env:REPRODUCTION_REPORT" --install-packages --headless
           if ($LASTEXITCODE -ne 0) { throw 'The private Windows Android SDK could not be provisioned.' }
           Write-Host ("[{0:o}] Private Android SDK provisioning finished" -f (Get-Date))
           foreach ($name in @('ANDROID_HOME', 'ANDROID_SDK_ROOT', 'ANDROID_USER_HOME')) {
             $value = [Environment]::GetEnvironmentVariable($name)
             [IO.File]::AppendAllText($env:GITHUB_ENV, "$name=$value`n", $utf8)
           }
-      - name: Reproduce the published failure and build its explicit-root control
+      - name: Reproduce the published failure and validate the candidate resolver
         shell: powershell
         env:
           REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
-        run: python scripts/check_android_windows_sources.py --baseline-version 1.5.3 --report-directory "$env:REPRODUCTION_REPORT"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python scripts/check_android_windows_sources.py --baseline-version 1.5.3 --gradle (Get-Command gradle.bat).Source --report-directory "$env:REPRODUCTION_REPORT"
+          if ($LASTEXITCODE -ne 0) { throw 'Android source resolver regression failed.' }
+      - name: Run the candidate native library on a software Android emulator
+        shell: powershell
+        env:
+          REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python scripts/run_android_windows_emulator.py --sdk-root "$env:ANDROID_HOME" --report-directory "$env:REPRODUCTION_REPORT"
+          if ($LASTEXITCODE -ne 0) { throw 'Headless Android native execution failed.' }
       - name: Retain Windows reproduction and emulator capability evidence
         if: always()
         uses: actions/upload-artifact@v5

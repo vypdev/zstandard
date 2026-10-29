@@ -10,9 +10,14 @@ import platform
 import shutil
 import struct
 import subprocess
+import sys
 import tarfile
 import tempfile
 import urllib.request
+
+# The reviewed embedded Windows runtime deliberately omits the script directory.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_android_native_sources import verify
 
 
 def run(command, report, *, expected_success=True, timeout=300):
@@ -113,10 +118,10 @@ def published_package(package, version, destination):
     return {'package': package, 'version': version, 'archive_sha256': digest}
 
 
-def reproduce(version, report):
+def reproduce(version, report, gradle=None):
     ndk, cmake, ninja = sdk_tools(report)
     with tempfile.TemporaryDirectory(prefix='zstandard android windows ') as temporary:
-        stage = Path(temporary)
+        stage = Path(temporary).resolve()
         cache = stage / 'Pub cache/hosted/pub.dev'
         plugin = cache / f'zstandard_android-{version}'
         native = cache / f'zstandard_native-{version}'
@@ -153,12 +158,64 @@ def reproduce(version, report):
                    'control_library_sha256': hashlib.sha256(data).hexdigest()}
         (report / 'reproduction.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
         print('Reproduced the published package failure; explicit-root control built a real Android ARM64 library.', flush=True)
+        if gradle:
+            repository = Path(__file__).resolve().parents[1]
+            candidate = stage / 'candidate Pub cache/hosted/pub.dev'
+            candidate_plugin = candidate / 'zstandard_android-candidate'
+            candidate_native = candidate / 'zstandard_native-candidate é'
+            ignored = shutil.ignore_patterns('build', '.dart_tool', '.gradle', '.cxx', '.git',
+                                            'example', 'example_legacy', 'pubspec_overrides.yaml')
+            shutil.copytree(repository / 'zstandard_android', candidate_plugin, ignore=ignored)
+            shutil.copytree(repository / 'zstandard_native', candidate_native, ignore=ignored)
+            selected = verify(gradle, candidate_plugin, candidate_native, stage / 'candidate cases', report)
+            # Use the production resolver's output, never an inferred cached version.
+            assert Path((report / 'selected-native-root.txt').read_text(encoding='utf-8')) == selected
+            build = stage / 'candidate build'
+            candidate_common = [cmake, '-G', 'Ninja', '-S', candidate_plugin / 'zstd_build',
+                                f'-DCMAKE_MAKE_PROGRAM={ninja}',
+                                f'-DCMAKE_TOOLCHAIN_FILE={ndk / "build/cmake/android.toolchain.cmake"}',
+                                f'-DZSTD_ROOT={selected.as_posix()}',
+                                '-DANDROID_ABI=arm64-v8a', '-DANDROID_PLATFORM=android-21',
+                                '-DCMAKE_BUILD_TYPE=RelWithDebInfo']
+            run(candidate_common + ['-B', build], report / 'candidate-configure.txt')
+            run([cmake, '--build', build, '--parallel', '2'], report / 'candidate-build.txt')
+            data = (build / 'libzstandard_android.so').read_bytes()
+            assert data[:4] == b'\x7fELF' and struct.unpack_from('<H', data, 18)[0] == 183
+            (report / 'candidate.json').write_text(json.dumps({
+                'gradle_regressions_passed': True, 'both_packages_outside_checkout': True,
+                'paths_contain_spaces_and_unicode': True, 'android_abi': 'arm64-v8a',
+                'android_api': 21, 'library_sha256': hashlib.sha256(data).hexdigest()
+            }, indent=2), encoding='utf-8')
+            print('Candidate resolver and real Android ARM64 library build passed.', flush=True)
+            smoke_project = stage / 'native runtime project'
+            smoke_project.mkdir()
+            (smoke_project / 'CMakeLists.txt').write_text(
+                'cmake_minimum_required(VERSION 3.10)\nproject(android_smoke C)\n'
+                f'add_subdirectory("{candidate_plugin.as_posix()}/zstd_build" native)\n'
+                f'add_executable(zstandard_android_smoke "{repository.as_posix()}/scripts/fixtures/android_native_smoke.c")\n'
+                'target_link_libraries(zstandard_android_smoke PRIVATE zstandard_android)\n', encoding='utf-8')
+            smoke_build = stage / 'native runtime build'
+            run([cmake, '-G', 'Ninja', '-S', smoke_project, '-B', smoke_build,
+                 f'-DCMAKE_MAKE_PROGRAM={ninja}',
+                 f'-DCMAKE_TOOLCHAIN_FILE={ndk / "build/cmake/android.toolchain.cmake"}',
+                 f'-DZSTD_ROOT={selected.as_posix()}', '-DANDROID_ABI=x86_64',
+                 '-DANDROID_PLATFORM=android-21', '-DCMAKE_BUILD_TYPE=RelWithDebInfo'],
+                report / 'runtime-configure.txt')
+            run([cmake, '--build', smoke_build, '--parallel', '2'], report / 'runtime-build.txt')
+            runtime = report / 'runtime'
+            runtime.mkdir(exist_ok=True)
+            for source in [smoke_build / 'zstandard_android_smoke',
+                           smoke_build / 'native/libzstandard_android.so']:
+                data = source.read_bytes()
+                assert data[:4] == b'\x7fELF' and struct.unpack_from('<H', data, 18)[0] == 62
+                shutil.copy2(source, runtime / source.name)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--baseline-version', default='1.5.3')
     parser.add_argument('--report-directory', type=Path, required=True)
+    parser.add_argument('--gradle', type=Path)
     arguments = parser.parse_args()
     arguments.report_directory.mkdir(parents=True, exist_ok=True)
-    reproduce(arguments.baseline_version, arguments.report_directory)
+    reproduce(arguments.baseline_version, arguments.report_directory, arguments.gradle)
