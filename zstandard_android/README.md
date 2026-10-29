@@ -52,6 +52,20 @@ send Dart-owned bytes to a worker isolate; native pointers never cross an
 isolate boundary. Decompression uses zstd's streaming API and enforces the
 configured output limit while producing bytes.
 
+Gradle locates `zstandard_native` through the consuming app's
+`.dart_tool/package_config.json`, including an enclosing Dart workspace. It
+resolves the selected dependency's `rootUri` with the host's file-URI parser
+and passes its `src/zstd` directory explicitly to CMake. This supports a
+versioned Pub cache outside the app, Windows drive paths, spaces and Unicode,
+without choosing another cached version. Run `flutter pub get` before building.
+
+An explicit Gradle property `-PZSTD_ROOT=...` or `ZSTD_ROOT` environment variable
+can select a source directory containing `zstd.h`, `common`, `compress` and
+`decompress`. Relative overrides use the consuming Android project directory.
+Direct CMake builds use `-DZSTD_ROOT=...`. Repository-local fallback is available
+only when no consumer package configuration or explicit override is present;
+an invalid selected dependency fails with a diagnostic.
+
 The plugin does not pin an Android Gradle Plugin version. The consuming app
 owns that choice. The repository contains two Android consumers for CI:
 

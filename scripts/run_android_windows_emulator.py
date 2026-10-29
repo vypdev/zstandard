@@ -83,7 +83,7 @@ def execute(sdk, report):
 
         tools = sdk / 'cmdline-tools/latest'
         java = Path(os.environ['JAVA_HOME']) / 'bin/java.exe'
-        command([java, '-Dfile.encoding=UTF-8', f'-Dcom.android.sdklib.toolsdir={tools}',
+        command([java, '-Dfile.encoding=UTF-8', f'-Dcom.android.sdkmanager.toolsdir={tools}',
                  '-classpath', tools / 'lib/avdmanager-classpath.jar',
                  'com.android.sdklib.tool.AvdManagerCli', 'create', 'avd', '--name', name,
                  '--package', 'system-images;android-30;aosp_atd;x86_64', '--device', 'pixel_2'],

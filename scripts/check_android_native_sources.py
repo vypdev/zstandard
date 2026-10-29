@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 from urllib.parse import quote
@@ -11,6 +12,12 @@ from urllib.parse import quote
 
 def verify(gradle, plugin, native, stage, report):
     cases = []
+    cache = stage / 'Pub cache/hosted/pub.dev'
+    selected_package = cache / 'zstandard_native-9.8.7 é'
+    # Both versions coexist in the same fixture cache. The source bytes come
+    # from the candidate; these fixture version names are never published.
+    shutil.copytree(native / 'src', selected_package / 'src')
+    native = selected_package
 
     def sources(directory):
         root = directory / 'src/zstd'
@@ -35,7 +42,7 @@ def verify(gradle, plugin, native, stage, report):
                       'error': error, 'explicit': str(explicit) if explicit is not None else None})
 
     selected = native / 'src/zstd'
-    decoy = sources(stage / 'Pub cache/hosted/pub.dev/zstandard_native-other-version')
+    decoy = sources(cache / 'zstandard_native-9.8.8')
     repository = stage / 'repository'
     sibling = sources(repository / 'zstandard_native')
     repository_plugin = repository / 'zstandard_android/android'

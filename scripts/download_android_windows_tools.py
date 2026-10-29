@@ -88,7 +88,7 @@ def install_packages(sdk, report, headless=False):
     # This is the Java invocation in the reviewed vendor sdkmanager.bat. Calling
     # it directly gives Java explicit UTF-8 stdin without a PowerShell/batch pipe.
     command = [str(java), '-Dfile.encoding=UTF-8',
-               f'-Dcom.android.sdklib.toolsdir={tools}', '-classpath', str(classpath),
+               f'-Dcom.android.sdkmanager.toolsdir={tools}', '-classpath', str(classpath),
                'com.android.sdklib.tool.sdkmanager.SdkManagerCli', f'--sdk_root={sdk}']
     requested = ['ndk;27.0.12077973', 'cmake;3.22.1', 'platform-tools', 'emulator']
     if headless:
