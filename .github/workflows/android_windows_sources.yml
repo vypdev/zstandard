@@ -18,7 +18,7 @@ jobs:
     runs-on:
       group: vypdev
       labels: [self-hosted, Windows, X64]
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       PYTHONDONTWRITEBYTECODE: '1'
     steps:
@@ -50,6 +50,46 @@ jobs:
           & (Join-Path $runtime 'python.exe') --version
           if ($LASTEXITCODE -ne 0) { throw 'The job-local Python runtime could not execute.' }
           [IO.File]::AppendAllText($env:GITHUB_PATH, "$runtime`n", $utf8)
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare a private Windows Android SDK
+        shell: powershell
+        env:
+          REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          $sdk = Join-Path $env:RUNNER_TEMP ("zstandard-android-sdk-{0}-{1}" -f $env:GITHUB_RUN_ID, $env:GITHUB_RUN_ATTEMPT)
+          New-Item -ItemType Directory -Path $sdk | Out-Null
+          $archive = Join-Path $sdk 'command-line-tools.zip'
+          $url = 'https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip'
+          $expected = '90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a'
+          [IO.File]::WriteAllText((Join-Path $env:REPRODUCTION_REPORT 'android-sdk-bootstrap.txt'), "$url`nSHA256 $expected`n", $utf8)
+          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $archive
+          if ((Get-FileHash -Algorithm SHA256 $archive).Hash.ToLowerInvariant() -ne $expected) {
+            throw 'The Android command-line tools do not match the official checksum.'
+          }
+          $extracted = Join-Path $sdk 'extracted-tools'
+          Expand-Archive -LiteralPath $archive -DestinationPath $extracted
+          New-Item -ItemType Directory -Path (Join-Path $sdk 'cmdline-tools') | Out-Null
+          $tools = Join-Path $sdk 'cmdline-tools/reviewed'
+          Move-Item -LiteralPath (Join-Path $extracted 'cmdline-tools') -Destination $tools
+          $env:ANDROID_HOME = $sdk
+          $env:ANDROID_SDK_ROOT = $sdk
+          $env:ANDROID_USER_HOME = Join-Path $sdk 'user-state'
+          New-Item -ItemType Directory -Path $env:ANDROID_USER_HOME | Out-Null
+          $manager = Join-Path $tools 'bin/sdkmanager.bat'
+          (1..100 | ForEach-Object { 'y' }) | & $manager "--sdk_root=$sdk" --licenses
+          if ($LASTEXITCODE -ne 0) { throw 'The private Android SDK licenses could not be prepared.' }
+          & $manager "--sdk_root=$sdk" --install 'ndk;27.0.12077973' 'cmake;3.22.1' platform-tools emulator
+          if ($LASTEXITCODE -ne 0) { throw 'The private Windows Android SDK could not be provisioned.' }
+          foreach ($name in @('ANDROID_HOME', 'ANDROID_SDK_ROOT', 'ANDROID_USER_HOME')) {
+            $value = [Environment]::GetEnvironmentVariable($name)
+            [IO.File]::AppendAllText($env:GITHUB_ENV, "$name=$value`n", $utf8)
+          }
       - name: Reproduce the published failure and build its explicit-root control
         shell: powershell
         env:
