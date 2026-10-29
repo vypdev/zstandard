@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 import time
 import urllib.request
@@ -75,9 +76,52 @@ def prepare(sdk, report):
         raise
 
 
+def install_packages(sdk, report):
+    sdk = sdk.resolve()
+    if sdk.parent != Path(os.environ['RUNNER_TEMP']).resolve():
+        raise ValueError('Package installation must remain inside the job-private SDK.')
+    tools = sdk / 'cmdline-tools/latest'
+    java = Path(os.environ['JAVA_HOME']) / 'bin/java.exe'
+    classpath = tools / 'lib/sdkmanager-classpath.jar'
+    if not java.is_file() or not classpath.is_file():
+        raise ValueError('The selected JDK and reviewed SDK manager are required.')
+    # This is the Java invocation in the reviewed vendor sdkmanager.bat. Calling
+    # it directly gives Java explicit UTF-8 stdin without a PowerShell/batch pipe.
+    command = [str(java), '-Dfile.encoding=UTF-8',
+               f'-Dcom.android.sdklib.toolsdir={tools}', '-classpath', str(classpath),
+               'com.android.sdklib.tool.sdkmanager.SdkManagerCli', f'--sdk_root={sdk}']
+    requested = ['ndk;27.0.12077973', 'cmake;3.22.1', 'platform-tools', 'emulator']
+    for phase, arguments, timeout in [('licenses', ['--licenses'], 180),
+                                      ('install', ['--install', *requested], 900)]:
+        print(f'Running SDK manager {phase} with explicit stdin (timeout {timeout}s).', flush=True)
+        receipt = {'stage': phase, 'requested_packages': requested, 'explicit_stdin': True}
+        (report / 'android-packages.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+        result = subprocess.run(command + arguments, input='y\n' * 256,
+                                capture_output=True, text=True, encoding='utf-8',
+                                errors='replace', timeout=timeout)
+        output = result.stdout + result.stderr
+        (report / f'android-{phase}.txt').write_text(output, encoding='utf-8')
+        print(output[-1800:], flush=True)
+        if result.returncode:
+            raise RuntimeError(f'Android SDK manager {phase} failed with exit {result.returncode}.')
+    required = ['ndk/27.0.12077973/build/cmake/android.toolchain.cmake',
+                'cmake/3.22.1/bin/cmake.exe', 'cmake/3.22.1/bin/ninja.exe',
+                'platform-tools/adb.exe', 'emulator/emulator.exe']
+    missing = [relative for relative in required if not (sdk / relative).is_file()]
+    if missing:
+        raise RuntimeError('SDK manager did not install required files: ' + ', '.join(missing))
+    receipt.update({'stage': 'ready', 'verified_files': required})
+    (report / 'android-packages.json').write_text(json.dumps(receipt, indent=2), encoding='utf-8')
+    print('Private Android SDK packages and executables verified.', flush=True)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sdk-root', type=Path, required=True)
     parser.add_argument('--report-directory', type=Path, required=True)
+    parser.add_argument('--install-packages', action='store_true')
     arguments = parser.parse_args()
-    prepare(arguments.sdk_root, arguments.report_directory)
+    if arguments.install_packages:
+        install_packages(arguments.sdk_root, arguments.report_directory)
+    else:
+        prepare(arguments.sdk_root, arguments.report_directory)

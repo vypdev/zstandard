@@ -71,12 +71,7 @@ jobs:
           $env:ANDROID_SDK_ROOT = $sdk
           $env:ANDROID_USER_HOME = Join-Path $sdk 'user-state'
           New-Item -ItemType Directory -Path $env:ANDROID_USER_HOME | Out-Null
-          $manager = Join-Path $tools 'bin/sdkmanager.bat'
-          Write-Host ("[{0:o}] Preparing private Android SDK licenses" -f (Get-Date))
-          (1..100 | ForEach-Object { 'y' }) | & $manager "--sdk_root=$sdk" --licenses
-          if ($LASTEXITCODE -ne 0) { throw 'The private Android SDK licenses could not be prepared.' }
-          Write-Host ("[{0:o}] Installing NDK 27, CMake 3.22.1 and emulator tools" -f (Get-Date))
-          & $manager "--sdk_root=$sdk" --install 'ndk;27.0.12077973' 'cmake;3.22.1' platform-tools emulator
+          python scripts/download_android_windows_tools.py --sdk-root "$sdk" --report-directory "$env:REPRODUCTION_REPORT" --install-packages
           if ($LASTEXITCODE -ne 0) { throw 'The private Windows Android SDK could not be provisioned.' }
           Write-Host ("[{0:o}] Private Android SDK provisioning finished" -f (Get-Date))
           foreach ($name in @('ANDROID_HOME', 'ANDROID_SDK_ROOT', 'ANDROID_USER_HOME')) {
