@@ -21,7 +21,6 @@ jobs:
     timeout-minutes: 20
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -31,12 +30,14 @@ jobs:
           python-version: '3.13'
       - name: Reproduce the published failure and build its explicit-root control
         shell: powershell
+        env:
+          REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
         run: python scripts/check_android_windows_sources.py --baseline-version 1.5.3 --report-directory "$env:REPRODUCTION_REPORT"
       - name: Retain Windows reproduction and emulator capability evidence
         if: always()
         uses: actions/upload-artifact@v5
         with:
           name: android-windows-source-reproduction-${{ github.run_attempt }}
-          path: ${{ env.REPRODUCTION_REPORT }}
+          path: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
           retention-days: 14
