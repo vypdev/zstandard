@@ -12,6 +12,11 @@ rootProject.allprojects {
 
 apply plugin: "com.android.library"
 
+apply from: new File(project.projectDir, 'native_sources.gradle')
+def explicitNativeRoot = project.findProperty('ZSTD_ROOT') ?: System.getenv('ZSTD_ROOT')
+def nativeRoot = resolveZstandardNativeRoot(rootProject.projectDir, project.projectDir, explicitNativeRoot?.toString())
+def cmakeNativeRoot = nativeRoot.path.replace(File.separatorChar, '/' as char)
+
 android {
     if (project.android.hasProperty("namespace")) {
         namespace = "dev.vyp.zstandard_android"
@@ -56,6 +61,7 @@ android {
             cmake {
                 cppFlags "-fmax-page-size=16384"
                 arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                arguments "-DZSTD_ROOT=${cmakeNativeRoot}"
             }
         }
     }

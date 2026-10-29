@@ -94,6 +94,34 @@ Windows setup resolves CMake and CTest from the job's current `PATH`, a standalo
 
 The workflow builds `zstandard_windows/example` in Debug mode, runs the generated native test target (including a zstd compression/decompression round trip), runs the Windows package tests with the built DLL on `PATH`, and launches the example for Flutter integration tests. The same sequence is repeated with the current `zstandard_native` package staged outside the checkout and selected through `package_config.json`. A separate federated-example job builds `zstandard/example` and runs its integration suite.
 
+### Android builds hosted on Windows
+
+`android_windows_sources.yml` adds one targeted job for relevant pull requests
+and pushes to `develop`. It reproduces the original published Android source
+lookup failure, then stages both candidate packages outside the checkout and
+outside a separate consuming app. Production Gradle resolver checks cover two
+cached native versions, absolute and relative file URIs, Windows drive paths,
+spaces, Unicode, workspace ancestors, overrides and invalid dependencies.
+NDK 27.0.12077973 with CMake 3.22.1 builds the corrected ARM64/API 21 library.
+
+Linux retains the complete Flutter integration and JNI instrumentation matrix.
+The Windows job covers host-specific source discovery and compilation. It does
+not claim Android runtime coverage. A Windows emulator requires separate
+infrastructure validation: the current runner reported unavailable hardware
+virtualization, and API 30 ATD software-emulator trials did not reach a stable
+boot. Enabling Windows runtime checks requires a reproducible successful boot
+and test execution first.
+
+Portable Python and Android command-line tools use reviewed archive checksums.
+The job requires HTTPS access to Python, Google SDK repositories, Gradle
+distributions and pub.dev archives.
+Java 17 and Gradle 8.14.2 are selected per job. The Android SDK, Gradle state and
+test fixtures live in private job directories, including on cancellation. Only
+the NDK and CMake packages are provisioned; no system image is downloaded for
+the compilation check. The job does not change machine-wide SDK, virtualization
+or PATH settings. Missing tools, failed resolution and failed compilation are
+explicit errors; diagnostic artifacts are retained for 14 days.
+
 ## Web job requirements
 
 Flutter 3.47.2 does not support running `package:integration_test` directly with `flutter test -d chrome`. The workflow therefore uses the supported WebDriver path:
