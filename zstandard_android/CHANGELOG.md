@@ -1,3 +1,11 @@
+## 1.5.5 - Release fix Android native sources from the Windows Pub cache
+
+- Fix Android native-source discovery for consumers using the Windows Pub cache, including paths with spaces, Unicode and correctly resolved package-config URIs.
+- Resolve the selected `zstandard_native` dependency from the consumer or workspace package configuration, validate the source tree, and retain explicit `ZSTD_ROOT` overrides.
+- Add a real Windows regression that reproduces the published failure, passes 16 Gradle resolver cases and compiles the Android ARM64 library.
+- Keep Android runtime coverage in the Linux Flutter/JNI matrix. Windows headless emulator stability is tracked separately in #184 and is not claimed as validated runtime coverage.
+- Minimum SDK requirements remain Dart ^3.12.0 and Flutter >=3.44.0. Validation uses Flutter 3.47.2; no public API or SDK minimum changes are introduced by this patch.
+
 ## 1.5.4 - Validate complete deployment flow in one pass
 
 - Maintenance patch to validate the complete Copilot-managed deployment flow with the publisher and CI fixes delivered in 1.5.3.

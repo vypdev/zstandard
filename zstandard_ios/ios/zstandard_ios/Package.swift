@@ -10,7 +10,7 @@ let nativePackageDependency: Package.Dependency = {
     // Match the immutable repository tag carrying this plugin release.
     return .package(
         url: "https://github.com/vypdev/zstandard.git",
-        exact: "1.5.4"
+        exact: "1.5.5"
     )
 }()
 
