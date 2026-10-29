@@ -110,6 +110,7 @@ def execute(sdk, report):
                                             '-no-boot-anim', '-camera-back', 'none', '-accel', 'off'],
                                            env=environment, stdout=log, stderr=subprocess.STDOUT)
                 started = time.monotonic()
+                last_diagnostic = ''
                 while time.monotonic() - started < 900:
                     if process.poll() is not None:
                         raise RuntimeError('The software Android emulator exited before boot completed.')
@@ -123,6 +124,12 @@ def execute(sdk, report):
                         break
                     print(f'Waiting for software Android boot: {time.monotonic() - started:.0f}s; '
                           f'ADB exit={result}, state={boot[:160]!r}.', flush=True)
+                    with (report / 'emulator.txt').open('rb') as snapshot:
+                        snapshot.seek(max(0, snapshot.seek(0, 2) - 800))
+                        diagnostic = snapshot.read().decode('utf-8', errors='replace').strip()
+                    if diagnostic and diagnostic != last_diagnostic:
+                        print('Guest boot diagnostic: ' + diagnostic, flush=True)
+                        last_diagnostic = diagnostic
                     time.sleep(10)
                 if not owned_device:
                     raise TimeoutError('The software Android emulator did not boot within 15 minutes.')
