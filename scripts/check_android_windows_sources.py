@@ -120,7 +120,8 @@ def published_package(package, version, destination):
 
 def reproduce(version, report, gradle=None):
     ndk, cmake, ninja = sdk_tools(report)
-    with tempfile.TemporaryDirectory(prefix='zstandard android windows ') as temporary:
+    with tempfile.TemporaryDirectory(prefix='zstandard android windows ',
+                                     dir=os.environ.get('RUNNER_TEMP')) as temporary:
         stage = Path(temporary).resolve()
         cache = stage / 'Pub cache/hosted/pub.dev'
         plugin = cache / f'zstandard_android-{version}'
@@ -187,28 +188,6 @@ def reproduce(version, report, gradle=None):
                 'android_api': 21, 'library_sha256': hashlib.sha256(data).hexdigest()
             }, indent=2), encoding='utf-8')
             print('Candidate resolver and real Android ARM64 library build passed.', flush=True)
-            smoke_project = stage / 'native runtime project'
-            smoke_project.mkdir()
-            (smoke_project / 'CMakeLists.txt').write_text(
-                'cmake_minimum_required(VERSION 3.10)\nproject(android_smoke C)\n'
-                f'add_subdirectory("{candidate_plugin.as_posix()}/zstd_build" native)\n'
-                f'add_executable(zstandard_android_smoke "{repository.as_posix()}/scripts/fixtures/android_native_smoke.c")\n'
-                'target_link_libraries(zstandard_android_smoke PRIVATE zstandard_android)\n', encoding='utf-8')
-            smoke_build = stage / 'native runtime build'
-            run([cmake, '-G', 'Ninja', '-S', smoke_project, '-B', smoke_build,
-                 f'-DCMAKE_MAKE_PROGRAM={ninja}',
-                 f'-DCMAKE_TOOLCHAIN_FILE={ndk / "build/cmake/android.toolchain.cmake"}',
-                 f'-DZSTD_ROOT={selected.as_posix()}', '-DANDROID_ABI=x86_64',
-                 '-DANDROID_PLATFORM=android-21', '-DCMAKE_BUILD_TYPE=RelWithDebInfo'],
-                report / 'runtime-configure.txt')
-            run([cmake, '--build', smoke_build, '--parallel', '2'], report / 'runtime-build.txt')
-            runtime = report / 'runtime'
-            runtime.mkdir(exist_ok=True)
-            for source in [smoke_build / 'zstandard_android_smoke',
-                           smoke_build / 'native/libzstandard_android.so']:
-                data = source.read_bytes()
-                assert data[:4] == b'\x7fELF' and struct.unpack_from('<H', data, 18)[0] == 62
-                shutil.copy2(source, runtime / source.name)
 
 
 if __name__ == '__main__':

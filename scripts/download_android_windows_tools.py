@@ -76,7 +76,7 @@ def prepare(sdk, report):
         raise
 
 
-def install_packages(sdk, report, headless=False):
+def install_packages(sdk, report):
     sdk = sdk.resolve()
     if sdk.parent != Path(os.environ['RUNNER_TEMP']).resolve():
         raise ValueError('Package installation must remain inside the job-private SDK.')
@@ -90,9 +90,7 @@ def install_packages(sdk, report, headless=False):
     command = [str(java), '-Dfile.encoding=UTF-8',
                f'-Dcom.android.sdkmanager.toolsdir={tools}', '-classpath', str(classpath),
                'com.android.sdklib.tool.sdkmanager.SdkManagerCli', f'--sdk_root={sdk}']
-    requested = ['ndk;27.0.12077973', 'cmake;3.22.1', 'platform-tools', 'emulator']
-    if headless:
-        requested.append('system-images;android-30;aosp_atd;x86_64')
+    requested = ['ndk;27.0.12077973', 'cmake;3.22.1']
     for phase, arguments, timeout in [('licenses', ['--licenses'], 180),
                                       ('install', ['--install', *requested], 900)]:
         print(f'Running SDK manager {phase} with explicit stdin (timeout {timeout}s).', flush=True)
@@ -107,8 +105,7 @@ def install_packages(sdk, report, headless=False):
         if result.returncode:
             raise RuntimeError(f'Android SDK manager {phase} failed with exit {result.returncode}.')
     required = ['ndk/27.0.12077973/build/cmake/android.toolchain.cmake',
-                'cmake/3.22.1/bin/cmake.exe', 'cmake/3.22.1/bin/ninja.exe',
-                'platform-tools/adb.exe', 'emulator/emulator.exe']
+                'cmake/3.22.1/bin/cmake.exe', 'cmake/3.22.1/bin/ninja.exe']
     missing = [relative for relative in required if not (sdk / relative).is_file()]
     if missing:
         raise RuntimeError('SDK manager did not install required files: ' + ', '.join(missing))
@@ -122,9 +119,8 @@ if __name__ == '__main__':
     parser.add_argument('--sdk-root', type=Path, required=True)
     parser.add_argument('--report-directory', type=Path, required=True)
     parser.add_argument('--install-packages', action='store_true')
-    parser.add_argument('--headless', action='store_true')
     arguments = parser.parse_args()
     if arguments.install_packages:
-        install_packages(arguments.sdk_root, arguments.report_directory, arguments.headless)
+        install_packages(arguments.sdk_root, arguments.report_directory)
     else:
         prepare(arguments.sdk_root, arguments.report_directory)

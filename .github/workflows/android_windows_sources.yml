@@ -8,8 +8,6 @@ on:
       - scripts/check_android_windows_sources.py
       - scripts/check_android_native_sources.py
       - scripts/download_android_windows_tools.py
-      - scripts/run_android_windows_emulator.py
-      - scripts/fixtures/android_native_smoke.c
       - .github/workflows/android_windows_sources.yml
   push:
     branches: [develop]
@@ -19,8 +17,6 @@ on:
       - scripts/check_android_windows_sources.py
       - scripts/check_android_native_sources.py
       - scripts/download_android_windows_tools.py
-      - scripts/run_android_windows_emulator.py
-      - scripts/fixtures/android_native_smoke.c
       - .github/workflows/android_windows_sources.yml
 
 concurrency:
@@ -37,7 +33,7 @@ jobs:
     runs-on:
       group: vypdev
       labels: [self-hosted, Windows, X64]
-    timeout-minutes: 45
+    timeout-minutes: 30
     env:
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONUTF8: '1'
@@ -97,12 +93,11 @@ jobs:
           $sdk = Join-Path $env:RUNNER_TEMP ("zstandard-android-sdk-{0}-{1}" -f $env:GITHUB_RUN_ID, $env:GITHUB_RUN_ATTEMPT)
           python scripts/download_android_windows_tools.py --sdk-root "$sdk" --report-directory "$env:REPRODUCTION_REPORT"
           if ($LASTEXITCODE -ne 0) { throw 'The reviewed command-line tools could not be prepared.' }
-          $tools = Join-Path $sdk 'cmdline-tools/latest'
           $env:ANDROID_HOME = $sdk
           $env:ANDROID_SDK_ROOT = $sdk
           $env:ANDROID_USER_HOME = Join-Path $sdk 'user-state'
           New-Item -ItemType Directory -Path $env:ANDROID_USER_HOME | Out-Null
-          python scripts/download_android_windows_tools.py --sdk-root "$sdk" --report-directory "$env:REPRODUCTION_REPORT" --install-packages --headless
+          python scripts/download_android_windows_tools.py --sdk-root "$sdk" --report-directory "$env:REPRODUCTION_REPORT" --install-packages
           if ($LASTEXITCODE -ne 0) { throw 'The private Windows Android SDK could not be provisioned.' }
           Write-Host ("[{0:o}] Private Android SDK provisioning finished" -f (Get-Date))
           foreach ($name in @('ANDROID_HOME', 'ANDROID_SDK_ROOT', 'ANDROID_USER_HOME')) {
@@ -117,14 +112,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           python scripts/check_android_windows_sources.py --baseline-version 1.5.3 --gradle (Get-Command gradle.bat).Source --report-directory "$env:REPRODUCTION_REPORT"
           if ($LASTEXITCODE -ne 0) { throw 'Android source resolver regression failed.' }
-      - name: Run the candidate native library on a software Android emulator
-        shell: powershell
-        env:
-          REPRODUCTION_REPORT: ${{ runner.temp }}/zstandard-android-windows-${{ github.run_id }}-${{ github.run_attempt }}
-        run: |
-          python scripts/run_android_windows_emulator.py --sdk-root "$env:ANDROID_HOME" --report-directory "$env:REPRODUCTION_REPORT"
-          if ($LASTEXITCODE -ne 0) { throw 'Headless Android native execution failed.' }
-      - name: Retain Windows reproduction and emulator capability evidence
+      - name: Retain Windows source resolution and toolchain evidence
         if: always()
         uses: actions/upload-artifact@v5
         with:

@@ -150,6 +150,7 @@ if __name__ == '__main__':
     parser.add_argument('--report-directory', required=True, type=Path)
     arguments = parser.parse_args()
     arguments.report_directory.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='zstandard resolver é ') as temporary:
+    with tempfile.TemporaryDirectory(prefix='zstandard resolver é ',
+                                     dir=os.environ.get('RUNNER_TEMP')) as temporary:
         verify(arguments.gradle, arguments.plugin.resolve(), arguments.native.resolve(),
                Path(temporary).resolve(), arguments.report_directory)

@@ -26,6 +26,12 @@ They provide Android emulator/instrumentation, Linux desktop, ChromeDriver,
 Windows desktop/native, and both SwiftPM and CocoaPods Apple integration. They
 also run publish dry-runs and coverage where applicable.
 
+`android_windows_sources.yml` separately verifies Android source discovery on
+a Windows host with both packages staged in a versioned cache outside the
+consumer and builds ARM64 native code. Android execution coverage remains in
+the Linux emulator matrix. See the [Windows Android runner
+contract](self-hosted-ci.md#android-builds-hosted-on-windows).
+
 Actions in workflows and composite actions must use version tags such as
 `@v1`, `@v2` or `@v3`. Commit SHA references are not permitted. The package
 preparation contract checks this policy when workflow or action files change.
