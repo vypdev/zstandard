@@ -139,7 +139,7 @@ def reproduce(version, report):
         if result == 0 or 'zstd source not found' not in output:
             raise RuntimeError('The expected source-discovery failure was not reproduced.')
         control = stage / 'explicit-root-control'
-        run(common + ['-B', control, f'-DZSTD_ROOT={native / "src/zstd"}'],
+        run(common + ['-B', control, f'-DZSTD_ROOT={(native / "src/zstd").as_posix()}'],
             report / 'control-configure.txt')
         run([cmake, '--build', control, '--parallel', '2'], report / 'control-build.txt')
         library = control / 'libzstandard_android.so'
