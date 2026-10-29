@@ -38,7 +38,8 @@ def emulator_lease():
 
 
 def available_port_pair():
-    for port in range(5600, 5680, 2):
+    # Stay inside ADB's documented default discovery range (5555..5585).
+    for port in range(5554, 5586, 2):
         try:
             with socket.socket() as console, socket.socket() as adb:
                 console.bind(('127.0.0.1', port))
@@ -103,6 +104,7 @@ def execute(sdk, report):
             with (report / 'emulator.txt').open('w', encoding='utf-8') as log:
                 process = subprocess.Popen([str(emulator), '-avd', name, '-port', str(port),
                                             '-no-window', '-gpu', 'swiftshader_indirect',
+                                            '-show-kernel', '-no-metrics',
                                             '-feature', '-Vulkan', '-feature', '-GnssGrpcV1',
                                             '-no-snapshot', '-no-snapshot-save', '-noaudio',
                                             '-no-boot-anim', '-camera-back', 'none', '-accel', 'off'],
@@ -111,15 +113,16 @@ def execute(sdk, report):
                 while time.monotonic() - started < 900:
                     if process.poll() is not None:
                         raise RuntimeError('The software Android emulator exited before boot completed.')
-                    _, boot = command([adb, '-P', adb_port, '-s', device, 'shell', 'getprop', 'sys.boot_completed'],
-                                      'boot-state.txt', check=False)
+                    result, boot = command([adb, '-P', adb_port, '-s', device, 'shell', 'getprop', 'sys.boot_completed'],
+                                           'boot-state.txt', check=False)
                     if boot == '1':
                         _, registered = command([adb, '-P', adb_port, '-s', device, 'emu', 'avd', 'name'], 'avd-name.txt')
                         if registered.splitlines()[0] != name:
                             raise RuntimeError('Emulator port is owned by a different AVD; refusing to use it.')
                         owned_device = True
                         break
-                    print(f'Waiting for software Android boot: {time.monotonic() - started:.0f}s.', flush=True)
+                    print(f'Waiting for software Android boot: {time.monotonic() - started:.0f}s; '
+                          f'ADB exit={result}, state={boot[:160]!r}.', flush=True)
                     time.sleep(10)
                 if not owned_device:
                     raise TimeoutError('The software Android emulator did not boot within 15 minutes.')
