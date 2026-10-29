@@ -1,3 +1,9 @@
+## 1.5.4 - Validate complete deployment flow in one pass
+
+- Maintenance patch to validate the complete Copilot-managed deployment flow with the publisher and CI fixes delivered in 1.5.3.
+- Regenerate and validate all distributed WebAssembly assets and CLI native libraries during deployment preparation.
+- Public APIs and minimum SDK requirements remain unchanged: Dart ^3.12.0 and Flutter >=3.44.0. Validation uses Flutter 3.47.2.
+
 ## 1.5.3 - Repair nested SDK setup before pub.dev publication
 
 - Fix nested publication SDK setup by disabling its optional analyzer problem matcher. Preserve fresh OIDC credentials for every package and all publication dry runs.
