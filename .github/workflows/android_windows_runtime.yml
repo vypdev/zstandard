@@ -1,0 +1,40 @@
+name: Windows Android host diagnostics
+
+on:
+  push:
+    branches:
+      - chore/184-stabilize-headless-android-execution-on-windows-self-hosted-runners
+    paths:
+      - scripts/check_android_windows_host.ps1
+      - .github/workflows/android_windows_runtime.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-android-runtime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect-host:
+    name: Inspect native Windows architecture and owned emulator crashes
+    runs-on:
+      group: vypdev
+      labels: [self-hosted, Windows, X64]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Capture read-only host evidence
+        shell: powershell
+        run: |
+          & scripts/check_android_windows_host.ps1 -ReportDirectory (Join-Path $env:RUNNER_TEMP 'zstandard-windows-android-host')
+      - name: Retain host diagnosis
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-android-host-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/zstandard-windows-android-host
+          if-no-files-found: error
+          retention-days: 14
