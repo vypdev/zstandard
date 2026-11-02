@@ -32,7 +32,7 @@ The iOS and macOS manifests depend on the repository-level SwiftPM facade:
 ```swift
 .package(
     url: "https://github.com/vypdev/zstandard.git",
-    exact: "1.5.0"
+    exact: "1.5.5"
 )
 ```
 
@@ -42,7 +42,12 @@ mutable branches are never used in a published manifest.
 
 The SwiftPM target deliberately excludes unsupported or unnecessary upstream
 directories and disables assembly for the Apple build. It also preserves the
-FFI entry points when release dead-code stripping is enabled. The public
+FFI entry points when release dead-code stripping is enabled. The product
+includes a project-owned C shim in `zstandard_native/src/swiftpm/`. SwiftPM
+plugin registration calls `ZstandardNativeRetainSymbols`, pulling in a
+`used` table of the ten Dart FFI entry points. This keeps version-based
+resolution compatible with SwiftPM without `unsafeFlags`; the upstream C
+sources and CocoaPods implementation remain unchanged. The public
 headers in `zstandard_native/src/zstd/include/` are thin forwarding headers;
 the actual headers and all C implementation files remain in the canonical
 directory.
@@ -53,6 +58,13 @@ load the embedded plugin framework. This distinction is covered by the
 native integration tests, not only by manifest parsing.
 
 ## Verification policy
+
+Run `python3 scripts/test_swiftpm_package.py` on macOS for the standalone
+regression. It creates an isolated local Git dependency with a semantic version
+tag, builds a consumer in Release with dead stripping, resolves every required
+symbol using `dlsym`, and exercises one-shot and streaming roundtrips. A local
+path or revision dependency alone would not detect the unsafe-flags regression.
+
 
 Every Apple change must be tested through both dependency managers on the
 ARM64 self-hosted macOS runner:

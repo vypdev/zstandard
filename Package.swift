@@ -13,7 +13,7 @@ let package = Package(
     products: [
         .library(
             name: "zstandard-native",
-            targets: ["zstandard_native"]
+            targets: ["zstandard_ffi"]
         ),
     ],
     targets: [
@@ -36,24 +36,14 @@ let package = Package(
                 // internal zstd translation units consume these declarations.
                 .define("ZSTD_STATIC_LINKING_ONLY"),
                 .define("ZSTD_DISABLE_ASM"),
-            ],
-            // Flutter's SwiftPM integration links this target statically into
-            // the application. Keep the FFI entry points in the final image
-            // even when release dead-code stripping is enabled.
-            linkerSettings: [
-                .unsafeFlags([
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_compress",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_decompress",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_compressBound",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_isError",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_getFrameContentSize",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_createDStream",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_initDStream",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_decompressStream",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_freeDStream",
-                    "-Xlinker", "-u", "-Xlinker", "_ZSTD_DStreamOutSize",
-                ])
             ]
+        ),
+        // Keep the Dart-only entry points without unsafe dependency flags.
+        .target(
+            name: "zstandard_ffi",
+            dependencies: ["zstandard_native"],
+            path: "zstandard_native/src/swiftpm",
+            publicHeadersPath: "include"
         ),
     ]
 )

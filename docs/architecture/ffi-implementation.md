@@ -41,8 +41,9 @@ application. Repository checkouts may use the adjacent package; published
 consumers resolve it through Dart's package configuration. Build scripts never
 select an arbitrary matching Pub-cache directory.
 
-SwiftPM force-loads the complete FFI symbol surface because its static linker
-could otherwise remove Dart-only entry points. CocoaPods builds the equivalent
+SwiftPM plugin registration links a C shim with a retained table of the ten
+FFI entry points, preventing its static linker from removing Dart-only symbols
+without using unsafe package flags. CocoaPods builds the equivalent
 C set in an embedded framework. CLI tests open every required symbol; runtime
 roundtrips exercise the same codec.
 
