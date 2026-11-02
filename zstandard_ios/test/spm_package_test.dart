@@ -27,18 +27,8 @@ void main() {
     if (rootManifest.existsSync()) {
       final rootContents = rootManifest.readAsStringSync();
       expect(rootContents, contains('path: "zstandard_native/src/zstd"'));
-      for (final symbol in [
-        '_ZSTD_compress',
-        '_ZSTD_decompress',
-        '_ZSTD_isError',
-        '_ZSTD_createDStream',
-        '_ZSTD_initDStream',
-        '_ZSTD_decompressStream',
-        '_ZSTD_freeDStream',
-        '_ZSTD_DStreamOutSize',
-      ]) {
-        expect(rootContents, contains(symbol));
-      }
+      expect(rootContents, isNot(contains('unsafeFlags')));
+      expect(rootContents, contains('targets: ["zstandard_ffi"]'));
     }
   });
 }

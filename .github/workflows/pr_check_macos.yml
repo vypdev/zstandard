@@ -54,6 +54,9 @@ jobs:
         working-directory: zstandard_macos
         run: flutter analyze
 
+      - name: Verify version-resolved SwiftPM and Release FFI symbols
+        run: python3 scripts/test_swiftpm_package.py
+
       - name: Run package tests
         working-directory: zstandard_macos
         run: flutter test
