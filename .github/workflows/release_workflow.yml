@@ -669,6 +669,9 @@ jobs:
           else
             flutter config --no-enable-swift-package-manager
           fi
+      - name: Verify version-resolved SwiftPM and Release FFI symbols
+        if: matrix.platform == 'macos' && matrix.dependency_manager == 'swiftpm'
+        run: python3 scripts/test_swiftpm_package.py
       - name: Get dependencies and build Apple example
         env:
           PLATFORM: ${{ matrix.platform }}
