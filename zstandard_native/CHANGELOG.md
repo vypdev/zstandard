@@ -1,3 +1,10 @@
+## 1.5.6 - Release patch fix versioned SwiftPM resolution 188
+
+- Fix SwiftPM resolution of the native package through immutable exact-version dependencies by removing unsafe linker flags (issue #188, PR #189).
+- Preserve all ten Dart FFI entry points in iOS/macOS SwiftPM Release builds through plugin registration and a retained native symbol table.
+- Add a version-resolved SwiftPM Release regression with dynamic symbol lookup and one-shot/streaming roundtrips to PR and release validation.
+- Minimum supported SDKs remain Dart `^3.12.0` and Flutter `>=3.44.0` (published 1.5.0 used Dart `^3.6.0` and Flutter `>=3.3.0`). CI uses Flutter 3.47.2.
+
 ## 1.5.5 - Release fix Android native sources from the Windows Pub cache
 
 - Fix Android native-source discovery for consumers using the Windows Pub cache, including paths with spaces, Unicode and correctly resolved package-config URIs.
